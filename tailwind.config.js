@@ -1,7 +1,6 @@
 import defaultTheme from 'tailwindcss/defaultTheme';
 import forms from '@tailwindcss/forms';
 
-/** @type {import('tailwindcss').Config} */
 export default {
     content: [
         './vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php',
@@ -14,6 +13,11 @@ export default {
         extend: {
             fontFamily: {
                 sans: ['Figtree', ...defaultTheme.fontFamily.sans],
+                poppins: ['Poppins', 'sans-serif'],
+                poppinsBold: ['Poppins-SemiBold', 'sans-serif'],
+                freckle: ['FreckleFace', 'cursive'],
+                sfPro: ['SF-Pro-Display', 'sans-serif'],
+                lightPoppins: ['Poppins-Light', 'sans-serif'],
             },
         },
     },
