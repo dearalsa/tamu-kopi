@@ -3,6 +3,7 @@ import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import { motion } from "framer-motion";
+import emailjs from "@emailjs/browser";
 
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
@@ -17,6 +18,7 @@ const Contact = () => {
     email: "",
     message: ""
   });
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const position = [-6.5971, 106.8060];
   const fadeInUp = {
@@ -28,9 +30,30 @@ const Contact = () => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    // Email tujuan: rumu.kopi@gmail.com
-    alert("Pesan terkirim ke rumu.kopi@gmail.com!");
-    setFormData({ name: "", email: "", message: "" });
+    setIsSubmitting(true);
+
+    const serviceID = "service_bsvalzq"; 
+    const templateID = "template_0w34gak"; 
+    const publicKey = "Jf5CYDdUQAoteHpof"; 
+
+    const templateParams = {
+      name: formData.name,
+      email: formData.email,
+      message: formData.message,
+    };
+
+    emailjs.send(serviceID, templateID, templateParams, publicKey)
+      .then((response) => {
+        console.log("SUCCESS!", response.status, response.text);
+        alert("✅ Terima kasih! Pesan kamu berhasil terkirim.");
+        setFormData({ name: "", email: "", message: "" });
+        setIsSubmitting(false);
+      })
+      .catch((err) => {
+        console.error("FAILED...", err);
+        alert("❌ Maaf, terjadi kesalahan saat mengirim pesan. Silakan coba lagi.");
+        setIsSubmitting(false);
+      });
   };
 
   const handleChange = (e) => {
@@ -63,6 +86,7 @@ const Contact = () => {
                 placeholder="Masukkan Nama"
                 className="flex-1 px-6 py-3 rounded-[40px] bg-transparent border border-gray-900 focus:outline-none focus:ring-0 focus:border-[#E84949] transition-colors font-sfPro text-[#3B1F1A]"
                 required
+                disabled={isSubmitting}
               />
               <input
                 type="email"
@@ -72,6 +96,7 @@ const Contact = () => {
                 placeholder="Masukkan Email"
                 className="flex-1 px-6 py-3 rounded-[40px] bg-transparent border border-gray-900 focus:outline-none focus:ring-0 focus:border-[#E84949] transition-colors font-sfPro text-[#3B1F1A]"
                 required
+                disabled={isSubmitting}
               />
             </div>
 
@@ -83,13 +108,15 @@ const Contact = () => {
               rows="6"
               className="w-full px-6 py-4 rounded-[15px] bg-transparent border border-gray-900 focus:outline-none focus:ring-0 focus:border-[#E84949] transition-colors font-sfPro text-[#3B1F1A] mb-6 resize-none"
               required
+              disabled={isSubmitting}
             />
 
             <button
               type="submit"
-              className="bg-[#393535] hover:bg-[#2d1814] text-white px-14 py-2 rounded-[30px] text-[15px] font-poppinsBold transition-all duration-300 transform hover:scale-105 active:scale-95"
+              disabled={isSubmitting}
+              className="bg-[#393535] hover:bg-[#2d1814] text-white px-14 py-2 rounded-[30px] text-[15px] font-poppinsBold transition-all duration-300 transform hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Kirim
+              {isSubmitting ? "Mengirim..." : "Kirim"}
             </button>
           </form>
         </motion.div>
@@ -98,7 +125,7 @@ const Contact = () => {
           {[
             { id: 1, href: "https://instagram.com/tamu_kopi", icon: "instagram", label: "tamu_kopi", desc: "Ikuti kami di Instagram.", delay: 0.2 },
             { id: 2, href: "https://tiktok.com/@tamu.kopi", icon: "tiktok", label: "tamu.kopi", desc: "Lihat konten seru kami di TikTok.", delay: 0.3 },
-            { id: 3, href: "http://google.com/maps", icon: "location", label: "Lokasi", desc: "Jl. Dadali No. 07, Kota Bogor", delay: 0.4 },
+            { id: 3, href: "https://maps.google.com/?q=-6.5971,106.8060", icon: "location", label: "Lokasi", desc: "Jl. Dadali No. 07, Kota Bogor", delay: 0.4 },
           ].map((item) => (
             <motion.a
               key={item.id}

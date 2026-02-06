@@ -43,11 +43,11 @@ const About = () => {
           }`}
         >
           <div 
-            className={`flex-1 max-w-[500px] text-white transition-all duration-700 delay-200 ${
+            className={`flex-1 max-w-[500px] text-white transition-all duration-700 delay-200 -mt-3 ${
               isVisible ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-8"
             }`}
           >
-            <h1 className="text-[38px] sm:text-[48px] md:text-[65px] font-freckle mb-6 md:mb-8 leading-tight">
+            <h1 className="text-[38px] sm:text-[48px] md:text-[68px] font-gochiHand mb-6 md:mb-8 leading-tight">
               Kenapa harus pilih Tamu Kopi?
             </h1>
             <p className="text-[16px] sm:text-[18px] md:text-[20px] leading-[1.7] md:leading-[1.8] font-sfPro">

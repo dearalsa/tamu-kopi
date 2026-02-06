@@ -39,7 +39,7 @@ export default function Home() {
           <div className="absolute inset-0 bg-gradient-to-r from-black/55 via-black/35 to-transparent" />
 
           <div className="relative z-10 flex flex-col items-start justify-center h-full px-12 md:px-24 text-white">
-            <h1 className={`text-5xl sm:text-6xl md:text-[107px] font-freckle mb-6 leading-none transition-all duration-1000 ${
+            <h1 className={`text-5xl sm:text-6xl md:text-[115px] font-gochiHand mb-6 leading-none transition-all duration-1000 ${
                 isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
               }`}
               style={{ transitionDelay: "100ms" }}

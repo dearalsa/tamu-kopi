@@ -18,6 +18,7 @@ export default {
                 freckle: ['FreckleFace', 'cursive'],
                 sfPro: ['SF-Pro-Display', 'sans-serif'],
                 lightPoppins: ['Poppins-Light', 'sans-serif'],
+                gochiHand: ['Gochi-Hand', 'cursive'],
             },
         },
     },
