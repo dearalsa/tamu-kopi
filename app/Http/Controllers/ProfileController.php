@@ -16,12 +16,13 @@ class ProfileController extends Controller
     public function edit(Request $request): Response
     {
         $admin = Auth::guard('admin')->user();
-        
+
         return Inertia::render('Profile/Edit', [
             'status' => session('status'),
             'role' => $admin->role,
         ]);
     }
+
     public function updatePassword(Request $request): RedirectResponse
     {
         $validated = $request->validate([
@@ -30,7 +31,7 @@ class ProfileController extends Controller
         ]);
 
         $admin = Auth::guard('admin')->user();
-        
+
         $admin->update([
             'password' => Hash::make($validated['password']),
         ]);
