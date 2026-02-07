@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Link, router } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import { Plus, Search, ChevronDown, Pencil, Trash2, Star, ToggleLeft } from 'lucide-react';
@@ -8,20 +8,33 @@ export default function Index({ menus }) {
   const [selectedFilter, setSelectedFilter] = useState('all');
   const [showFilterDropdown, setShowFilterDropdown] = useState(false);
 
+  const dynamicCategoryFilters = useMemo(() => {
+    const map = new Map();
+    menus.forEach((menu) => {
+      if (menu.category) {
+        if (!map.has(menu.category.slug)) {
+          map.set(menu.category.slug, menu.category.name);
+        }
+      }
+    });
+    return Array.from(map.entries()).map(([slug, name]) => ({
+      value: slug,
+      label: name,
+    }));
+  }, [menus]);
+
   const filters = [
-    { value: 'all', label: 'Filter Menu' },
-    { value: 'makanan', label: 'Makanan' },
-    { value: 'minuman', label: 'Minuman' },
-    { value: 'cemilan', label: 'Cemilan' },
+    { value: 'all', label: 'Semua Menu' },
+    ...dynamicCategoryFilters,
     { value: 'best-seller', label: 'Best Seller' },
   ];
 
   const filteredMenus = menus.filter((menu) => {
     const matchSearch = menu.name.toLowerCase().includes(searchTerm.toLowerCase());
-
-    if (selectedFilter === 'all') return matchSearch;
-    if (selectedFilter === 'best-seller') return matchSearch && menu.is_best_seller === true;
-    return matchSearch && menu.category.slug === selectedFilter;
+    if (!matchSearch) return false;
+    if (selectedFilter === 'all') return true;
+    if (selectedFilter === 'best-seller') return menu.is_best_seller === true;
+    return menu.category && menu.category.slug === selectedFilter;
   });
 
   const toggleAvailability = (menu) => {

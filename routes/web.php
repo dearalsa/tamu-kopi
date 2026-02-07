@@ -2,14 +2,13 @@
 
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\CategoryController;
+use App\Http\Controllers\GoogleReviewController;
 use App\Http\Controllers\MenuController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 
-Route::get('/', function () {
-    return Inertia::render('Home');
-})->name('home');
+Route::get('/', [MenuController::class, 'landing'])->name('home');
 
 Route::get('/about', function () {
     return Inertia::render('About');
@@ -55,6 +54,8 @@ Route::middleware(['auth:admin'])->prefix('admin')->name('admin.')->group(functi
         Route::put('/menus/{menu}', [MenuController::class, 'update'])->name('menus.update');
         Route::delete('/menus/{menu}', [MenuController::class, 'destroy'])->name('menus.destroy');
     });
+
+    Route::get('/reviews', [GoogleReviewController::class, 'index']);
 });
 
 require __DIR__.'/auth.php';

@@ -19,6 +19,7 @@ export default {
                 sfPro: ['SF-Pro-Display', 'sans-serif'],
                 lightPoppins: ['Poppins-Light', 'sans-serif'],
                 gochiHand: ['Gochi-Hand', 'cursive'],
+                telegraf: ['Telegraf-Regular', 'sans-serif'],
             },
         },
     },

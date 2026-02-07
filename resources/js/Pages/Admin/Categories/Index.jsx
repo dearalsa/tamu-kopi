@@ -26,7 +26,7 @@ export default function Index() {
 
     return (
         <AdminLayout>
-            <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 mt-20">
                 {flash?.success && (
                     <div className="mb-4 p-3 bg-green-50 border border-green-100 text-green-700 rounded-lg flex items-center gap-2 text-xs animate-in fade-in slide-in-from-top-2">
                         <span className="w-1.5 h-1.5 bg-green-500 rounded-full" />

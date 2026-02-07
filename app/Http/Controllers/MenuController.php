@@ -11,6 +11,21 @@ use Inertia\Inertia;
 
 class MenuController extends Controller
 {
+    public function landing()
+    {
+        $menus = Menu::with('category')
+            ->where('is_available', true)
+            ->latest()
+            ->get();
+
+        $categories = Category::where('is_active', true)->get();
+
+        return Inertia::render('Home', [
+            'menus' => $menus,
+            'categories' => $categories,
+        ]);
+    }
+
     public function index()
     {
         $menus = Menu::with('category')->latest()->get();

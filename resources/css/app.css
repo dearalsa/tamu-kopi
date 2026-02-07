@@ -48,3 +48,10 @@ html {
     font-style: normal;
 }
 
+@font-face {
+    font-family: "Telegraf-Regular";
+    src: url("../../public/fonts/Telegraf-Regular.otf") format("truetype");
+    font-weight: normal;
+    font-style: normal;
+}
+
