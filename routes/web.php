@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\CategoryController;
+use App\Http\Controllers\MenuController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
@@ -11,7 +12,7 @@ Route::get('/', function () {
 })->name('home');
 
 Route::get('/about', function () {
-    return Inertia::render('About'); 
+    return Inertia::render('About');
 })->name('about');
 
 Route::middleware(['auth:admin'])->prefix('owner')->name('owner.')->group(function () {
@@ -45,6 +46,15 @@ Route::middleware(['auth:admin'])->prefix('admin')->name('admin.')->group(functi
     Route::get('/categories/{category}/edit', [CategoryController::class, 'edit'])->name('categories.edit');
     Route::put('/categories/{category}', [CategoryController::class, 'update'])->name('categories.update');
     Route::delete('/categories/{category}', [CategoryController::class, 'destroy'])->name('categories.destroy');
+
+    Route::prefix('kasir')->name('kasir.')->group(function () {
+        Route::get('/menus', [MenuController::class, 'index'])->name('menus.index');
+        Route::get('/menus/create', [MenuController::class, 'create'])->name('menus.create');
+        Route::post('/menus', [MenuController::class, 'store'])->name('menus.store');
+        Route::get('/menus/{menu}/edit', [MenuController::class, 'edit'])->name('menus.edit');
+        Route::put('/menus/{menu}', [MenuController::class, 'update'])->name('menus.update');
+        Route::delete('/menus/{menu}', [MenuController::class, 'destroy'])->name('menus.destroy');
+    });
 });
 
 require __DIR__.'/auth.php';

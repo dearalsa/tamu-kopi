@@ -29,7 +29,7 @@ export default function AdminSidebar() {
             label: 'Kasir',
             icon: ShoppingBag,
             children: [
-                { label: 'Kelola Menu', icon: UtensilsCrossed, href: '/admin/menus' },
+                { label: 'Kelola Menu', icon: UtensilsCrossed, href: '/admin/kasir/menus' },
                 { label: 'Katalog Menu', icon: ClipboardList, href: '/admin/catalog' },
                 { label: 'Menu Promo', icon: Tag, href: '/admin/promos' },
                 { label: 'Summary Menu', icon: BarChart3, href: '/admin/summary' },
@@ -49,7 +49,7 @@ export default function AdminSidebar() {
 
     return (
         <>
-            {/* Mobile Toggle */}
+            {/* mobile toggle */}
             <div className="lg:hidden fixed top-5 left-5 z-[60] font-sfPro">
                 <button onClick={() => setIsMobileOpen(!isMobileOpen)} className="text-[#374151]">
                     {isMobileOpen ? <X size={28} /> : <Menu size={28} />}
@@ -93,7 +93,6 @@ export default function AdminSidebar() {
                                                 ? { backgroundColor: '#EF5350', color: '#FFFFFF' } 
                                                 : { backgroundColor: 'transparent', color: '#374151' }
                                             }
-                                            // Efek Hover hanya scale sedikit agar terasa "klik-able", tanpa warna merah muda
                                             whileHover={!isActive ? { scale: 1.02 } : {}}
                                             className="flex items-center justify-between px-5 h-11 rounded-lg cursor-pointer transition-shadow duration-200"
                                         >
@@ -110,8 +109,7 @@ export default function AdminSidebar() {
                                             animate={isActive 
                                                 ? { backgroundColor: '#EF5350', color: '#FFFFFF' } 
                                                 : { backgroundColor: 'transparent', color: '#374151' }
-                                            }
-                                            // Efek Hover hanya scale sedikit tanpa warna background
+                                            }   
                                             whileHover={!isActive ? { scale: 1.02 } : {}}
                                             transition={{ type: 'spring', stiffness: 500, damping: 30 }}
                                             className="flex items-center gap-4 px-5 h-11 rounded-lg cursor-pointer transition-shadow duration-200"
@@ -138,7 +136,7 @@ export default function AdminSidebar() {
                                                         <motion.div
                                                             whileHover={{ x: 4 }}
                                                             className={`flex items-center gap-3 py-2.5 px-4 text-[13px] rounded-lg font-sfPro cursor-pointer transition-colors ${
-                                                                isChildActive ? 'text-[#EF5350] font-bold' : 'text-[#374151]'
+                                                                isChildActive ? 'text-[#EF5350] font-sfPro' : 'text-[#374151]'
                                                             }`}
                                                         >
                                                             <child.icon size={16} strokeWidth={2} className="opacity-70" />

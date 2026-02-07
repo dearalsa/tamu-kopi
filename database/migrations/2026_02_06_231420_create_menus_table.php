@@ -8,17 +8,20 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('categories', function (Blueprint $table) {
+        Schema::create('menus', function (Blueprint $table) {
             $table->id();
             $table->string('name');
             $table->string('slug')->unique();
-            $table->boolean('is_active')->default(true);
+            $table->foreignId('category_id')->constrained('categories')->onDelete('cascade');
+            $table->decimal('price', 10, 2);
+            $table->string('image')->nullable();
+            $table->boolean('is_available')->default(true); // Tersedia/Habis
             $table->timestamps();
         });
-    }   
+    }
 
     public function down(): void
     {
-        Schema::dropIfExists('categories');
+        Schema::dropIfExists('menus');
     }
 };
