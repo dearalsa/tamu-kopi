@@ -20,7 +20,7 @@ const Contact = () => {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const position = [-6.5971, 106.8060];
+  const position = [-6.5835, 106.8058];
   const fadeInUp = {
     initial: { opacity: 0, y: 30 },
     whileInView: { opacity: 1, y: 0 },
@@ -125,7 +125,7 @@ const Contact = () => {
           {[
             { id: 1, href: "https://instagram.com/tamu_kopi", icon: "instagram", label: "tamu_kopi", desc: "Ikuti kami di Instagram.", delay: 0.2 },
             { id: 2, href: "https://tiktok.com/@tamu.kopi", icon: "tiktok", label: "tamu.kopi", desc: "Lihat konten seru kami di TikTok.", delay: 0.3 },
-            { id: 3, href: "https://maps.google.com/?q=-6.5971,106.8060", icon: "location", label: "Lokasi", desc: "Jl. Dadali No. 07, Kota Bogor", delay: 0.4 },
+            { id: 3, href: "https://maps.app.goo.gl/GN79vsyfQwiwjycm8?g_st=ac", icon: "location", label: "Lokasi", desc: "Jl. Dadali No. 07, Kota Bogor", delay: 0.4 },
           ].map((item) => (
             <motion.a
               key={item.id}
@@ -161,7 +161,7 @@ const Contact = () => {
             <MapContainer center={position} zoom={16} scrollWheelZoom={false} className="w-full h-full">
               <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" attribution="© OpenStreetMap" />
               <Marker position={position}>
-                <Popup><strong>Tamu Kopi</strong><br />Bogor, Jawa Barat</Popup>
+                <Popup><strong>Ta-Mu Coffee</strong><br />Jl. Dadali No.7, Tanah Sareal<br />Kota Bogor, Jawa Barat 16161</Popup>
               </Marker>
             </MapContainer>
           </div>

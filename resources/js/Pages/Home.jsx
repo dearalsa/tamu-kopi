@@ -30,7 +30,10 @@ export default function Home() {
 
   return (
     <LandingLayout>
-      <section className="bg-[#F8F3F3] px-6 sm:px-10 pt-24 md:pt-28 pb-10">
+      <section
+        id="hero"
+        className="bg-[#F8F3F3] px-6 sm:px-10 pt-24 md:pt-28 pb-10"
+      >
         <div className="relative w-full max-w-[1309px] mx-auto h-[480px] md:h-[600px] rounded-[30px] overflow-hidden shadow-2xl bg-black">
           {images.map((img, i) => (
             <img
@@ -63,7 +66,7 @@ export default function Home() {
 
             <button
               onClick={() =>
-                document.getElementById("menu").scrollIntoView({ behavior: "smooth" })
+                document.getElementById("menu")?.scrollIntoView({ behavior: "smooth" })
               }
               className="bg-[#FF1C00] hover:bg-[#E61D00] text-white px-10 py-3 rounded-[15px] text-[15px] font-poppinsBold transition-all duration-300"
             >

@@ -150,7 +150,7 @@ export default function UpdatePasswordForm({ role, status }) {
                 onChange={(e) => setData('password_confirmation', e.target.value)}
                 type="password"
                 className={errors.password_confirmation ? inputError : inputNormal}
-                placeholder="Ulangi password baru"
+                placeholder="Konfirmasi password baru"
               />
             </div>
             {errors.password_confirmation && (
