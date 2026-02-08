@@ -31,7 +31,7 @@ export default function AdminSidebar() {
             children: [
                 { label: 'Kelola Menu', icon: UtensilsCrossed, href: '/admin/kasir/menus' },
                 { label: 'Katalog Menu', icon: ClipboardList, href: '/admin/catalog' },
-                { label: 'Menu Promo', icon: Tag, href: '/admin/promos' },
+                { label: 'Menu Promo', icon: Tag, href: '/admin/kasir/promo' },
                 { label: 'Summary Menu', icon: BarChart3, href: '/admin/summary' },
                 { label: 'Transaksi', icon: Receipt, href: '/admin/transactions' }
             ]
