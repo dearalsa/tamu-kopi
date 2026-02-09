@@ -11,6 +11,29 @@ use Inertia\Inertia;
 
 class MenuPromoController extends Controller
 {
+    protected function generateSlugForPromo(string $name, ?int $ignoreId = null): string
+    {
+        $base = Str::slug($name.' promo');
+        $slug = $base;
+        $counter = 1;
+
+        $query = Menu::where('slug', $slug)->where('is_package', true);
+        if ($ignoreId) {
+            $query->where('id', '!=', $ignoreId);
+        }
+
+        while ($query->exists()) {
+            $slug = $base.'-'.$counter;
+            $counter++;
+            $query = Menu::where('slug', $slug)->where('is_package', true);
+            if ($ignoreId) {
+                $query->where('id', '!=', $ignoreId);
+            }
+        }
+
+        return $slug;
+    }
+
     public function index()
     {
         $menus = Menu::with('category', 'packageItems')
@@ -41,27 +64,38 @@ class MenuPromoController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'name'             => 'required|string|max:255',
-            'category_id'      => 'required|exists:categories,id',
-            'price'            => 'required|numeric|min:0',
-            'image'            => 'nullable|file',
-            'is_available'     => 'required|boolean',
-            'package_items'    => 'required|array|min:1',
-            'package_items.*'  => 'exists:menus,id',
-            'promo_start_date' => 'nullable|date',
-            'promo_start_time' => 'nullable|date_format:H:i',
-            'promo_end_date'   => 'nullable|date',
-            'promo_end_time'   => 'nullable|date_format:H:i',
+            'name'              => 'nullable|string|max:255',
+            'category_id'       => 'required|exists:categories,id',
+            'price'             => 'required|numeric|min:0',
+            'image'             => 'nullable|file',
+            'is_available'      => 'required|boolean',
+            'package_items'     => 'required|array|min:1',
+            'package_items.*'   => 'exists:menus,id',
+            'promo_start_date'  => 'nullable|date',
+            'promo_start_time'  => 'nullable|date_format:H:i',
+            'promo_end_date'    => 'nullable|date',
+            'promo_end_time'    => 'nullable|date_format:H:i',
         ]);
 
-        $validated['slug']         = Str::slug($validated['name']);
+        if (empty($validated['name']) && count($validated['package_items']) === 1) {
+            $firstMenu = Menu::find($validated['package_items'][0]);
+            if ($firstMenu) {
+                $validated['name'] = $firstMenu->name;
+            }
+        }
+
+        if (empty($validated['name'])) {
+            $validated['name'] = 'Promo '.now()->format('YmdHis');
+        }
+
+        $validated['slug'] = $this->generateSlugForPromo($validated['name']);
         $validated['is_available'] = (bool) $validated['is_available'];
-        $validated['is_package']   = true;
+        $validated['is_package'] = true;
 
         $startDate = $validated['promo_start_date'] ?? null;
         $startTime = $validated['promo_start_time'] ?? null;
-        $endDate   = $validated['promo_end_date'] ?? null;
-        $endTime   = $validated['promo_end_time'] ?? null;
+        $endDate = $validated['promo_end_date'] ?? null;
+        $endTime = $validated['promo_end_time'] ?? null;
 
         $validated['promo_start_at'] = ($startDate && $startTime)
             ? $startDate.' '.$startTime.':00'
@@ -80,6 +114,11 @@ class MenuPromoController extends Controller
 
         if ($request->hasFile('image')) {
             $validated['image'] = $request->file('image')->store('menus', 'public');
+        } elseif (count($validated['package_items']) === 1) {
+            $firstMenu = Menu::find($validated['package_items'][0]);
+            if ($firstMenu && $firstMenu->image) {
+                $validated['image'] = $firstMenu->image;
+            }
         }
 
         $menu = Menu::create($validated);
@@ -129,27 +168,38 @@ class MenuPromoController extends Controller
         abort_unless($menu->is_package, 404);
 
         $validated = $request->validate([
-            'name'             => 'required|string|max:255',
-            'category_id'      => 'required|exists:categories,id',
-            'price'            => 'required|numeric|min:0',
-            'image'            => 'nullable|file',
-            'is_available'     => 'required|boolean',
-            'package_items'    => 'required|array|min:1',
-            'package_items.*'  => 'exists:menus,id',
-            'promo_start_date' => 'nullable|date',
-            'promo_start_time' => 'nullable|date_format:H:i',
-            'promo_end_date'   => 'nullable|date',
-            'promo_end_time'   => 'nullable|date_format:H:i',
-            'remove_image'     => 'nullable|boolean',
+            'name'              => 'nullable|string|max:255',
+            'category_id'       => 'required|exists:categories,id',
+            'price'             => 'required|numeric|min:0',
+            'image'             => 'nullable|file',
+            'is_available'      => 'required|boolean',
+            'package_items'     => 'required|array|min:1',
+            'package_items.*'   => 'exists:menus,id',
+            'promo_start_date'  => 'nullable|date',
+            'promo_start_time'  => 'nullable|date_format:H:i',
+            'promo_end_date'    => 'nullable|date',
+            'promo_end_time'    => 'nullable|date_format:H:i',
+            'remove_image'      => 'nullable|boolean',
         ]);
 
-        $validated['slug']         = Str::slug($validated['name']);
+        if (empty($validated['name']) && count($validated['package_items']) === 1) {
+            $firstMenu = Menu::find($validated['package_items'][0]);
+            if ($firstMenu) {
+                $validated['name'] = $firstMenu->name;
+            }
+        }
+
+        if (empty($validated['name'])) {
+            $validated['name'] = $menu->name ?: 'Promo '.$menu->id;
+        }
+
+        $validated['slug'] = $this->generateSlugForPromo($validated['name'], $menu->id);
         $validated['is_available'] = (bool) $validated['is_available'];
 
         $startDate = $validated['promo_start_date'] ?? null;
         $startTime = $validated['promo_start_time'] ?? null;
-        $endDate   = $validated['promo_end_date'] ?? null;
-        $endTime   = $validated['promo_end_time'] ?? null;
+        $endDate = $validated['promo_end_date'] ?? null;
+        $endTime = $validated['promo_end_time'] ?? null;
 
         $validated['promo_start_at'] = ($startDate && $startTime)
             ? $startDate.' '.$startTime.':00'
@@ -177,6 +227,13 @@ class MenuPromoController extends Controller
                 Storage::disk('public')->delete($menu->image);
             }
             $validated['image'] = $request->file('image')->store('menus', 'public');
+        } elseif (count($validated['package_items']) === 1) {
+            $firstMenu = Menu::find($validated['package_items'][0]);
+            if ($firstMenu && $firstMenu->image) {
+                $validated['image'] = $firstMenu->image;
+            } else {
+                unset($validated['image']);
+            }
         } else {
             unset($validated['image']);
         }
@@ -186,6 +243,17 @@ class MenuPromoController extends Controller
 
         return redirect()->route('admin.kasir.promo.index')
             ->with('success', 'Menu promo berhasil diupdate!');
+    }
+
+    public function toggle(Menu $menu)
+    {
+        abort_unless($menu->is_package, 404);
+
+        $menu->update([
+            'is_available' => ! (bool) $menu->is_available,
+        ]);
+
+        return redirect()->route('admin.kasir.promo.index');
     }
 
     public function destroy(Menu $menu)

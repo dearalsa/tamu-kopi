@@ -7,6 +7,7 @@ export default function Index({ menus }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedFilter, setSelectedFilter] = useState('all');
   const [showFilterDropdown, setShowFilterDropdown] = useState(false);
+
   const dynamicCategoryFilters = useMemo(() => {
     const map = new Map();
     menus.forEach((menu) => {
@@ -35,16 +36,9 @@ export default function Index({ menus }) {
   });
 
   const toggleAvailability = (menu) => {
-    router.post(
-      route('admin.kasir.promo.update', menu.id),
-      {
-        _method: 'PUT',
-        name: menu.name,
-        category_id: menu.category_id,
-        price: menu.price,
-        is_available: menu.is_available ? 0 : 1,
-        package_items: menu.package_items?.map((item) => item.id) || [],
-      },
+    router.patch(
+      route('admin.kasir.promo.toggle', menu.id),
+      {},
       { preserveScroll: true }
     );
   };

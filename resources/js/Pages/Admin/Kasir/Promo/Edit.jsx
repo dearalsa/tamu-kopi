@@ -10,20 +10,21 @@ export default function Edit({ promo, categories, allMenus }) {
 
   const fileInputRef = useRef(null);
   const [preview, setPreview] = useState(promo.image_url || null);
+  const [nameTouched, setNameTouched] = useState(false);
 
   const { data, setData, post, processing, errors } = useForm({
     name: promo.name || '',
     category_id: promo.category_id || '',
     price: promo.price || '',
-    image: null,                
+    image: null,
     is_available: promo.is_available ? 1 : 0,
-    package_items: promo.package_items || [], 
+    package_items: promo.package_items || [],
     promo_start_date: promo.promo_start_date || '',
     promo_start_time: promo.promo_start_time || '',
     promo_end_date: promo.promo_end_date || '',
     promo_end_time: promo.promo_end_time || '',
-    _method: 'PUT',               
-    remove_image: false,          
+    _method: 'PUT',
+    remove_image: false,
   });
 
   const handleSubmit = (e) => {
@@ -60,12 +61,28 @@ export default function Edit({ promo, categories, allMenus }) {
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
-  // kalau mode promo 1 menu dan user centang lebih dari satu, batasi satu
   useEffect(() => {
     if (!isPackageMode && data.package_items.length > 1) {
       setData('package_items', [data.package_items[0]]);
+      return;
     }
-  }, [isPackageMode]);
+
+    if (!isPackageMode && data.package_items.length === 1) {
+      const selectedId = data.package_items[0];
+      const selectedMenu = allMenus.find((m) => m.id === selectedId);
+
+      if (selectedMenu) {
+        if (!nameTouched) {
+          setData('name', selectedMenu.name);
+        }
+
+        if (!data.image && !data.remove_image && selectedMenu.image) {
+          const imgUrl = `/storage/${selectedMenu.image}`;
+          setPreview(imgUrl);
+        }
+      }
+    }
+  }, [isPackageMode, data.package_items, allMenus, nameTouched, data.image, data.remove_image, setData]);
 
   return (
     <AdminLayout>
@@ -89,7 +106,6 @@ export default function Edit({ promo, categories, allMenus }) {
                 </h1>
               </div>
 
-              {/* nama promo */}
               <div className="space-y-2">
                 <label className="block text-sm text-gray-900">
                   Nama Promo:
@@ -99,6 +115,11 @@ export default function Edit({ promo, categories, allMenus }) {
                   placeholder="Masukkan nama promo"
                   value={data.name}
                   onChange={(e) => setData('name', e.target.value)}
+                  onBlur={() => {
+                    if (data.name && data.name !== promo.name) {
+                      setNameTouched(true);
+                    }
+                  }}
                   className={`w-full bg-white border ${
                     errors.name ? 'border-red-500' : 'border-gray-300'
                   } rounded-xl px-3.5 py-2.5 text-sm outline-none focus:border-gray-700 focus:ring-0`}
@@ -108,7 +129,6 @@ export default function Edit({ promo, categories, allMenus }) {
                 )}
               </div>
 
-              {/* kategori */}
               <div className="space-y-2">
                 <label className="block text-sm text-gray-900">
                   Kategori:
@@ -132,7 +152,6 @@ export default function Edit({ promo, categories, allMenus }) {
                 )}
               </div>
 
-              {/* harga promo */}
               <div className="space-y-2">
                 <label className="block text-sm text-gray-900">
                   Harga Promo:
@@ -152,7 +171,6 @@ export default function Edit({ promo, categories, allMenus }) {
                 )}
               </div>
 
-              {/* status */}
               <div className="space-y-2">
                 <label className="block text-sm text-gray-900">
                   Status:
@@ -169,7 +187,6 @@ export default function Edit({ promo, categories, allMenus }) {
                 </select>
               </div>
 
-              {/* jenis promo */}
               <div className="space-y-2">
                 <label className="block text-sm text-gray-900">
                   Jenis Promo:
@@ -203,7 +220,6 @@ export default function Edit({ promo, categories, allMenus }) {
                 </p>
               </div>
 
-              {/* periode promo */}
               <div className="space-y-2">
                 <label className="block text-sm text-gray-900">
                   Periode Promo:
@@ -312,7 +328,6 @@ export default function Edit({ promo, categories, allMenus }) {
                 </p>
               </div>
 
-              {/* pilih menu promo */}
               <div className="space-y-2">
                 <label className="block text-sm text-gray-900">
                   {isPackageMode ? 'Pilih Menu Dalam Paket' : 'Pilih Menu Promo'}
@@ -372,7 +387,6 @@ export default function Edit({ promo, categories, allMenus }) {
                 )}
               </div>
 
-              {/* memilih gambar promo */}
               <div className="space-y-2">
                 <label className="block text-sm text-gray-900">
                   Pilih Gambar:
@@ -423,7 +437,6 @@ export default function Edit({ promo, categories, allMenus }) {
                 )}
               </div>
 
-              {/* button perbarui menu promo */}
               <div className="pt-2">
                 <button
                   type="submit"
