@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from 'framer-motion'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import {
   LayoutDashboard,
   ShoppingBag,
@@ -20,7 +20,7 @@ import { Link, usePage } from '@inertiajs/react'
 
 export default function AdminSidebar() {
   const { url } = usePage()
-  const [openDropdown, setOpenDropdown] = useState(null)
+  const [openDropdowns, setOpenDropdowns] = useState([])
   const [isMobileOpen, setIsMobileOpen] = useState(false)
 
   const menuItems = [
@@ -30,22 +30,51 @@ export default function AdminSidebar() {
       icon: ShoppingBag,
       children: [
         { label: 'Kelola Menu', icon: UtensilsCrossed, href: '/admin/kasir/menus' },
-        { label: 'Katalog Menu', icon: ClipboardList, href: '/admin/kasir/katalog' },
         { label: 'Menu Promo', icon: Tag, href: '/admin/kasir/promo' },
+        { label: 'Katalog Menu', icon: ClipboardList, href: '/admin/kasir/katalog' },
         { label: 'Summary Menu', icon: BarChart3, href: '/admin/summary' },
         { label: 'Transaksi', icon: Receipt, href: '/admin/transactions' }
       ]
     },
     {
-      label: 'Kelola Produk',
+      label: 'Kelola Produk', 
       icon: PackageSearch,
-      children: [
-        { label: 'Pengeluaran', icon: Wallet, href: '/admin/expenses' }
-      ]
     },
     { label: 'Kategori', icon: Clipboard, href: '/admin/categories' },
-    { label: 'Laporan', icon: FileText, href: '/admin/reports' }
+    {
+    label: 'Laporan',
+    icon: FileText,
+    children: [
+      { label: 'Pemasukan', icon: BarChart3, href: '/admin/reports/income' },
+      { label: 'Pengeluaran', icon: Wallet, href: '/admin/reports/expenses' },
+      { label: 'Ringkasan Kas', icon: ClipboardList, href: '/admin/reports/summary' }
+    ]
+  }
   ]
+
+  // logika baru yaitu cek url saat komponen load atau pindah halaman
+  // kalau URL ada di dalam children sebuah menu, buka menu tersebut secara paksa.
+  useEffect(() => {
+    const activeIndices = menuItems
+      .map((item, index) => {
+        if (item.children && item.children.some(child => child.href === url)) {
+          return index;
+        }
+        return null;
+      })
+      .filter(index => index !== null);
+
+    // menggunakan set supaya index yang sudah dibuka manual tidak hilang
+    setOpenDropdowns(prev => Array.from(new Set([...prev, ...activeIndices])));
+  }, [url]);
+
+  const toggleDropdown = (index) => {
+    setOpenDropdowns(prev => 
+      prev.includes(index) 
+        ? prev.filter(i => i !== index) 
+        : [...prev, index]
+    )
+  }
 
   return (
     <>
@@ -82,7 +111,7 @@ export default function AdminSidebar() {
         <nav className="flex-1 px-5 space-y-2 overflow-y-auto">
           {menuItems.map((item, index) => {
             const hasChildren = !!item.children
-            const isOpen = openDropdown === index
+            const isOpen = openDropdowns.includes(index)
             const isActive =
               item.href === url ||
               (hasChildren && item.children.some(child => child.href === url))
@@ -92,7 +121,7 @@ export default function AdminSidebar() {
                 {hasChildren ? (
                   <>
                     <div
-                      onClick={() => setOpenDropdown(isOpen ? null : index)}
+                      onClick={() => toggleDropdown(index)}
                       className="group"
                     >
                       <motion.div
@@ -128,32 +157,31 @@ export default function AdminSidebar() {
                           transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
                           className="ml-6 mt-1 space-y-1 overflow-hidden"
                         >
-                          {item.children.map((child, idx) => {
-                            const isChildActive = child.href === url
+                         {item.children.map((child, idx) => {
+                          const isChildActive = child.href === url
 
-                            return (
-                              <Link
-                                key={idx}
-                                href={child.href}
-                                onClick={() => setIsMobileOpen(false)}
-                                className="block"
+                          return (
+                            <Link
+                              key={idx}
+                              href={child.href}
+                              className="block"
+                            >
+                              <motion.div
+                                whileHover={{ x: 4 }}
+                                className={`flex items-center gap-3 py-2.5 px-4 text-[13px] rounded-lg font-sfPro cursor-pointer transition-colors ${
+                                  isChildActive ? 'text-[#EF5350]' : 'text-[#374151]'
+                                }`}
                               >
-                                <motion.div
-                                  whileHover={{ x: 4 }}
-                                  className={`flex items-center gap-3 py-2.5 px-4 text-[13px] rounded-lg font-sfPro cursor-pointer transition-colors ${
-                                    isChildActive ? 'text-[#EF5350]' : 'text-[#374151]'
-                                  }`}
-                                >
-                                  <child.icon
-                                    size={16}
-                                    strokeWidth={2}
-                                    className="opacity-70"
-                                  />
-                                  {child.label}
-                                </motion.div>
-                              </Link>
-                            )
-                          })}
+                                <child.icon
+                                  size={16}
+                                  strokeWidth={2}
+                                  className="opacity-70"
+                                />
+                                {child.label}
+                              </motion.div>
+                            </Link>
+                          )
+                        })}
                         </motion.div>
                       )}
                     </AnimatePresence>

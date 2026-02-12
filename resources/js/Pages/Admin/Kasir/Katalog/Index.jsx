@@ -19,7 +19,7 @@ export default function CatalogIndex({ menus, categories }) {
   const [selectedCategory, setSelectedCategory] = useState('all')
   const [showCategoryDropdown, setShowCategoryDropdown] = useState(false)
   
-  // State Keranjang & Pembayaran
+  // state Keranjang & Pembayaran
   const [cart, setCart] = useState([])
   const [showPaymentModal, setShowPaymentModal] = useState(false)
   const [paymentMethod, setPaymentMethod] = useState(null)
@@ -31,17 +31,17 @@ export default function CatalogIndex({ menus, categories }) {
     ...categories.map(cat => ({ value: String(cat.id), label: cat.name })),
   ]
 
-  // Filter & Sorting Menu
+  // filter & sorting menu
   const filteredAndSortedMenus = useMemo(() => {
-    // Filter dulu berdasarkan search & kategori
+    // filter dulu berdasarkan search & kategori
     let result = menus.filter(menu => {
       const matchesSearch = menu.name.toLowerCase().includes(searchTerm.toLowerCase())
       const matchesCategory = selectedCategory === 'all' || String(menu.category_id) === String(selectedCategory)
       return matchesSearch && matchesCategory
     })
 
-    // Sorting berdasarkan Prioritas
-    // Urutan: Promo+BestSeller, BestSeller, Promo, Biasa
+    // sort berdasarkan status promo & best-seller
+    // urutan nya adalah promo + best-seller > best-seller > promo > lainnya (berdasarkan nama)
     result.sort((a, b) => {
         const scoreA = (a.is_promo && a.is_best_seller ? 3 : 0) + (a.is_best_seller ? 2 : 0) + (a.is_promo ? 1 : 0);
         const scoreB = (b.is_promo && b.is_best_seller ? 3 : 0) + (b.is_best_seller ? 2 : 0) + (b.is_promo ? 1 : 0);
@@ -196,10 +196,13 @@ export default function CatalogIndex({ menus, categories }) {
                 const currentPrice = getEffectivePrice(menu)
 
                 return (
-                  <div
-                    key={menu.id}
-                    className="bg-white rounded-[1.5rem] border border-gray-200 overflow-hidden flex flex-col h-full hover:border-gray-300 transition-colors duration-200"
-                  >
+                  <motion.div
+                  key={menu.id}
+                  whileHover={{ scale: 1.03 }}
+                  whileTap={{ scale: 0.97 }}
+                  transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+                  className="bg-white rounded-[1.5rem] overflow-hidden flex flex-col h-full cursor-pointer"
+                >
                     <div className="aspect-square bg-gray-50 relative">
                       {/* badges */}
                       <div className="absolute top-3 left-3 z-10 flex flex-col items-start gap-1.5">
@@ -265,7 +268,7 @@ export default function CatalogIndex({ menus, categories }) {
                         <span className="text-sm font-telegraf">Tambah</span>
                       </button>
                     </div>
-                  </div>
+                  </motion.div>
                 )
               })}
             </div>

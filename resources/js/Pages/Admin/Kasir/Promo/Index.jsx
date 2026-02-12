@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { Link, router } from '@inertiajs/react';
+import { motion } from 'framer-motion';
 import AdminLayout from '@/Layouts/AdminLayout';
 import { Plus, Search, ChevronDown, Pencil, Trash2, ToggleLeft } from 'lucide-react';
 
@@ -127,12 +128,15 @@ export default function Index({ menus }) {
                 const displayPrice = menu.promo_price ? menu.promo_price : menu.price;
                 
                 return (
-                  <div
-                    key={menu.id}
-                    className="bg-white rounded-[2rem] shadow-[0_8px_30px_rgba(0,0,0,0.02)] overflow-hidden border border-gray-50 transition-none"
-                  >
-                    <div className="aspect-square bg-gray-50 relative">
-                      <div className="absolute top-3 left-3 z-10 flex items-center gap-2">
+                <motion.div
+                key={menu.id}
+                whileHover={{ scale: 1.03 }}      // efek saat hover
+                whileTap={{ scale: 0.97 }}        // efek saat klik
+                transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+                className="bg-white rounded-[2rem] shadow-[0_8px_30px_rgba(0,0,0,0.02)] overflow-hidden border border-gray-50 cursor-pointer"
+              >
+                <div className="aspect-square bg-gray-50 relative">
+                    <div className="absolute top-3 left-3 z-10 flex items-center gap-2">
                         <span
                           className={`px-3 py-1 rounded-full text-[10px] font-medium tracking-[0.12em] ${
                             menu.is_available
@@ -150,7 +154,10 @@ export default function Index({ menus }) {
                         >
                           <ToggleLeft size={13} />
                         </button>
+                        
                       </div>
+                      
+                      
 
                       {menu.image ? (
                         <img
@@ -198,7 +205,7 @@ export default function Index({ menus }) {
                         </button>
                       </div>
                     </div>
-                  </div>
+                    </motion.div>
                 );
             })}
           </div>

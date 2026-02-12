@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { Link, router } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import { Plus, Search, ChevronDown, Pencil, Trash2, Star, ToggleLeft } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 export default function Index({ menus }) {
   const [searchTerm, setSearchTerm] = useState('');
@@ -127,10 +128,13 @@ export default function Index({ menus }) {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {filteredMenus.map((menu) => (
-              <div
-                key={menu.id}
-                className="bg-white rounded-[2rem] shadow-[0_8px_30px_rgba(0,0,0,0.02)] overflow-hidden border border-gray-50 transition-none"
-              >
+             <motion.div
+              key={menu.id}
+              whileHover={{ scale: 1.03 }}
+              whileTap={{ scale: 0.97 }}
+              transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+              className="bg-white rounded-[2rem] shadow-[0_8px_30px_rgba(0,0,0,0.02)] overflow-hidden border border-gray-50 transition-none"
+            >
                 <div className="aspect-square bg-gray-50 relative">
                   <div className="absolute top-3 left-3 z-10 flex items-center gap-2">
                     <span
@@ -203,7 +207,7 @@ export default function Index({ menus }) {
                     </button>
                   </div>
                 </div>
-              </div>
+              </motion.div>
             ))}
           </div>
         )}
