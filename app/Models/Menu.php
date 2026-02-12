@@ -14,6 +14,7 @@ class Menu extends Model
         'slug',
         'category_id',
         'price',
+        'promo_price', 
         'image',
         'is_available',
         'is_best_seller',
@@ -23,12 +24,13 @@ class Menu extends Model
     ];
 
     protected $casts = [
-        'price' => 'decimal:2',
-        'is_available' => 'boolean',
+        'price'          => 'decimal:2',
+        'promo_price'    => 'decimal:2', 
+        'is_available'   => 'boolean',
         'is_best_seller' => 'boolean',
-        'is_package' => 'boolean',
+        'is_package'     => 'boolean',
         'promo_start_at' => 'datetime',
-        'promo_end_at' => 'datetime',
+        'promo_end_at'   => 'datetime',
     ];
 
     public function category()
@@ -36,23 +38,9 @@ class Menu extends Model
         return $this->belongsTo(Category::class);
     }
 
+    // Relasi Package (tetap biarkan)
     public function packageItems()
     {
-        return $this->belongsToMany(
-            Menu::class,
-            'menu_package_items',
-            'package_menu_id',
-            'item_menu_id'
-        );
-    }
-
-    public function includedInPackages()
-    {
-        return $this->belongsToMany(
-            Menu::class,
-            'menu_package_items',
-            'item_menu_id',
-            'package_menu_id'
-        );
+        return $this->belongsToMany(Menu::class, 'menu_package_items', 'package_menu_id', 'item_menu_id');
     }
 }

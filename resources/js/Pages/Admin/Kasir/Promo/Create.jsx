@@ -1,15 +1,14 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useForm, Link } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
-import { ArrowLeft, CheckSquare, Square, Download, X } from 'lucide-react';
+import { ArrowLeft, CheckSquare, Square, Download, X, AlertCircle } from 'lucide-react';
 
 export default function Create({ categories, allMenus }) {
   const [isPackageMode, setIsPackageMode] = useState(false);
-
   const fileInputRef = useRef(null);
   const [preview, setPreview] = useState(null);
 
-  const { data, setData, post, processing, errors } = useForm({
+  const { data, setData, post, processing, errors, clearErrors } = useForm({
     name: '',
     category_id: '',
     price: '',
@@ -22,6 +21,11 @@ export default function Create({ categories, allMenus }) {
     promo_end_time: '',
   });
 
+  // Reset error saat ganti mode
+  useEffect(() => {
+    clearErrors();
+  }, [isPackageMode]);
+
   const handleSubmit = (e) => {
     e.preventDefault();
     post(route('admin.kasir.promo.store'), {
@@ -33,6 +37,14 @@ export default function Create({ categories, allMenus }) {
   const togglePackageItem = (menuId) => {
     const current = data.package_items || [];
     const exists = current.includes(menuId);
+    
+    if (!isPackageMode) {
+        // Mode Single: Cuma boleh pilih 1, ganti langsung
+        setData('package_items', [menuId]);
+        return;
+    }
+
+    // Mode Paket: Toggle array
     const updated = exists
       ? current.filter((id) => id !== menuId)
       : [...current, menuId];
@@ -58,6 +70,8 @@ export default function Create({ categories, allMenus }) {
     <AdminLayout>
       <div className="min-h-screen flex items-start justify-center">
         <div className="w-full max-w-2xl px-6 pt-8 pb-12 font-sfPro">
+          
+          {/* Header Link */}
           <div className="mb-6 mt-4">
             <Link
               href={route('admin.kasir.promo.index')}
@@ -70,360 +84,178 @@ export default function Create({ categories, allMenus }) {
 
           <div className="bg-white rounded-[30px] border border-gray-200 shadow-[0_18px_45px_rgba(15,23,42,0.08)]">
             <form onSubmit={handleSubmit} className="p-8 space-y-7">
-              <div className="mb-2">
-                <h1 className="text-xl font-semibold text-gray-900 text-center tracking-tight">
-                  Tambah Menu Promo
+              <div className="text-center mb-6">
+                <h1 className="text-xl font-semibold text-gray-900 tracking-tight">
+                  {isPackageMode ? 'Buat Paket Bundling' : 'Atur Diskon Menu'}
                 </h1>
-              </div>
-
-              {/* nama promo */}
-              <div className="space-y-2">
-                <label className="block text-sm text-gray-900">
-                  Nama Promo:
-                </label>
-                <input
-                  type="text"
-                  placeholder="Masukkan nama promo"
-                  value={data.name}
-                  onChange={(e) => setData('name', e.target.value)}
-                  className={`w-full bg-white border ${
-                    errors.name ? 'border-red-500' : 'border-gray-300'
-                  } rounded-xl px-3.5 py-2.5 text-sm outline-none focus:border-gray-700 focus:ring-0`}
-                />
-                {errors.name && (
-                  <p className="text-xs text-red-500">{errors.name}</p>
-                )}
-              </div>
-
-              {/* select kategori */}
-              <div className="space-y-2">
-                <label className="block text-sm text-gray-900">
-                  Kategori:
-                </label>
-                <select
-                  value={data.category_id}
-                  onChange={(e) => setData('category_id', e.target.value)}
-                  className={`w-full bg-white border ${
-                    errors.category_id ? 'border-red-500' : 'border-gray-300'
-                  } rounded-xl px-3.5 py-2.5 text-sm outline-none focus:border-gray-700 focus:ring-0`}
-                >
-                  <option value="">Pilih Kategori</option>
-                  {categories.map((cat) => (
-                    <option key={cat.id} value={cat.id}>
-                      {cat.name}
-                    </option>
-                  ))}
-                </select>
-                {errors.category_id && (
-                  <p className="text-xs text-red-500">{errors.category_id}</p>
-                )}
-              </div>
-
-              {/* nominal harga promo */}
-              <div className="space-y-2">
-                <label className="block text-sm text-gray-900">
-                  Harga Promo:
-                </label>
-                <input
-                  type="number"
-                  min="0"
-                  placeholder="Masukkan harga promo"
-                  value={data.price}
-                  onChange={(e) => setData('price', e.target.value)}
-                  className={`w-full bg-white border ${
-                    errors.price ? 'border-red-500' : 'border-gray-300'
-                  } rounded-xl px-3.5 py-2.5 text-sm outline-none focus:border-gray-700 focus:ring-0`}
-                />
-                {errors.price && (
-                  <p className="text-xs text-red-500">{errors.price}</p>
-                )}
-              </div>
-
-              {/* status */}
-              <div className="space-y-2">
-                <label className="block text-sm text-gray-900">
-                  Status:
-                </label>
-                <select
-                  value={data.is_available}
-                  onChange={(e) =>
-                    setData('is_available', Number(e.target.value))
-                  }
-                  className="w-full bg-white border border-gray-300 rounded-xl px-3.5 py-2.5 text-sm outline-none focus:border-gray-700 focus:ring-0"
-                >
-                  <option value={1}>Tersedia</option>
-                  <option value={0}>Habis</option>
-                </select>
-              </div>
-
-              {/* jenis promo */}
-              <div className="space-y-2">
-                <label className="block text-sm text-gray-900">
-                  Jenis Promo:
-                </label>
-                <div className="flex gap-3">
-                  <button
-                    type="button"
-                    onClick={() => setIsPackageMode(false)}
-                    className={`flex-1 border rounded-xl px-3.5 py-2.5 text-sm flex items-center justify-center gap-2 ${
-                      !isPackageMode
-                        ? 'border-[#EF5350] bg-red-50 text-[#EF5350]'
-                        : 'border-gray-300 text-gray-700'
-                    }`}
-                  >
-                    <span>Promo 1 Menu</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setIsPackageMode(true)}
-                    className={`flex-1 border rounded-xl px-3.5 py-2.5 text-sm flex items-center justify-center gap-2 ${
-                      isPackageMode
-                        ? 'border-[#EF5350] bg-red-50 text-[#EF5350]'
-                        : 'border-gray-300 text-gray-700'
-                    }`}
-                  >
-                    <span>Paket (Beberapa Menu)</span>
-                  </button>
-                </div>
-                <p className="text-[11px] text-gray-500">
-                  Pilih &quot;Promo 1 Menu&quot; kalau diskon satu menu saja,
-                  atau &quot;Paket&quot; kalau menggabungkan beberapa menu.
+                <p className="text-sm text-gray-500 mt-1">
+                    {isPackageMode ? 'Gabungkan beberapa menu menjadi satu harga paket.' : 'Ubah harga satu menu tertentu menjadi harga promo.'}
                 </p>
               </div>
 
-              {/* periode promo */}
-              <div className="space-y-2">
-                <label className="block text-sm text-gray-900">
-                  Periode Promo:
-                </label>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  <div className="space-y-1">
-                    <span className="text-[11px] text-gray-500">
-                      Tanggal Mulai:
-                    </span>
-                    <input
-                      type="date"
-                      value={data.promo_start_date}
-                      onChange={(e) =>
-                        setData('promo_start_date', e.target.value)
-                      }
-                      className={`w-full bg-white border ${
-                        errors.promo_start_date
-                          ? 'border-red-500'
-                          : 'border-gray-300'
-                      } rounded-xl px-3.5 py-2.5 text-sm outline-none focus:border-gray-700 focus:ring-0`}
-                    />
-                    {errors.promo_start_date && (
-                      <p className="text-xs text-red-500">
-                        {errors.promo_start_date}
-                      </p>
-                    )}
-                  </div>
-
-                  <div className="space-y-1">
-                    <span className="text-[11px] text-gray-500">
-                      Jam Mulai:
-                    </span>
-                    <input
-                      type="time"
-                      value={data.promo_start_time}
-                      onChange={(e) =>
-                        setData('promo_start_time', e.target.value)
-                      }
-                      onFocus={(e) =>
-                        e.target.showPicker && e.target.showPicker()
-                      }
-                      className={`w-full bg-white border ${
-                        errors.promo_start_time
-                          ? 'border-red-500'
-                          : 'border-gray-300'
-                      } rounded-xl px-3.5 py-2.5 text-sm outline-none focus:border-gray-700 focus:ring-0`}
-                    />
-                    {errors.promo_start_time && (
-                      <p className="text-xs text-red-500">
-                        {errors.promo_start_time}
-                      </p>
-                    )}
-                  </div>
-
-                  <div className="space-y-1">
-                    <span className="text-[11px] text-gray-500">
-                      Tanggal Berakhir:
-                    </span>
-                    <input
-                      type="date"
-                      value={data.promo_end_date}
-                      onChange={(e) =>
-                        setData('promo_end_date', e.target.value)
-                      }
-                      className={`w-full bg-white border ${
-                        errors.promo_end_date
-                          ? 'border-red-500'
-                          : 'border-gray-300'
-                      } rounded-xl px-3.5 py-2.5 text-sm outline-none focus:border-gray-700 focus:ring-0`}
-                    />
-                    {errors.promo_end_date && (
-                      <p className="text-xs text-red-500">
-                        {errors.promo_end_date}
-                      </p>
-                    )}
-                  </div>
-
-                  <div className="space-y-1">
-                    <span className="text-[11px] text-gray-500">
-                      Jam Berakhir:
-                    </span>
-                    <input
-                      type="time"
-                      value={data.promo_end_time}
-                      onChange={(e) =>
-                        setData('promo_end_time', e.target.value)
-                      }
-                      onFocus={(e) =>
-                        e.target.showPicker && e.target.showPicker()
-                      }
-                      className={`w-full bg-white border ${
-                        errors.promo_end_time
-                          ? 'border-red-500'
-                          : 'border-gray-300'
-                      } rounded-xl px-3.5 py-2.5 text-sm outline-none focus:border-gray-700 focus:ring-0`}
-                    />
-                    {errors.promo_end_time && (
-                      <p className="text-xs text-red-500">
-                        {errors.promo_end_time}
-                      </p>
-                    )}
-                  </div>
-                </div>
-                <p className="text-[11px] text-gray-500">
-                  Boleh dikosongkan kalau promo tidak dibatasi tanggal dan jam.
-                </p>
+              {/* TOGGLE MODE */}
+              <div className="bg-gray-50 p-1.5 rounded-2xl flex relative">
+                 <button
+                    type="button"
+                    onClick={() => { setIsPackageMode(false); setData('package_items', []); }}
+                    className={`flex-1 py-2.5 text-sm font-medium rounded-xl transition-all relative z-10 ${!isPackageMode ? 'bg-white text-red-500 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                 >
+                    Promo Satuan
+                 </button>
+                 <button
+                    type="button"
+                    onClick={() => { setIsPackageMode(true); setData('package_items', []); }}
+                    className={`flex-1 py-2.5 text-sm font-medium rounded-xl transition-all relative z-10 ${isPackageMode ? 'bg-white text-red-500 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                 >
+                    Paket Bundling
+                 </button>
               </div>
 
-              {/* pilih menu untuk promo */}
+              {/* INPUT FORM: NAMA & KATEGORI (Hanya Muncul di Mode Paket) */}
+              {isPackageMode && (
+                  <div className="space-y-5 border-b border-gray-100 pb-6">
+                      <div className="space-y-2">
+                        <label className="block text-sm text-gray-900">Nama Paket:</label>
+                        <input
+                          type="text"
+                          placeholder="Contoh: Paket Hemat Berdua"
+                          value={data.name}
+                          onChange={(e) => setData('name', e.target.value)}
+                          className={`w-full bg-white border ${errors.name ? 'border-red-500' : 'border-gray-300'} rounded-xl px-3.5 py-2.5 text-sm outline-none focus:border-gray-700`}
+                        />
+                        {errors.name && <p className="text-xs text-red-500">{errors.name}</p>}
+                      </div>
+
+                      <div className="space-y-2">
+                        <label className="block text-sm text-gray-900">Kategori Paket:</label>
+                        <select
+                          value={data.category_id}
+                          onChange={(e) => setData('category_id', e.target.value)}
+                          className={`w-full bg-white border ${errors.category_id ? 'border-red-500' : 'border-gray-300'} rounded-xl px-3.5 py-2.5 text-sm outline-none focus:border-gray-700`}
+                        >
+                          <option value="">Pilih Kategori</option>
+                          {categories.map((cat) => (
+                            <option key={cat.id} value={cat.id}>{cat.name}</option>
+                          ))}
+                        </select>
+                        {errors.category_id && <p className="text-xs text-red-500">{errors.category_id}</p>}
+                      </div>
+                  </div>
+              )}
+
+              {/* PILIH MENU (Logic berbeda tergantung mode) */}
               <div className="space-y-2">
                 <label className="block text-sm text-gray-900">
-                  {isPackageMode ? 'Pilih Menu Dalam Paket' : 'Pilih Menu Promo'}
+                  {isPackageMode ? 'Pilih Isi Paket (Bisa Banyak):' : 'Pilih 1 Menu yang Didiskon:'}
                 </label>
 
-                <div className="border border-gray-200 rounded-2xl max-h-60 overflow-y-auto bg-gradient-to-b from-white to-gray-50">
+                <div className={`border ${errors.package_items ? 'border-red-500' : 'border-gray-200'} rounded-2xl max-h-60 overflow-y-auto bg-gray-50/30`}>
                   {allMenus.length === 0 && (
-                    <p className="text-xs text-gray-500 px-3 py-3">
-                      Belum ada menu yang bisa dipilih.
-                    </p>
+                    <p className="text-xs text-gray-500 px-4 py-4 text-center">Belum ada menu utama.</p>
                   )}
 
                   {allMenus.map((menu) => {
                     const checked = data.package_items.includes(menu.id);
-
                     return (
                       <button
                         key={menu.id}
                         type="button"
-                        onClick={() => {
-                          if (isPackageMode) {
-                            togglePackageItem(menu.id);
-                          } else {
-                            setData('package_items', [menu.id]);
-                          }
-                        }}
-                        className={`w-full flex items-center justify-between px-3 py-2.5 text-left text-sm border-b last:border-b-0 transition-colors ${
-                          checked
-                            ? 'bg-red-50 border-red-100'
-                            : 'bg-transparent border-transparent hover:bg-white'
+                        onClick={() => togglePackageItem(menu.id)}
+                        className={`w-full flex items-center justify-between px-4 py-3 text-left text-sm border-b last:border-b-0 transition-colors ${
+                          checked ? 'bg-red-50/50' : 'hover:bg-white'
                         }`}
                       >
                         <div className="flex items-center gap-3">
-                          <div className="w-4 h-4 flex items-center justify-center">
-                            {checked ? (
-                              <CheckSquare className="w-4 h-4 text-[#EF5350]" />
-                            ) : (
-                              <Square className="w-4 h-4 text-gray-300" />
-                            )}
+                          <div className={`w-5 h-5 rounded-md border flex items-center justify-center transition-colors ${checked ? 'bg-red-500 border-red-500' : 'bg-white border-gray-300'}`}>
+                             {checked && <CheckSquare className="w-3.5 h-3.5 text-white" />}
                           </div>
-                          <div className="flex flex-col">
-                            <span className="text-[13px] text-gray-900">
-                              {menu.name}
-                            </span>
-                            <span className="text-[11px] text-gray-500">
-                              Rp {Number(menu.price).toLocaleString('id-ID')}
-                            </span>
+                          <div>
+                            <div className="text-gray-900 font-medium">{menu.name}</div>
+                            <div className="text-xs text-gray-500">Normal: Rp {Number(menu.price).toLocaleString('id-ID')}</div>
                           </div>
                         </div>
                       </button>
                     );
                   })}
                 </div>
-
-                {errors.package_items && (
-                  <p className="text-xs text-red-500">{errors.package_items}</p>
-                )}
-              </div>
-
-              {/* pilih gambar */}
-              <div className="space-y-2">
-                <label className="block text-sm text-gray-900">
-                  Pilih Gambar:
-                </label>
-                <div
-                  onClick={() =>
-                    fileInputRef.current && fileInputRef.current.click()
-                  }
-                  className="w-full border border-gray-300 border-dashed rounded-2xl p-6 flex flex-col items-center justify-center cursor-pointer min-h-[180px] relative overflow-hidden bg-gray-50/40 hover:bg-gray-100 transition-colors duration-150"
-                >
-                  {preview ? (
-                    <>
-                      <img
-                        src={preview}
-                        alt="Preview"
-                        className="absolute inset-0 w-full h-full object-cover"
-                      />
-                      <div className="absolute inset-0 bg-black/15 flex items-center justify-center">
-                        <button
-                          type="button"
-                          onClick={removeImage}
-                          className="bg-black/60 text-white rounded-full p-2"
-                        >
-                          <X size={16} />
-                        </button>
-                      </div>
-                    </>
-                  ) : (
-                    <div className="flex flex-col items-center gap-2">
-                      <div className="bg-black text-white p-2.5 rounded-lg">
-                        <Download size={22} />
-                      </div>
-                      <p className="text-xs font-sfPro text-gray-500 tracking-wide">
-                        Pilih File
-                      </p>
+                {errors.package_items && <p className="text-xs text-red-500">{errors.package_items}</p>}
+                
+                {/* Info Box untuk Single Mode */}
+                {!isPackageMode && data.package_items.length > 0 && (
+                    <div className="flex gap-2 items-start bg-blue-50 text-blue-700 p-3 rounded-xl text-xs mt-2">
+                        <AlertCircle size={16} className="mt-0.5 shrink-0"/>
+                        <p>Kamu memilih menu <strong>{allMenus.find(m => m.id === data.package_items[0])?.name}</strong>. Harga di katalog utama akan dicoret menjadi harga promo di bawah ini.</p>
                     </div>
-                  )}
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/*"
-                    onChange={handleImageChange}
-                    className="hidden"
-                  />
-                </div>
-                {errors.image && (
-                  <p className="text-xs text-red-500">{errors.image}</p>
                 )}
-                <p className="text-[11px] text-gray-500">
-                  Kalau tidak diisi, promo tetap bisa dibuat tanpa gambar.
-                </p>
               </div>
 
-              {/* button simpan menu promo */}
-              <div className="pt-2">
-                <button
-                  type="submit"
-                  disabled={processing || data.package_items.length === 0}
-                  className="w-full bg-[#EF5350] text-white py-3.5 rounded-xl text-sm hover:bg-[#e53935] active:scale-[0.98] transition-all"
-                >
-                  {processing ? 'Menyimpan...' : 'Simpan Menu Promo'}
-                </button>
+              {/* HARGA PROMO */}
+              <div className="space-y-2">
+                <label className="block text-sm text-gray-900 font-bold">
+                  {isPackageMode ? 'Harga Jual Paket (Rp):' : 'Harga Setelah Diskon (Rp):'}
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  placeholder="0"
+                  value={data.price}
+                  onChange={(e) => setData('price', e.target.value)}
+                  className={`w-full bg-white border ${errors.price ? 'border-red-500' : 'border-gray-300'} rounded-xl px-3.5 py-3 text-lg font-bold outline-none focus:border-gray-700`}
+                />
+                {errors.price && <p className="text-xs text-red-500">{errors.price}</p>}
               </div>
+
+              {/* PERIODE PROMO (Sama seperti sebelumnya) */}
+              <div className="bg-gray-50 rounded-xl p-4 space-y-4">
+                 <h3 className="text-xs font-bold text-gray-500 uppercase">Jadwal Promo (Opsional)</h3>
+                 <div className="grid grid-cols-2 gap-4">
+                    <div>
+                        <label className="text-[11px] text-gray-500 block mb-1">Mulai</label>
+                        <div className="flex gap-2">
+                            <input type="date" value={data.promo_start_date} onChange={e => setData('promo_start_date', e.target.value)} className="w-full text-xs border-gray-300 rounded-lg"/>
+                            <input type="time" value={data.promo_start_time} onChange={e => setData('promo_start_time', e.target.value)} className="w-20 text-xs border-gray-300 rounded-lg"/>
+                        </div>
+                    </div>
+                    <div>
+                        <label className="text-[11px] text-gray-500 block mb-1">Selesai</label>
+                        <div className="flex gap-2">
+                            <input type="date" value={data.promo_end_date} onChange={e => setData('promo_end_date', e.target.value)} className="w-full text-xs border-gray-300 rounded-lg"/>
+                            <input type="time" value={data.promo_end_time} onChange={e => setData('promo_end_time', e.target.value)} className="w-20 text-xs border-gray-300 rounded-lg"/>
+                        </div>
+                    </div>
+                 </div>
+              </div>
+
+              {/* IMAGE (Hanya untuk Paket) */}
+              {isPackageMode && (
+                <div className="space-y-2">
+                    <label className="block text-sm text-gray-900">Gambar Paket:</label>
+                    <div onClick={() => fileInputRef.current && fileInputRef.current.click()} className="w-full border border-gray-300 border-dashed rounded-2xl p-6 flex flex-col items-center justify-center cursor-pointer min-h-[150px] relative bg-gray-50/50 hover:bg-gray-100 transition-colors">
+                        {preview ? (
+                            <>
+                                <img src={preview} alt="Preview" className="absolute inset-0 w-full h-full object-cover rounded-2xl" />
+                                <button type="button" onClick={removeImage} className="absolute top-2 right-2 bg-black/60 text-white rounded-full p-1.5"><X size={14} /></button>
+                            </>
+                        ) : (
+                            <div className="flex flex-col items-center gap-2">
+                                <Download size={20} className="text-gray-400" />
+                                <span className="text-xs text-gray-500">Upload Gambar</span>
+                            </div>
+                        )}
+                        <input ref={fileInputRef} type="file" accept="image/*" onChange={handleImageChange} className="hidden" />
+                    </div>
+                </div>
+              )}
+
+              {/* TOMBOL SIMPAN */}
+              <button
+                type="submit"
+                disabled={processing || data.package_items.length === 0}
+                className="w-full bg-[#EF5350] text-white py-4 rounded-xl font-bold text-sm hover:bg-[#e53935] active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-red-100"
+              >
+                {processing ? 'Menyimpan...' : (isPackageMode ? 'Buat Paket Baru' : 'Terapkan Diskon')}
+              </button>
+
             </form>
           </div>
         </div>

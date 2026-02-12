@@ -44,7 +44,11 @@ export default function Index({ menus }) {
   };
 
   const handleDelete = (menu) => {
-    if (confirm(`Yakin ingin menghapus paket "${menu.name}"?`)) {
+    const msg = menu.is_package 
+        ? `Yakin ingin menghapus paket "${menu.name}"?`
+        : `Yakin ingin menonaktifkan promo untuk "${menu.name}"?`;
+        
+    if (confirm(msg)) {
       router.delete(route('admin.kasir.promo.destroy', menu.id), { preserveScroll: true });
     }
   };
@@ -79,6 +83,7 @@ export default function Index({ menus }) {
                 <ChevronDown size={16} className="text-gray-400" />
               </button>
 
+              {/* menu dropdown filter */}
               {showFilterDropdown && (
                 <div className="absolute left-0 mt-2 w-full bg-white border border-gray-50 rounded-2xl shadow-xl z-20 overflow-hidden outline-none">
                   {filters.map((filter) => (
@@ -117,80 +122,85 @@ export default function Index({ menus }) {
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {filteredMenus.map((menu) => (
-              <div
-                key={menu.id}
-                className="bg-white rounded-[2rem] shadow-[0_8px_30px_rgba(0,0,0,0.02)] overflow-hidden border border-gray-50 transition-none"
-              >
-                <div className="aspect-square bg-gray-50 relative">
-                  <div className="absolute top-3 left-3 z-10 flex items-center gap-2">
-                    <span
-                      className={`px-3 py-1 rounded-full text-[10px] font-medium tracking-[0.12em] ${
-                        menu.is_available
-                          ? 'bg-emerald-50 text-emerald-600'
-                          : 'bg-gray-200 text-gray-500'
-                      }`}
-                    >
-                      {menu.is_available ? 'Tersedia' : 'Habis'}
-                    </span>
+            {filteredMenus.map((menu) => {
+                // LOGIKA HARGA: Jika promo_price ada, pakai itu. Jika tidak, pakai price (untuk paket).
+                const displayPrice = menu.promo_price ? menu.promo_price : menu.price;
+                
+                return (
+                  <div
+                    key={menu.id}
+                    className="bg-white rounded-[2rem] shadow-[0_8px_30px_rgba(0,0,0,0.02)] overflow-hidden border border-gray-50 transition-none"
+                  >
+                    <div className="aspect-square bg-gray-50 relative">
+                      <div className="absolute top-3 left-3 z-10 flex items-center gap-2">
+                        <span
+                          className={`px-3 py-1 rounded-full text-[10px] font-medium tracking-[0.12em] ${
+                            menu.is_available
+                              ? 'bg-emerald-50 text-emerald-600'
+                              : 'bg-gray-200 text-gray-500'
+                          }`}
+                        >
+                          {menu.is_available ? 'Tersedia' : 'Habis'}
+                        </span>
 
-                    <button
-                      type="button"
-                      onClick={() => toggleAvailability(menu)}
-                      className="w-7 h-7 flex items-center justify-center rounded-full bg-white/80 text-gray-500 hover:text-red-500 hover:bg-white shadow-sm transition-colors"
-                    >
-                      <ToggleLeft size={13} />
-                    </button>
-                  </div>
+                        <button
+                          type="button"
+                          onClick={() => toggleAvailability(menu)}
+                          className="w-7 h-7 flex items-center justify-center rounded-full bg-white/80 text-gray-500 hover:text-red-500 hover:bg-white shadow-sm transition-colors"
+                        >
+                          <ToggleLeft size={13} />
+                        </button>
+                      </div>
 
-                  {menu.image ? (
-                    <img
-                      src={`/storage/${menu.image}`}
-                      alt={menu.name}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <div className="flex items-center justify-center h-full">
-                      <span className="text-4xl opacity-30">🍽️</span>
+                      {menu.image ? (
+                        <img
+                          src={`/storage/${menu.image}`}
+                          alt={menu.name}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="flex items-center justify-center h-full">
+                          <span className="text-4xl opacity-30">🍽️</span>
+                        </div>
+                      )}
                     </div>
-                  )}
-                </div>
 
-                <div className="p-5">
-                  <h3 className="text-gray-800 truncate text-base leading-tight mb-1">
-                    {menu.name}
-                  </h3>
+                    <div className="p-5">
+                      <h3 className="text-gray-800 truncate text-base leading-tight mb-1">
+                        {menu.name}
+                      </h3>
 
-                  {menu.category && (
-                    <p className="text-[11px] text-gray-500 mb-2">
-                      {menu.category.name}
-                    </p>
-                  )}
+                      {menu.category && (
+                        <p className="text-[11px] text-gray-500 mb-2">
+                          {menu.category.name}
+                        </p>
+                      )}
 
-                  <p className="text-sm text-gray-900 mb-4">
-                    Rp{' '}
-                    <span className="font-semibold">
-                      {Number(menu.price).toLocaleString('id-ID')}
-                    </span>
-                  </p>
+                      <p className="text-sm text-gray-900 mb-4">
+                        Rp{' '}
+                        <span className="font-semibold text-red-500">
+                          {Number(displayPrice).toLocaleString('id-ID')}
+                        </span>
+                      </p>
 
-                  <div className="flex gap-2">
-                    <Link
-                      href={route('admin.kasir.promo.edit', menu.id)}
-                      className="flex-1 flex items-center justify-center bg-[#f26c66] text-white py-2 rounded-xl outline-none transition-none hover:bg-[#e53935]"
-                    >
-                      <Pencil size={13} />
-                    </Link>
-                    <button
-                      onClick={() => handleDelete(menu)}
-                      className="flex-1 flex items-center justify-center bg-[#ef5350] text-white py-2 rounded-xl outline-none transition-none hover:bg-[#d32f2f]"
-                    >
-                      <Trash2 size={13} />
-                    </button>
+                      <div className="flex gap-2">
+                        <Link
+                          href={route('admin.kasir.promo.edit', menu.id)}
+                          className="flex-1 flex items-center justify-center bg-[#f26c66] text-white py-2 rounded-xl outline-none transition-none hover:bg-[#e53935]"
+                        >
+                          <Pencil size={13} />
+                        </Link>
+                        <button
+                          onClick={() => handleDelete(menu)}
+                          className="flex-1 flex items-center justify-center bg-[#ef5350] text-white py-2 rounded-xl outline-none transition-none hover:bg-[#d32f2f]"
+                        >
+                          <Trash2 size={13} />
+                        </button>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              </div>
-            ))}
+                );
+            })}
           </div>
         )}
       </div>

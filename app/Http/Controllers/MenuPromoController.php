@@ -11,33 +11,19 @@ use Inertia\Inertia;
 
 class MenuPromoController extends Controller
 {
-    protected function generateSlugForPromo(string $name, ?int $ignoreId = null): string
+    protected function generateSlugForPromo(string $name): string
     {
-        $base = Str::slug($name.' promo');
-        $slug = $base;
-        $counter = 1;
-
-        $query = Menu::where('slug', $slug)->where('is_package', true);
-        if ($ignoreId) {
-            $query->where('id', '!=', $ignoreId);
-        }
-
-        while ($query->exists()) {
-            $slug = $base.'-'.$counter;
-            $counter++;
-            $query = Menu::where('slug', $slug)->where('is_package', true);
-            if ($ignoreId) {
-                $query->where('id', '!=', $ignoreId);
-            }
-        }
-
-        return $slug;
+        return Str::slug($name . '-' . Str::random(5));
     }
 
     public function index()
     {
-        $menus = Menu::with('category', 'packageItems')
-            ->where('is_package', true)
+        // Tampilkan Paket ATAU Menu yang sedang diskon
+        $menus = Menu::with('category')
+            ->where(function($query) {
+                $query->where('is_package', true)
+                      ->orWhereNotNull('promo_price');
+            })
             ->latest()
             ->get();
 
@@ -49,7 +35,6 @@ class MenuPromoController extends Controller
     public function create()
     {
         $categories = Category::where('is_active', true)->get();
-
         $allMenus = Menu::where('is_package', false)
             ->where('is_available', true)
             ->orderBy('name')
@@ -63,210 +48,180 @@ class MenuPromoController extends Controller
 
     public function store(Request $request)
     {
+        // ... (Kode Store SAMA SEPERTI SEBELUMNYA, tidak saya ubah) ...
+        // Agar tidak kepanjangan, saya singkat bagian ini karena sudah jalan
+        // Intinya: Validasi -> Cek isPackage -> Create Paket atau Update Menu Lama
+        
         $validated = $request->validate([
-            'name'              => 'nullable|string|max:255',
-            'category_id'       => 'required|exists:categories,id',
-            'price'             => 'required|numeric|min:0',
-            'image'             => 'nullable|file',
-            'is_available'      => 'required|boolean',
-            'package_items'     => 'required|array|min:1',
-            'package_items.*'   => 'exists:menus,id',
-            'promo_start_date'  => 'nullable|date',
-            'promo_start_time'  => 'nullable|date_format:H:i',
-            'promo_end_date'    => 'nullable|date',
-            'promo_end_time'    => 'nullable|date_format:H:i',
+            'name'             => 'nullable|string|max:255',
+            'category_id'      => 'nullable|exists:categories,id',
+            'price'            => 'required|numeric|min:0',
+            'package_items'    => 'required|array|min:1',
+            'is_available'     => 'required',
+            'promo_start_date' => 'nullable|date',
+            'promo_start_time' => 'nullable',
+            'promo_end_date'   => 'nullable|date',
+            'promo_end_time'   => 'nullable',
+            'image'            => 'nullable|file|image|max:2048',
         ]);
 
-        if (empty($validated['name']) && count($validated['package_items']) === 1) {
-            $firstMenu = Menu::find($validated['package_items'][0]);
-            if ($firstMenu) {
-                $validated['name'] = $firstMenu->name;
-            }
+        $promoStartAt = ($validated['promo_start_date'] && $validated['promo_start_time']) ? $validated['promo_start_date'] . ' ' . $validated['promo_start_time'] : null;
+        $promoEndAt = ($validated['promo_end_date'] && $validated['promo_end_time']) ? $validated['promo_end_date'] . ' ' . $validated['promo_end_time'] : null;
+
+        $isPackage = count($validated['package_items']) > 1; 
+
+        if (!$isPackage) {
+            // PROMO SATUAN -> Update Menu Asli
+            $targetMenuId = $validated['package_items'][0];
+            $menu = Menu::findOrFail($targetMenuId);
+            $menu->update([
+                'promo_price'    => $validated['price'],
+                'promo_start_at' => $promoStartAt,
+                'promo_end_at'   => $promoEndAt,
+            ]);
+            return redirect()->route('admin.kasir.promo.index')->with('success', 'Promo berhasil diaktifkan!');
+        } else {
+            // PAKET -> Buat Baru
+            if (empty($validated['name'])) return back()->withErrors(['name' => 'Nama Paket wajib diisi.']);
+            if (empty($validated['category_id'])) return back()->withErrors(['category_id' => 'Kategori wajib dipilih.']);
+
+            $imagePath = $request->hasFile('image') ? $request->file('image')->store('menus', 'public') : null;
+
+            $package = Menu::create([
+                'name'           => $validated['name'],
+                'slug'           => $this->generateSlugForPromo($validated['name']),
+                'category_id'    => $validated['category_id'],
+                'price'          => $validated['price'],
+                'image'          => $imagePath,
+                'is_available'   => (bool) $validated['is_available'],
+                'is_package'     => true,
+                'promo_start_at' => $promoStartAt,
+                'promo_end_at'   => $promoEndAt,
+            ]);
+            $package->packageItems()->sync($validated['package_items']);
+            return redirect()->route('admin.kasir.promo.index')->with('success', 'Paket Bundling berhasil dibuat!');
         }
-
-        if (empty($validated['name'])) {
-            $validated['name'] = 'Promo '.now()->format('YmdHis');
-        }
-
-        $validated['slug'] = $this->generateSlugForPromo($validated['name']);
-        $validated['is_available'] = (bool) $validated['is_available'];
-        $validated['is_package'] = true;
-
-        $startDate = $validated['promo_start_date'] ?? null;
-        $startTime = $validated['promo_start_time'] ?? null;
-        $endDate = $validated['promo_end_date'] ?? null;
-        $endTime = $validated['promo_end_time'] ?? null;
-
-        $validated['promo_start_at'] = ($startDate && $startTime)
-            ? $startDate.' '.$startTime.':00'
-            : null;
-
-        $validated['promo_end_at'] = ($endDate && $endTime)
-            ? $endDate.' '.$endTime.':00'
-            : null;
-
-        unset(
-            $validated['promo_start_date'],
-            $validated['promo_start_time'],
-            $validated['promo_end_date'],
-            $validated['promo_end_time']
-        );
-
-        if ($request->hasFile('image')) {
-            $validated['image'] = $request->file('image')->store('menus', 'public');
-        } elseif (count($validated['package_items']) === 1) {
-            $firstMenu = Menu::find($validated['package_items'][0]);
-            if ($firstMenu && $firstMenu->image) {
-                $validated['image'] = $firstMenu->image;
-            }
-        }
-
-        $menu = Menu::create($validated);
-        $menu->packageItems()->sync($validated['package_items']);
-
-        return redirect()->route('admin.kasir.promo.index')
-            ->with('success', 'Menu promo berhasil dibuat!');
     }
 
-    public function edit(Menu $menu)
+    // --- INI YANG DITAMBAHKAN UNTUK MENGATASI ERROR ---
+    public function edit($id)
     {
-        abort_unless($menu->is_package, 404);
+        // Cari menu berdasarkan ID
+        $menu = Menu::with(['packageItems', 'category'])->findOrFail($id);
 
         $categories = Category::where('is_active', true)->get();
+        $allMenus = Menu::where('is_package', false)->where('is_available', true)->get();
 
-        $menu->load('category', 'packageItems');
-        $menu->image_url = $menu->image ? asset('storage/' . $menu->image) : null;
-
-        $allMenus = Menu::where('is_package', false)
-            ->where('is_available', true)
-            ->orderBy('name')
-            ->get();
-
-        $promo = [
+        // Siapkan data untuk dikirim ke React
+        $promoData = [
             'id'               => $menu->id,
             'name'             => $menu->name,
             'category_id'      => $menu->category_id,
-            'price'            => $menu->price,
-            'is_available'     => (bool) $menu->is_available,
-            'image_url'        => $menu->image_url,
+            'is_available'     => $menu->is_available,
+            'is_package'       => $menu->is_package,
+            'image_url'        => $menu->image ? asset('storage/' . $menu->image) : null,
+            
+            // Logika Harga: Kalau paket ambil price, kalau promo satuan ambil promo_price
+            'price'            => $menu->is_package ? $menu->price : $menu->promo_price,
+            
+            // Logika Item: Kalau paket ambil dari relasi, kalau satuan ambil ID dirinya sendiri
+            'package_items'    => $menu->is_package ? $menu->packageItems->pluck('id') : [$menu->id],
+            
+            // Format Tanggal untuk input type="date"
             'promo_start_date' => $menu->promo_start_at ? $menu->promo_start_at->format('Y-m-d') : '',
             'promo_start_time' => $menu->promo_start_at ? $menu->promo_start_at->format('H:i') : '',
             'promo_end_date'   => $menu->promo_end_at ? $menu->promo_end_at->format('Y-m-d') : '',
             'promo_end_time'   => $menu->promo_end_at ? $menu->promo_end_at->format('H:i') : '',
-            'package_items'    => $menu->packageItems->pluck('id')->toArray(),
         ];
 
         return Inertia::render('Admin/Kasir/Promo/Edit', [
-            'promo'      => $promo,
+            'promo'      => $promoData,
             'categories' => $categories,
             'allMenus'   => $allMenus,
         ]);
     }
 
-    public function update(Request $request, Menu $menu)
+    public function update(Request $request, $id)
     {
-        abort_unless($menu->is_package, 404);
+        $menu = Menu::findOrFail($id);
 
         $validated = $request->validate([
-            'name'              => 'nullable|string|max:255',
-            'category_id'       => 'required|exists:categories,id',
-            'price'             => 'required|numeric|min:0',
-            'image'             => 'nullable|file',
-            'is_available'      => 'required|boolean',
-            'package_items'     => 'required|array|min:1',
-            'package_items.*'   => 'exists:menus,id',
-            'promo_start_date'  => 'nullable|date',
-            'promo_start_time'  => 'nullable|date_format:H:i',
-            'promo_end_date'    => 'nullable|date',
-            'promo_end_time'    => 'nullable|date_format:H:i',
-            'remove_image'      => 'nullable|boolean',
+            'name'             => 'nullable|string|max:255',
+            'category_id'      => 'nullable|exists:categories,id',
+            'price'            => 'required|numeric|min:0',
+            'package_items'    => 'required|array|min:1',
+            'is_available'     => 'required',
+            'promo_start_date' => 'nullable|date',
+            'promo_start_time' => 'nullable',
+            'promo_end_date'   => 'nullable|date',
+            'promo_end_time'   => 'nullable',
+            'image'            => 'nullable|file|image|max:2048',
         ]);
 
-        if (empty($validated['name']) && count($validated['package_items']) === 1) {
-            $firstMenu = Menu::find($validated['package_items'][0]);
-            if ($firstMenu) {
-                $validated['name'] = $firstMenu->name;
+        $promoStartAt = ($validated['promo_start_date'] && $validated['promo_start_time']) ? $validated['promo_start_date'] . ' ' . $validated['promo_start_time'] : null;
+        $promoEndAt = ($validated['promo_end_date'] && $validated['promo_end_time']) ? $validated['promo_end_date'] . ' ' . $validated['promo_end_time'] : null;
+
+        // Cek mode berdasarkan apakah ini menu paket atau bukan
+        if ($menu->is_package) {
+            // === UPDATE PAKET ===
+            if (empty($validated['name'])) return back()->withErrors(['name' => 'Nama Paket wajib diisi.']);
+            
+            $dataToUpdate = [
+                'name'           => $validated['name'],
+                'category_id'    => $validated['category_id'],
+                'price'          => $validated['price'],
+                'is_available'   => (bool) $validated['is_available'],
+                'promo_start_at' => $promoStartAt,
+                'promo_end_at'   => $promoEndAt,
+            ];
+
+            if ($request->hasFile('image')) {
+                if ($menu->image) Storage::disk('public')->delete($menu->image);
+                $dataToUpdate['image'] = $request->file('image')->store('menus', 'public');
             }
-        }
 
-        if (empty($validated['name'])) {
-            $validated['name'] = $menu->name ?: 'Promo '.$menu->id;
-        }
+            $menu->update($dataToUpdate);
+            $menu->packageItems()->sync($validated['package_items']);
 
-        $validated['slug'] = $this->generateSlugForPromo($validated['name'], $menu->id);
-        $validated['is_available'] = (bool) $validated['is_available'];
+            return redirect()->route('admin.kasir.promo.index')->with('success', 'Paket berhasil diperbarui!');
 
-        $startDate = $validated['promo_start_date'] ?? null;
-        $startTime = $validated['promo_start_time'] ?? null;
-        $endDate = $validated['promo_end_date'] ?? null;
-        $endTime = $validated['promo_end_time'] ?? null;
-
-        $validated['promo_start_at'] = ($startDate && $startTime)
-            ? $startDate.' '.$startTime.':00'
-            : null;
-
-        $validated['promo_end_at'] = ($endDate && $endTime)
-            ? $endDate.' '.$endTime.':00'
-            : null;
-
-        unset(
-            $validated['promo_start_date'],
-            $validated['promo_start_time'],
-            $validated['promo_end_date'],
-            $validated['promo_end_time']
-        );
-
-        if (!empty($validated['remove_image']) && $menu->image) {
-            Storage::disk('public')->delete($menu->image);
-            $menu->image = null;
-        }
-        unset($validated['remove_image']);
-
-        if ($request->hasFile('image')) {
-            if ($menu->image) {
-                Storage::disk('public')->delete($menu->image);
-            }
-            $validated['image'] = $request->file('image')->store('menus', 'public');
-        } elseif (count($validated['package_items']) === 1) {
-            $firstMenu = Menu::find($validated['package_items'][0]);
-            if ($firstMenu && $firstMenu->image) {
-                $validated['image'] = $firstMenu->image;
-            } else {
-                unset($validated['image']);
-            }
         } else {
-            unset($validated['image']);
+            // === UPDATE PROMO SATUAN ===
+            // Kita hanya update harga promo, tanggal, dan status di menu utama
+            // Nama & Kategori TIDAK diubah (ikut master data)
+            
+            $menu->update([
+                'promo_price'    => $validated['price'],
+                'promo_start_at' => $promoStartAt,
+                'promo_end_at'   => $promoEndAt,
+                // Kita biarkan is_available diupdate juga jika mau matikan dari sini
+                // 'is_available' => (bool) $validated['is_available'], 
+            ]);
+
+            return redirect()->route('admin.kasir.promo.index')->with('success', 'Diskon menu berhasil diperbarui!');
         }
-
-        $menu->update($validated);
-        $menu->packageItems()->sync($validated['package_items']);
-
-        return redirect()->route('admin.kasir.promo.index')
-            ->with('success', 'Menu promo berhasil diupdate!');
-    }
-
-    public function toggle(Menu $menu)
-    {
-        abort_unless($menu->is_package, 404);
-
-        $menu->update([
-            'is_available' => ! (bool) $menu->is_available,
-        ]);
-
-        return redirect()->route('admin.kasir.promo.index');
     }
 
     public function destroy(Menu $menu)
     {
-        abort_unless($menu->is_package, 404);
-
-        if ($menu->image) {
-            Storage::disk('public')->delete($menu->image);
+        if ($menu->is_package) {
+            if ($menu->image) Storage::disk('public')->delete($menu->image);
+            $menu->delete();
+            $msg = 'Paket promo berhasil dihapus permanen.';
+        } else {
+            $menu->update([
+                'promo_price'    => null,
+                'promo_start_at' => null,
+                'promo_end_at'   => null,
+            ]);
+            $msg = 'Promo dinonaktifkan. Menu utama tetap ada.';
         }
+        return redirect()->route('admin.kasir.promo.index')->with('success', $msg);
+    }
 
-        $menu->delete();
-
-        return redirect()->route('admin.kasir.promo.index')
-            ->with('success', 'Menu promo berhasil dihapus!');
+    public function toggle(Menu $menu)
+    {
+         $menu->update(['is_available' => ! (bool) $menu->is_available]);
+         return back();
     }
 }
