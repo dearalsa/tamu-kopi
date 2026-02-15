@@ -18,7 +18,7 @@ export default function Create() {
 
     return (
         <AdminLayout>
-            <div className="w-full max-w-4xl mx-auto px-6 lg:px-8 overflow-x-hidden">
+            <div className="w-full max-w-4xl mx-auto px-6 lg:px-8 pt-20 pb-10 overflow-x-hidden">
                 <div className="mb-8">
                     <h1 className="text-3xl font-sfPro text-gray-900 tracking-tight">
                         Tambah Kategori
