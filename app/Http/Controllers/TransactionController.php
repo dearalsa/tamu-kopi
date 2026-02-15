@@ -3,191 +3,110 @@
 namespace App\Http\Controllers;
 
 use App\Models\Transaction;
-use App\Models\TransactionItem;
+use App\Models\TransactionDetail;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
+use Carbon\Carbon;
 use Inertia\Inertia;
 
 class TransactionController extends Controller
 {
-    // Generate invoice number
-    private function generateInvoiceNumber()
+    public function index(Request $request)
     {
-        $prefix = 'INV';
-        $date = now()->format('Ymd');
-        $lastTransaction = Transaction::whereDate('created_at', today())
-            ->orderBy('id', 'desc')
+        // ambil input tanggal atau default ke hari ini
+        $start_date = $request->query('start_date') ?? Carbon::today()->toDateString();
+        $end_date = $request->query('end_date') ?? Carbon::today()->toDateString();
+
+        // query dasar untuk filter tanggal (untuk statistik dan tabel)
+        $dateFilter = [$start_date . ' 00:00:00', $end_date . ' 23:59:59'];
+        $baseQuery = Transaction::whereBetween('created_at', $dateFilter);
+
+        // hitung statistik berdasarkan filter
+        $total_income = (int) $baseQuery->sum('total');
+        $total_orders = $baseQuery->count();
+        
+        // logika jam tersibuk
+        $busy_hour_query = Transaction::whereBetween('created_at', $dateFilter)
+            ->select(DB::raw('HOUR(created_at) as hour'), DB::raw('count(*) as count'))
+            ->groupBy('hour')
+            ->orderBy('count', 'desc')
             ->first();
-        
-        $number = $lastTransaction ? (int)substr($lastTransaction->invoice_number, -4) + 1 : 1;
-        
-        return $prefix . $date . str_pad($number, 4, '0', STR_PAD_LEFT);
-    }
 
-    public function index()
-    {
-        $transactions = Transaction::with(['admin', 'items.menu'])
+        $busy_hours = $busy_hour_query 
+            ? str_pad($busy_hour_query->hour, 2, '0', STR_PAD_LEFT) . ':00' 
+            : '-';
+
+        // ambil data transaksi untuk tabel (paginated)
+        $transactions = Transaction::with(['user', 'items'])
+            ->whereBetween('created_at', $dateFilter)
             ->latest()
-            ->paginate(20);
+            ->paginate(10)
+            ->withQueryString();
 
-        return Inertia::render('Admin/Transactions/Index', [
+        return Inertia::render('Admin/Kasir/Transaksi/Index', [
             'transactions' => $transactions,
+            'stats' => [
+                'total_income' => $total_income,
+                'total_orders' => $total_orders,
+                'busy_hours'   => $busy_hours,
+            ],
+            'filters' => [
+                'start_date' => $start_date, 
+                'end_date'   => $end_date
+            ],
         ]);
     }
 
-    // Store transaksi CASH
-    public function storeCash(Request $request)
+    public function store(Request $request)
     {
-        $validated = $request->validate([
-            'cart' => 'required|array|min:1',
-            'cart.*.id' => 'required|exists:menus,id',
-            'cart.*.quantity' => 'required|integer|min:1',
-            'cart.*.price' => 'required|numeric|min:0',
-            'subtotal' => 'required|numeric|min:0',
-            'tax' => 'required|numeric|min:0',
-            'discount' => 'required|numeric|min:0',
-            'total' => 'required|numeric|min:0',
-            'cash_amount' => 'required|numeric|min:0',
+        $request->validate([
+            'subtotal'       => 'required|numeric',
+            'discount'       => 'required|numeric',
+            'total'          => 'required|numeric',
+            'payment_method' => 'required|in:cash,qris',
+            'order_type'     => 'required|in:dine-in,takeaway',
+            'cart'           => 'required|array|min:1',
         ]);
 
-        DB::beginTransaction();
         try {
-            $changeAmount = $validated['cash_amount'] - $validated['total'];
+            $transaction = DB::transaction(function () use ($request) {
+                $invoice = 'TRX-' . now()->format('ymdHis') . rand(10, 99);
+                $todayCount = Transaction::whereDate('created_at', Carbon::today())->count();
+                $orderNumber = 'C' . str_pad($todayCount + 1, 3, '0', STR_PAD_LEFT);
 
-            if ($changeAmount < 0) {
-                return back()->withErrors(['cash_amount' => 'Uang tidak cukup!']);
-            }
-
-            $transaction = Transaction::create([
-                'invoice_number' => $this->generateInvoiceNumber(),
-                'admin_id' => Auth::guard('admin')->id(),
-                'subtotal' => $validated['subtotal'],
-                'tax' => $validated['tax'],
-                'discount' => $validated['discount'],
-                'total' => $validated['total'],
-                'payment_method' => 'cash',
-                'payment_status' => 'paid',
-                'cash_amount' => $validated['cash_amount'],
-                'change_amount' => $changeAmount,
-                'paid_at' => now(),
-            ]);
-
-            foreach ($validated['cart'] as $item) {
-                TransactionItem::create([
-                    'transaction_id' => $transaction->id,
-                    'menu_id' => $item['id'],
-                    'menu_name' => $item['name'],
-                    'price' => $item['price'],
-                    'quantity' => $item['quantity'],
-                    'subtotal' => $item['price'] * $item['quantity'],
+                $newTransaction = Transaction::create([
+                    'user_id'        => Auth::guard('admin')->id(), 
+                    'invoice_number' => $invoice,
+                    'queue_number'   => $orderNumber, 
+                    'subtotal'       => $request->subtotal,
+                    'discount'       => $request->discount,
+                    'total'          => $request->total,
+                    'payment_method' => $request->payment_method,
+                    'cash_amount'    => $request->cash_amount ?? 0,
+                    'change'         => $request->change ?? 0,
+                    'order_type'     => $request->order_type,
                 ]);
-            }
 
-            DB::commit();
+                foreach ($request->cart as $item) {
+                    TransactionDetail::create([
+                        'transaction_id' => $newTransaction->id,
+                        'menu_name'      => $item['name'],
+                        'price'          => $item['price'],
+                        'quantity'       => $item['quantity'],
+                    ]);
+                }
 
-            return redirect()->route('admin.transactions.index')
-                ->with('success', 'Transaksi berhasil! Kembalian: Rp ' . number_format($changeAmount, 0, ',', '.'));
+                return $newTransaction;
+            });
+
+            return redirect()->back()->with('success_transaction', [
+                'invoice_number' => $transaction->invoice_number,
+                'queue_number'   => $transaction->queue_number,
+            ]);
+
         } catch (\Exception $e) {
-            DB::rollBack();
-            return back()->withErrors(['error' => 'Terjadi kesalahan: ' . $e->getMessage()]);
+            return redirect()->back()->withErrors(['error' => 'Gagal: ' . $e->getMessage()]);
         }
-    }
-
-    // Store transaksi QRIS (generate QRIS dinamis)
-    public function storeQris(Request $request)
-    {
-        $validated = $request->validate([
-            'cart' => 'required|array|min:1',
-            'cart.*.id' => 'required|exists:menus,id',
-            'cart.*.quantity' => 'required|integer|min:1',
-            'cart.*.price' => 'required|numeric|min:0',
-            'subtotal' => 'required|numeric|min:0',
-            'tax' => 'required|numeric|min:0',
-            'discount' => 'required|numeric|min:0',
-            'total' => 'required|numeric|min:0',
-        ]);
-
-        DB::beginTransaction();
-        try {
-            $transaction = Transaction::create([
-                'invoice_number' => $this->generateInvoiceNumber(),
-                'admin_id' => Auth::guard('admin')->id(),
-                'subtotal' => $validated['subtotal'],
-                'tax' => $validated['tax'],
-                'discount' => $validated['discount'],
-                'total' => $validated['total'],
-                'payment_method' => 'qris',
-                'payment_status' => 'pending',
-                'qris_expired_at' => now()->addMinutes(5), // QRIS expired 5 menit
-            ]);
-
-            foreach ($validated['cart'] as $item) {
-                TransactionItem::create([
-                    'transaction_id' => $transaction->id,
-                    'menu_id' => $item['id'],
-                    'menu_name' => $item['name'],
-                    'price' => $item['price'],
-                    'quantity' => $item['quantity'],
-                    'subtotal' => $item['price'] * $item['quantity'],
-                ]);
-            }
-
-            // TODO: Integrate dengan Payment Gateway untuk generate QRIS
-            // Contoh: Midtrans, Xendit, DOKU, dll
-            // $qrisData = $this->generateQRISFromGateway($transaction);
-
-            // Sementara pakai dummy data
-            $transaction->update([
-                'qris_code' => 'QRIS-' . $transaction->invoice_number,
-                // 'qris_image' => $qrisData['image_url'], // dari payment gateway
-            ]);
-
-            DB::commit();
-
-            return response()->json([
-                'success' => true,
-                'transaction' => $transaction->load('items'),
-                'message' => 'QRIS berhasil di-generate. Silakan scan untuk membayar.',
-            ]);
-        } catch (\Exception $e) {
-            DB::rollBack();
-            return response()->json([
-                'success' => false,
-                'message' => 'Terjadi kesalahan: ' . $e->getMessage()
-            ], 500);
-        }
-    }
-
-    // Webhook dari payment gateway untuk update status
-    public function webhookPayment(Request $request)
-    {
-        // TODO: Verify webhook signature dari payment gateway
-        
-        $paymentGatewayId = $request->input('order_id'); // sesuaikan dengan gateway
-        $status = $request->input('transaction_status'); // sesuaikan
-
-        $transaction = Transaction::where('payment_gateway_id', $paymentGatewayId)->first();
-
-        if (!$transaction) {
-            return response()->json(['message' => 'Transaction not found'], 404);
-        }
-
-        if ($status === 'settlement' || $status === 'capture') {
-            $transaction->update([
-                'payment_status' => 'paid',
-                'paid_at' => now(),
-            ]);
-        } elseif ($status === 'pending') {
-            $transaction->update([
-                'payment_status' => 'pending',
-            ]);
-        } else {
-            $transaction->update([
-                'payment_status' => 'failed',
-            ]);
-        }
-
-        return response()->json(['message' => 'Webhook processed']);
     }
 }

@@ -13,6 +13,9 @@ use Inertia\Response;
 
 class ProfileController extends Controller
 {
+    /**
+     * Menampilkan form edit profil.
+     */
     public function edit(Request $request): Response
     {
         $admin = Auth::guard('admin')->user();
@@ -20,22 +23,43 @@ class ProfileController extends Controller
         return Inertia::render('Profile/Edit', [
             'status' => session('status'),
             'role' => $admin->role,
+            'admin' => $admin,
         ]);
     }
 
-    public function updatePassword(Request $request): RedirectResponse
+    /**
+     * Memperbarui Nama, Email, dan Password.
+     */
+    public function update(Request $request): RedirectResponse
     {
-        $validated = $request->validate([
-            'current_password' => ['required', 'current_password:admin'],
-            'password' => ['required', Password::defaults(), 'confirmed'],
-        ]);
-
         $admin = Auth::guard('admin')->user();
 
-        $admin->update([
-            'password' => Hash::make($validated['password']),
-        ]);
+        $rules = [
+            'name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'lowercase', 'email', 'max:255', 'unique:admins,email,' . $admin->id],
+        ];
 
-        return Redirect::route($admin->role . '.profile.edit')->with('status', 'password-updated');
+        // Validasi password hanya jika field password diisi
+        if ($request->filled('password')) {
+            $rules['current_password'] = ['required', 'current_password:admin'];
+            $rules['password'] = ['required', Password::defaults(), 'confirmed'];
+        }
+
+        $validated = $request->validate($rules);
+
+        // Update data profil
+        $admin->name = $validated['name'];
+        $admin->email = $validated['email'];
+
+        // Update password jika ada input baru
+        if ($request->filled('password')) {
+            $admin->password = Hash::make($validated['password']);
+        }
+
+        $admin->save();
+
+        // Redirect back dengan membawa status sukses
+        // Inertia akan otomatis mengirimkan data admin yang terbaru ke frontend
+        return Redirect::back()->with('status', 'profile-updated');
     }
 }

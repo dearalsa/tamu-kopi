@@ -16,7 +16,7 @@ export default function Edit({ categories, menu }) {
   const { data, setData, post, processing, errors } = useForm({
     name: menu.name || '',
     category_id: menu.category_id || '',
-    price: menu.price || '',
+    price: menu.price ? Math.floor(menu.price).toString() : '', 
     image: null,
     is_available: menu.is_available ? 1 : 0,
     is_best_seller:
@@ -29,6 +29,26 @@ export default function Edit({ categories, menu }) {
   });
 
   const [preview, setPreview] = useState(menu.image_url || null);
+
+  // fungsi untuk format titik ribuan 
+  const formatRupiah = (value) => {
+    if (value === null || value === undefined || value === '') return '';
+    const numberString = value.toString().replace(/[^0-9]/g, '');
+    const sisa = numberString.length % 3;
+    let rupiah = numberString.substr(0, sisa);
+    const ribuan = numberString.substr(sisa).match(/\d{3}/gi);
+
+    if (ribuan) {
+      const separator = sisa ? '.' : '';
+      rupiah += separator + ribuan.join('.');
+    }
+    return rupiah;
+  };
+
+  // fungsi untuk membersihkan titik sebelum disimpan ke state data
+  const cleanThousandSeparator = (value) => {
+    return value.toString().replace(/\./g, '');
+  };
 
   const handleImageChange = (e) => {
     const file = e.target.files[0];
@@ -55,7 +75,7 @@ export default function Edit({ categories, menu }) {
 
   return (
     <AdminLayout>
-      <div className="min-h-screen flex items-start justify-center">
+      <div className="min-h-screen flex items-start justify-center font-sfPro">
         <div className="w-full max-w-2xl px-6 pt-8 pb-12">
           <div className="mb-6 mt-4">
             <Link
@@ -91,7 +111,7 @@ export default function Edit({ categories, menu }) {
                     onChange={(e) => setData('name', e.target.value)}
                     className={`w-full bg-white border ${
                       errors.name ? 'border-red-500' : 'border-gray-400'
-                    } rounded-xl pl-9 pr-4 py-3 text-sm outline-none focus:outline-none focus:ring-0 focus:border-gray-500 placeholder:text-gray-400 shadow-sm`}
+                    } rounded-xl pl-9 pr-4 py-3 text-sm outline-none focus:outline-none focus:ring-0 focus:border-gray-500 placeholder:text-gray-400 shadow-sm font-normal`}
                   />
                 </div>
                 {errors.name && (
@@ -109,13 +129,16 @@ export default function Edit({ categories, menu }) {
                     <CircleDollarSign className="w-4 h-4" />
                   </span>
                   <input
-                    type="number"
-                    placeholder="Masukkan Harga"
-                    value={data.price}
-                    onChange={(e) => setData('price', e.target.value)}
+                    type="text"
+                    placeholder="0"
+                    value={formatRupiah(data.price)}
+                    onChange={(e) => {
+                      const rawValue = cleanThousandSeparator(e.target.value);
+                      setData('price', rawValue);
+                    }}
                     className={`w-full bg-white border ${
                       errors.price ? 'border-red-500' : 'border-gray-400'
-                    } rounded-xl pl-9 pr-4 py-3 text-sm outline-none focus:outline-none focus:ring-0 focus:border-gray-500 placeholder:text-gray-400 shadow-sm`}
+                    } rounded-xl pl-9 pr-4 py-3 text-sm outline-none focus:outline-none focus:ring-0 focus:border-gray-500 placeholder:text-gray-400 shadow-sm font-normal`}
                   />
                 </div>
                 {errors.price && (
@@ -152,7 +175,7 @@ export default function Edit({ categories, menu }) {
                       errors.category_id ? 'border-red-500' : 'border-gray-400'
                     } rounded-xl pl-9 pr-12 py-3 text-sm outline-none appearance-none bg-none !bg-none bg-no-repeat focus:outline-none focus:ring-0 focus:border-gray-500 cursor-pointer ${
                       !data.category_id ? 'text-gray-400' : 'text-gray-900'
-                    } shadow-sm transition-colors duration-150 hover:border-gray-500`}
+                    } shadow-sm transition-colors duration-150 hover:border-gray-500 font-normal`}
                   >
                     <option value="">Pilih Kategori</option>
                     {categories.map((cat) => (
@@ -203,7 +226,7 @@ export default function Edit({ categories, menu }) {
                     onChange={(e) =>
                       setData('is_available', Number(e.target.value))
                     }
-                    className="w-full bg-white border border-gray-400 rounded-xl pl-9 pr-12 py-3 text-sm outline-none appearance-none bg-none !bg-none bg-no-repeat focus:outline-none focus:ring-0 focus:border-gray-500 cursor-pointer text-gray-900 shadow-sm transition-colors duration-150 hover:border-gray-500"
+                    className="w-full bg-white border border-gray-400 rounded-xl pl-9 pr-12 py-3 text-sm outline-none appearance-none bg-none !bg-none bg-no-repeat focus:outline-none focus:ring-0 focus:border-gray-500 cursor-pointer text-gray-900 shadow-sm transition-colors duration-150 hover:border-gray-500 font-normal"
                   >
                     <option value="1">Tersedia</option>
                     <option value="0">Habis</option>
@@ -242,7 +265,7 @@ export default function Edit({ categories, menu }) {
                         e.target.value === '' ? '' : Number(e.target.value)
                       )
                     }
-                    className={`w-full bg-white border border-gray-400 rounded-xl px-4 py-3 text-sm outline-none appearance-none bg-none !bg-none bg-no-repeat focus:outline-none focus:ring-0 focus:border-gray-500 cursor-pointer shadow-sm transition-colors duration-150 hover:border-gray-500 ${
+                    className={`w-full bg-white border border-gray-400 rounded-xl px-4 py-3 text-sm outline-none appearance-none bg-none !bg-none bg-no-repeat focus:outline-none focus:ring-0 focus:border-gray-500 cursor-pointer shadow-sm transition-colors duration-150 hover:border-gray-500 font-normal ${
                       data.is_best_seller === '' ? 'text-gray-400' : 'text-gray-900'
                     }`}
                   >
@@ -293,7 +316,7 @@ export default function Edit({ categories, menu }) {
                           onClick={removeImage}
                           className="bg-black/60 text-white rounded-full p-2"
                         >
-                          <X size={16} />
+                          <XIcon size={16} />
                         </button>
                       </div>
                     </>
@@ -302,7 +325,7 @@ export default function Edit({ categories, menu }) {
                       <div className="bg-black text-white p-2.5 rounded-lg">
                         <Download size={22} />
                       </div>
-                      <p className="text-xs font-sfPro text-gray-500 tracking-wide">
+                      <p className="text-xs font-sfPro text-gray-500 tracking-wide font-normal">
                         Pilih File
                       </p>
                     </div>
@@ -325,7 +348,7 @@ export default function Edit({ categories, menu }) {
                 <button
                   type="submit"
                   disabled={processing}
-                  className="w-full bg-[#EF5350] text-white font-sfPro py-4 rounded-xl text-sm hover:bg-[#e53935] active:scale-[0.98] transition-all disabled:opacity-50"
+                  className="w-full bg-[#EF5350] text-white font-sfPro py-4 rounded-xl text-sm hover:bg-[#e53935] active:scale-[0.98] transition-all disabled:opacity-50 font-normal"
                 >
                   {processing ? 'Menyimpan...' : 'Simpan Perubahan'}
                 </button>

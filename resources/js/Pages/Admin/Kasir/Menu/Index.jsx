@@ -128,17 +128,19 @@ export default function Index({ menus }) {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {filteredMenus.map((menu) => (
-             <motion.div
-              key={menu.id}
-              whileHover={{ scale: 1.03 }}
-              whileTap={{ scale: 0.97 }}
-              transition={{ type: 'spring', stiffness: 300, damping: 20 }}
-              className="bg-white rounded-[2rem] shadow-[0_8px_30px_rgba(0,0,0,0.02)] overflow-hidden border border-gray-50 transition-none"
-            >
-                <div className="aspect-square bg-gray-50 relative">
-                  <div className="absolute top-3 left-3 z-10 flex items-center gap-2">
+              <motion.div
+                key={menu.id}
+                whileHover={menu.is_available ? { scale: 1.02 } : {}}
+                whileTap={menu.is_available ? { scale: 0.98 } : {}}
+                transition={{ type: 'tween', duration: 0.15 }}
+                className={`bg-white rounded-[2rem] shadow-[0_8px_30px_rgba(0,0,0,0.02)] overflow-hidden border border-gray-50 relative group transition-all duration-300 ${
+                  !menu.is_available ? 'opacity-90' : ''
+                }`}
+              >
+                <div className="aspect-square bg-gray-100 relative overflow-hidden">
+                  <div className="absolute top-3 left-3 z-20 flex items-center gap-2">
                     <span
-                      className={`px-3 py-1 rounded-full text-[10px] font-medium tracking-[0.12em] ${
+                      className={`px-3 py-1 rounded-full text-[10px] font-medium tracking-[0.12em] shadow-sm transition-colors ${
                         menu.is_available
                           ? 'bg-emerald-50 text-emerald-600'
                           : 'bg-gray-200 text-gray-500'
@@ -150,31 +152,50 @@ export default function Index({ menus }) {
                     <button
                       type="button"
                       onClick={() => toggleAvailability(menu)}
-                      className="w-7 h-7 flex items-center justify-center rounded-full bg-white/80 text-gray-500 hover:text-red-500 hover:bg-white shadow-sm transition-colors"
+                      className={`w-7 h-7 flex items-center justify-center rounded-full shadow-sm transition-all duration-300 ${
+                        menu.is_available 
+                          ? 'bg-white/90 text-gray-500 hover:text-red-500' 
+                          : 'bg-gray-800 text-white hover:bg-black'
+                      }`}
                     >
-                      <ToggleLeft size={13} />
+                      <ToggleLeft size={13} className={!menu.is_available ? 'opacity-50' : ''} />
                     </button>
                   </div>
+
+                  {/* tampilan ketika menu habis */}
+                  {!menu.is_available && (
+                    <div className="absolute inset-0 z-10 flex items-center justify-center bg-gray-900/10 backdrop-blur-[2px] transition-all duration-700">
+                      <div className="px-4 py-1.5 rounded-full border border-white/20 bg-black/20 backdrop-blur-md">
+                        <span className="text-[10px] text-white/80 font-medium tracking-[0.2em] uppercase">Habis</span>
+                      </div>
+                    </div>
+                  )}
 
                   {menu.image ? (
                     <img
                       src={`/storage/${menu.image}`}
                       alt={menu.name}
-                      className="w-full h-full object-cover"
+                      className={`w-full h-full object-cover transition-all duration-700 ${
+                        !menu.is_available ? 'scale-110 saturate-[0.2] brightness-90' : 'group-hover:scale-110'
+                      }`}
                     />
                   ) : (
-                    <div className="flex items-center justify-center h-full">
-                      <span className="text-4xl opacity-30">🍽️</span>
+                    <div className="flex items-center justify-center h-full bg-gray-50">
+                      <span className={`text-4xl transition-opacity duration-700 ${!menu.is_available ? 'opacity-10' : 'opacity-30'}`}>🍽️</span>
                     </div>
                   )}
                 </div>
 
-                <div className="p-5">
-                  <h3 className="text-gray-800 truncate text-base leading-tight mb-2">
+                <div className={`p-5 transition-all duration-500 ${!menu.is_available ? 'bg-gray-50/50' : ''}`}>
+                  <h3 className={`truncate text-base leading-tight mb-2 font-medium tracking-tight transition-colors ${
+                    !menu.is_available ? 'text-gray-400' : 'text-gray-800'
+                  }`}>
                     {menu.name}
                   </h3>
 
-                  <p className="text-sm text-gray-900 mb-2">
+                  <p className={`text-sm mb-2 transition-colors duration-500 ${
+                    !menu.is_available ? 'text-gray-400' : 'text-gray-900'
+                  }`}>
                     Rp{' '}
                     <span className="font-semibold">
                       {Number(menu.price).toLocaleString('id-ID')}
@@ -183,9 +204,16 @@ export default function Index({ menus }) {
 
                   <div className="mb-4 h-6 flex items-center">
                     {menu.is_best_seller && (
-                      <div className="inline-flex items-center gap-1 rounded-full bg-yellow-50 px-3 py-1">
-                        <Star size={10} className="fill-[#f59e0b] text-[#f59e0b]" />
-                        <span className="text-[10px] font-sfPro uppercase tracking-[0.18em] text-[#b45309]">
+                      <div className={`inline-flex items-center gap-1 rounded-full px-3 py-1 transition-all duration-500 ${
+                        !menu.is_available ? 'bg-gray-100/50 grayscale' : 'bg-yellow-50'
+                      }`}>
+                        <Star 
+                          size={10} 
+                          className={!menu.is_available ? 'fill-gray-300 text-gray-300' : 'fill-[#f59e0b] text-[#f59e0b]'} 
+                        />
+                        <span className={`text-[10px] font-sfPro uppercase tracking-[0.18em] ${
+                          !menu.is_available ? 'text-gray-300' : 'text-[#b45309]'
+                        }`}>
                           Best Seller
                         </span>
                       </div>
@@ -195,13 +223,21 @@ export default function Index({ menus }) {
                   <div className="flex gap-2">
                     <Link
                       href={route('admin.kasir.menus.edit', menu.id)}
-                      className="flex-1 flex items-center justify-center bg-[#f26c66] text-white py-2 rounded-xl outline-none transition-none hover:bg-[#e53935]"
+                      className={`flex-1 flex items-center justify-center py-2 rounded-xl outline-none transition-all duration-300 border ${
+                        !menu.is_available 
+                        ? 'bg-white border-gray-200 text-gray-400 hover:bg-gray-50' 
+                        : 'bg-[#f26c66] border-transparent text-white hover:bg-[#e53935]'
+                      }`}
                     >
                       <Pencil size={13} />
                     </Link>
                     <button
                       onClick={() => handleDelete(menu)}
-                      className="flex-1 flex items-center justify-center bg-[#ef5350] text-white py-2 rounded-xl outline-none transition-none hover:bg-[#d32f2f]"
+                      className={`flex-1 flex items-center justify-center py-2 rounded-xl outline-none transition-all duration-300 border ${
+                        !menu.is_available 
+                        ? 'bg-white border-gray-200 text-gray-400 hover:bg-gray-50' 
+                        : 'bg-[#ef5350] border-transparent text-white hover:bg-[#d32f2f]'
+                      }`}
                     >
                       <Trash2 size={13} />
                     </button>

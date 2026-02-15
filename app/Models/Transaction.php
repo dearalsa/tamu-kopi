@@ -9,42 +9,35 @@ class Transaction extends Model
 {
     use HasFactory;
 
-    protected $fillable = [
-        'invoice_number',
-        'admin_id',
-        'subtotal',
-        'tax',
-        'discount',
-        'total',
-        'payment_method',
-        'payment_status',
-        'cash_amount',
-        'change_amount',
-        'qris_code',
-        'qris_image',
-        'qris_expired_at',
-        'payment_gateway_id',
-        'paid_at',
-    ];
+    protected $guarded = ['id'];
 
     protected $casts = [
         'subtotal' => 'decimal:2',
-        'tax' => 'decimal:2',
         'discount' => 'decimal:2',
         'total' => 'decimal:2',
         'cash_amount' => 'decimal:2',
-        'change_amount' => 'decimal:2',
-        'qris_expired_at' => 'datetime',
-        'paid_at' => 'datetime',
+        'change' => 'decimal:2',
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
     ];
 
-    public function admin()
+    public function user()
     {
-        return $this->belongsTo(Admin::class);
+        return $this->belongsTo(Admin::class, 'user_id');
     }
 
     public function items()
     {
-        return $this->hasMany(TransactionItem::class);
+        return $this->hasMany(TransactionDetail::class, 'transaction_id');
+    }
+
+    public function getFormattedDateAttribute()
+    {
+        return $this->created_at->translatedFormat('d M Y');
+    }
+
+    public function getFormattedTimeAttribute()
+    {
+        return $this->created_at->format('H:i');
     }
 }

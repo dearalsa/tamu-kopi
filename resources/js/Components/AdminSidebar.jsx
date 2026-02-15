@@ -12,7 +12,7 @@ import {
   ClipboardList,
   Tag,
   BarChart3,
-  Receipt,
+  CircleDollarSign, // Icon Dollar di dalam Lingkaran
   Wallet,
   Clipboard
 } from 'lucide-react'
@@ -33,7 +33,7 @@ export default function AdminSidebar() {
         { label: 'Menu Promo', icon: Tag, href: '/admin/kasir/promo' },
         { label: 'Katalog Menu', icon: ClipboardList, href: '/admin/kasir/katalog' },
         { label: 'Summary Menu', icon: BarChart3, href: '/admin/summary' },
-        { label: 'Transaksi', icon: Receipt, href: '/admin/transactions' }
+        { label: 'Transaksi', icon: CircleDollarSign, href: '/admin/kasir/transaksi' }
       ]
     },
     {
@@ -52,8 +52,7 @@ export default function AdminSidebar() {
   }
   ]
 
-  // logika baru yaitu cek url saat komponen load atau pindah halaman
-  // kalau URL ada di dalam children sebuah menu, buka menu tersebut secara paksa.
+  // Logika supaya dropdown tidak menutup sendiri
   useEffect(() => {
     const activeIndices = menuItems
       .map((item, index) => {
@@ -64,7 +63,6 @@ export default function AdminSidebar() {
       })
       .filter(index => index !== null);
 
-    // menggunakan set supaya index yang sudah dibuka manual tidak hilang
     setOpenDropdowns(prev => Array.from(new Set([...prev, ...activeIndices])));
   }, [url]);
 

@@ -17,7 +17,6 @@ export default function Menu({ menus, categories }) {
   const [selectedFilter, setSelectedFilter] = useState("all")
 
   const now = useMemo(() => new Date(), [])
-
   const normalizedMenus = useMemo(() => {
     const byId = new Map()
     const normalMenus = menus.filter((m) => !m.is_package)
@@ -25,6 +24,10 @@ export default function Menu({ menus, categories }) {
 
     normalMenus.forEach((m) => {
       const key = `menu-${m.id}`
+      const isPromoActive = m.promo_price && 
+        (!m.promo_start_at || new Date(m.promo_start_at) <= now) &&
+        (!m.promo_end_at || new Date(m.promo_end_at) >= now);
+
       byId.set(key, {
         id: key,
         baseId: m.id,
@@ -33,9 +36,8 @@ export default function Menu({ menus, categories }) {
         category: m.category,
         is_best_seller: m.is_best_seller,
         base_price: Number(m.price),
-        promo_price: null,
-        promo_label: null,
-        promo_id: null,
+        promo_price: isPromoActive ? Number(m.promo_price) : null,
+        promo_label: isPromoActive ? "Promo" : null,
         type: "single",
       })
     })
@@ -47,97 +49,70 @@ export default function Menu({ menus, categories }) {
 
       if (!promoActive || !promo.is_available) return
 
-      const categorySlug = promo.category?.slug
-      const label = categorySlug === "paket-menu-hemat" 
-        ? "Paket Menu Hemat" 
-        : categorySlug === "paket-menu-spesial" 
-        ? "Paket Menu Spesial" 
-        : "Promo"
-
-      if (!promo.package_items || promo.package_items.length === 0) {
-        const key = `promo-${promo.id}`
-        byId.set(key, {
-          id: key,
-          baseId: null,
-          name: promo.name,
-          image: promo.image,
-          category: promo.category,
-          is_best_seller: promo.is_best_seller,
-          base_price: null,
-          promo_price: Number(promo.price),
-          promo_label: label,
-          promo_id: promo.id,
-          type: categorySlug === "paket-menu-hemat" ? "package_set" : "package_special",
-          package_item_ids: [],
-        })
-      } else if (promo.package_items.length === 1) {
-        const item = promo.package_items[0]
-        const key = `menu-${item.id}`
-        byId.set(key, {
-          id: key,
-          baseId: item.id,
-          name: item.name,
-          image: promo.image || item.image,
-          category: item.category || promo.category,
-          is_best_seller: item.is_best_seller,
-          base_price: Number(item.price),
-          promo_price: Number(promo.price),
-          promo_label: label,
-          promo_id: promo.id,
-          type: "single",
-        })
-      } else {
-        const key = `paket-${promo.id}`
-        byId.set(key, {
-          id: key,
-          baseId: null,
-          name: promo.name,
-          image: promo.image,
-          category: promo.category,
-          is_best_seller: promo.is_best_seller,
-          base_price: null,
-          promo_price: Number(promo.price),
-          promo_label: label,
-          promo_id: promo.id,
-          type: categorySlug === "paket-menu-hemat" ? "package_set" : "package_special",
-          package_item_ids: promo.package_items.map((i) => i.id),
-        })
-      }
+      const key = `paket-${promo.id}`
+      byId.set(key, {
+        id: key,
+        baseId: null,
+        name: promo.name,
+        image: promo.image,
+        category: promo.category,
+        is_best_seller: promo.is_best_seller,
+        base_price: null,
+        promo_price: Number(promo.price),
+        promo_label: promo.category?.name || "Promo", 
+        type: "package",
+      })
     })
 
-    return Array.from(byId.values()).sort((a, b) => a.name.localeCompare(b.name))
+    return Array.from(byId.values()).sort((a, b) => {
+      const aIsPromo = a.promo_price !== null;
+      const bIsPromo = b.promo_price !== null;
+      const aIsBest = !!a.is_best_seller;
+      const bIsBest = !!b.is_best_seller;
+      if ((aIsPromo && aIsBest) && !(bIsPromo && bIsBest)) return -1;
+      if (!(aIsPromo && aIsBest) && (bIsPromo && bIsBest)) return 1;
+      if (aIsBest && !bIsBest) return -1;
+      if (!aIsBest && bIsBest) return 1;
+      if (aIsPromo && !bIsPromo) return -1;
+      if (!aIsPromo && bIsPromo) return 1;
+      return a.name.localeCompare(b.name);
+    })
   }, [menus, now])
 
+  // filter options berdasarkan kategori yang ada di menus
   const filterOptions = useMemo(() => {
     const base = [
       { value: "all", label: "Semua Menu" },
       { value: "best_seller", label: "Best Seller" },
-      { value: "paket_menu_hemat", label: "Paket Menu Hemat" },
-      { value: "paket_menu_spesial", label: "Paket Menu Spesial" },
     ]
 
-    const baseLabels = base.map(b => b.label.toLowerCase())
+    // ambil semua slug kategori yang sedang digunakan oleh menu yang sudah dinormalisasi
+    const usedCategorySlugs = new Set(
+      normalizedMenus
+        .map(m => m.category?.slug)
+        .filter(slug => !!slug)
+    );
 
+    // filter kategori dari database: hanya ambil yang slug-nya ada di daftar menu saat ini
     const categoryOptions = (categories || [])
-      .filter(cat => !baseLabels.includes(cat.name.toLowerCase()))
+      .filter(cat => usedCategorySlugs.has(cat.slug))
       .map((cat) => ({
         value: `cat_${cat.slug}`,
         label: cat.name,
-        category_slug: cat.slug,
       }))
 
     return [...base, ...categoryOptions]
-  }, [categories])
+  }, [categories, normalizedMenus])
 
+  // logika filter menu berdasarkan selectedFilter
   const filteredMenus = useMemo(() => {
     return normalizedMenus.filter((m) => {
-      if (selectedFilter === "all") return m.type === "single"
+      if (selectedFilter === "all") return true 
       if (selectedFilter === "best_seller") return !!m.is_best_seller
-      if (selectedFilter === "paket_menu_hemat") return m.promo_label === "Paket Menu Hemat"
-      if (selectedFilter === "paket_menu_spesial") return m.promo_label === "Paket Menu Spesial"
+      
       if (selectedFilter.startsWith("cat_")) {
         const slug = selectedFilter.replace("cat_", "")
-        return m.category?.slug === slug && m.type === "single"
+        return m.category?.slug === slug
       }
       return true
     })
@@ -189,9 +164,6 @@ export default function Menu({ menus, categories }) {
                         {option.label}
                       </button>
                     ))}
-                    {filterOptions.length === 0 && (
-                      <div className="px-4 py-3 text-xs sm:text-sm text-gray-400">Belum ada kategori.</div>
-                    )}
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -201,9 +173,8 @@ export default function Menu({ menus, categories }) {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6 mb-8 sm:mb-10">
             <AnimatePresence mode="popLayout">
               {displayMenus.map((menu, index) => {
-                const isSingle = menu.type === "single"
-                const hasPromo = isSingle && menu.promo_price !== null
-                const effectivePrice = isSingle && hasPromo ? menu.promo_price : (menu.base_price ?? menu.promo_price)
+                const hasPromo = menu.promo_price !== null && menu.base_price !== null
+                const effectivePrice = menu.promo_price ?? menu.base_price
 
                 return (
                   <motion.div
@@ -230,7 +201,7 @@ export default function Menu({ menus, categories }) {
                         {menu.name}
                       </h3>
                       <div className="mt-0.5 sm:mt-1 flex flex-col">
-                        {isSingle && hasPromo && menu.base_price !== null && (
+                        {hasPromo && (
                           <span className="text-[10px] sm:text-xs text-gray-400 line-through">
                             Rp. {Number(menu.base_price).toLocaleString("id-ID")}
                           </span>
