@@ -36,10 +36,7 @@ export default function AdminSidebar() {
         { label: 'Transaksi', icon: CircleDollarSign, href: '/admin/kasir/transaksi' }
       ]
     },
-    {
-      label: 'Kelola Produk', 
-      icon: PackageSearch,
-    },
+    { label: 'Kelola Produk', icon: PackageSearch },
     { label: 'Kategori', icon: Clipboard, href: '/admin/categories' },
     {
       label: 'Laporan',
@@ -62,12 +59,12 @@ export default function AdminSidebar() {
           })
           if (hasActiveChild) return index
         }
-        return null;
+        return null
       })
-      .filter(index => index !== null);
+      .filter(index => index !== null)
 
-    setOpenDropdowns(prev => Array.from(new Set([...prev, ...activeIndices])));
-  }, [url]);
+    setOpenDropdowns(prev => Array.from(new Set([...prev, ...activeIndices])))
+  }, [url])
 
   const toggleDropdown = (index) => {
     setOpenDropdowns(prev => 
@@ -79,12 +76,14 @@ export default function AdminSidebar() {
 
   return (
     <>
+      {/* mobile toggle button */}
       <div className="lg:hidden fixed top-5 left-5 z-[60] font-sfPro">
         <button onClick={() => setIsMobileOpen(!isMobileOpen)} className="text-[#374151]">
           {isMobileOpen ? <X size={28} /> : <MenuIcon size={28} />}
         </button>
       </div>
 
+      {/* mobile overlay */}
       <AnimatePresence>
         {isMobileOpen && (
           <motion.div
@@ -97,24 +96,26 @@ export default function AdminSidebar() {
         )}
       </AnimatePresence>
 
+      {/* sidebar */}
       <aside
         className={`
-          fixed inset-y-0 left-0 w-64 bg-white flex flex-col z-50 border-r border-gray-100 font-sfPro
+          fixed inset-y-0 left-0 w-64 bg-white flex flex-col h-screen z-50 border-r border-gray-100 font-sfPro
           transition-transform duration-300 ease-in-out
           ${isMobileOpen ? 'translate-x-0' : '-translate-x-full'} 
           lg:translate-x-0
         `}
       >
+        {/* logo */}
         <div className="flex justify-center pt-[50px] lg:pt-[24px] pb-[25px]">
           <img src="/asset/Tamu.svg" alt="Logo" className="h-[60px] w-auto" />
         </div>
 
+        {/* navigation */}
         <nav className="flex-1 px-5 space-y-2 overflow-y-auto">
           {menuItems.map((item, index) => {
             const hasChildren = !!item.children
             const isOpen = openDropdowns.includes(index)
             
-            // Cek active untuk parent
             let isActive = false
             if (item.href) {
               isActive = url === item.href
@@ -126,10 +127,7 @@ export default function AdminSidebar() {
               <div key={index} className="relative">
                 {hasChildren ? (
                   <>
-                    <div
-                      onClick={() => toggleDropdown(index)}
-                      className="group"
-                    >
+                    <div onClick={() => toggleDropdown(index)} className="group">
                       <motion.div
                         animate={
                           isActive
@@ -147,9 +145,7 @@ export default function AdminSidebar() {
                         </div>
                         <ChevronDown
                           size={18}
-                          className={`transition-transform duration-300 ${
-                            isOpen ? 'rotate-180' : ''
-                          }`}
+                          className={`transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`}
                         />
                       </motion.div>
                     </div>
@@ -167,22 +163,14 @@ export default function AdminSidebar() {
                             const isChildActive = url === child.href || url.startsWith(child.href + '?')
 
                             return (
-                              <Link
-                                key={idx}
-                                href={child.href}
-                                className="block"
-                              >
+                              <Link key={idx} href={child.href} className="block">
                                 <motion.div
                                   whileHover={{ x: 4 }}
                                   className={`flex items-center gap-3 py-2.5 px-4 text-[13px] rounded-lg font-sfPro cursor-pointer transition-colors ${
                                     isChildActive ? 'text-[#EF5350]' : 'text-[#374151]'
                                   }`}
                                 >
-                                  <child.icon
-                                    size={16}
-                                    strokeWidth={2}
-                                    className="opacity-70"
-                                  />
+                                  <child.icon size={16} strokeWidth={2} className="opacity-70" />
                                   {child.label}
                                 </motion.div>
                               </Link>
@@ -193,11 +181,7 @@ export default function AdminSidebar() {
                     </AnimatePresence>
                   </>
                 ) : (
-                  <Link
-                    href={item.href}
-                    onClick={() => setIsMobileOpen(false)}
-                    className="block outline-none"
-                  >
+                  <Link href={item.href} onClick={() => setIsMobileOpen(false)} className="block outline-none">
                     <motion.div
                       animate={
                         isActive

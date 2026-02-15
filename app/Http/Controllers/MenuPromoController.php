@@ -12,20 +12,29 @@ use Carbon\Carbon;
 
 class MenuPromoController extends Controller
 {
-    /**
-     * Generate slug unik untuk promo paket dengan format nama-promo-randomstring. Ini untuk memastikan slug tidak bentrok dengan menu biasa dan mudah diidentifikasi sebagai promo paket.
-     */
     protected function generateSlugForPromo(string $name): string
     {
         return Str::slug($name . '-' . Str::random(5));
     }
 
     /**
-     * Tampilkan daftar promo (baik paket maupun satuan). Promo paket adalah menu dengan is_package=true, sedangkan promo satuan adalah menu dengan promo_price tidak null. Tampilkan informasi terkait promo seperti nama, kategori, harga normal, harga promo, tanggal mulai promo, tanggal berakhir promo, dan apakah promo sedang aktif atau tidak.
+     * update status promo otomatis berdasarkan tanggal.
      */
+    protected function updateExpiredPromos()
+    {
+        $now = Carbon::now();
+        Menu::whereNotNull('promo_end_at')
+            ->where('promo_end_at', '<', $now)
+            ->where('is_available', true)
+            ->update(['is_available' => false]);
+    }
+
     public function index(Request $request)
     {
-        $perPage = 20; // jumlah item per halaman untuk pagination
+        // cek dan update promo expired sebelum fetch data
+        $this->updateExpiredPromos();
+
+        $perPage = 20;
 
         $menus = Menu::with('category')
             ->where(function($query) {
@@ -54,9 +63,6 @@ class MenuPromoController extends Controller
         ]);
     }
 
-    /**
-     * Tampilkan form buat promo baru. Form ini bisa digunakan untuk membuat promo paket maupun promo satuan. Jika paket, admin bisa memilih beberapa menu untuk dimasukkan ke dalam paket. Jika satuan, admin hanya memilih 1 menu dan mengisi harga promo serta tanggal promo.
-     */
     public function create()
     {
         $categories = Category::where('is_active', true)->get();
@@ -70,9 +76,6 @@ class MenuPromoController extends Controller
         ]);
     }
 
-    /**
-     * Simpan promo baru (baik paket maupun satuan). Jika paket, simpan data menu dengan is_package=true dan relasi ke menu-menu yang termasuk dalam paket. Jika satuan, update menu tersebut dengan harga promo dan tanggal promo.
-     */
     public function store(Request $request)
     {
         $validated = $request->validate([
@@ -104,6 +107,7 @@ class MenuPromoController extends Controller
                 'promo_price'    => $validated['price'],
                 'promo_start_at' => $promoStartAt,
                 'promo_end_at'   => $promoEndAt,
+                'is_available'   => true, // pastikan aktif saat dibuat
             ]);
 
             return redirect()->route('admin.kasir.promo.index')
@@ -132,9 +136,6 @@ class MenuPromoController extends Controller
         }
     }
 
-    /**
-     * Tampilkan form edit promo (baik paket maupun satuan). Jika paket, tampilkan seluruh item dalam paket. Jika satuan, tampilkan data menu tersebut saja.
-     */
     public function edit($id)
     {
         $menu = Menu::with(['packageItems', 'category'])->findOrFail($id);
@@ -165,9 +166,6 @@ class MenuPromoController extends Controller
         ]);
     }
 
-    /**
-     * Update promo (baik paket maupun satuan). Jika paket, update berlaku untuk seluruh item dalam paket. Jika satuan, update hanya berlaku untuk menu tersebut.
-     */
     public function update(Request $request, $id)
     {
         $menu = Menu::findOrFail($id);
@@ -191,15 +189,13 @@ class MenuPromoController extends Controller
             'promo_price'    => $validated['price'],
             'promo_start_at' => $promoStartAt,
             'promo_end_at'   => $promoEndAt,
+            'is_available'   => true, // pastikan aktif lagi saat diupdate
         ]);
 
         return redirect()->route('admin.kasir.promo.index')
                          ->with('success', 'Promo berhasil diperbarui!');
     }
 
-    /**
-     * toggle status promo (aktif/nonaktif) dengan memanipulasi tanggal mulai dan berakhir promo. jika promo satuan, toggle hanya berlaku untuk menu tersebut. jika paket, toggle berlaku untuk seluruh item dalam paket.
-     */
     public function toggle($id)
     {
         $menu = Menu::findOrFail($id);
@@ -219,9 +215,6 @@ class MenuPromoController extends Controller
         return back();
     }
 
-    /**
-     * hapus promo (jika paket, hapus seluruh data paket; jika promo satuan, reset harga promo dan tanggal promo menjadi null)
-     */
     public function destroy($id)
     {
         $menu = Menu::findOrFail($id);
@@ -232,7 +225,8 @@ class MenuPromoController extends Controller
             $menu->update([
                 'promo_price'    => null,
                 'promo_start_at' => null,
-                'promo_end_at'   => null
+                'promo_end_at'   => null,
+                'is_available'   => true,
             ]);
         }
 
