@@ -41,6 +41,15 @@ export default function Index({ menus }) {
     return menu.category && menu.category.slug === selectedFilter;
   });
 
+  // urutkan: best seller dulu, lalu menu biasa, dalam masing-masing grup urut nama
+  const sortedMenus = [...filteredMenus].sort((a, b) => {
+    if (a.is_best_seller === b.is_best_seller) {
+      return a.name.localeCompare(b.name);
+    }
+    // true sebelum false
+    return a.is_best_seller ? -1 : 1;
+  });
+
   const toggleAvailability = (menu) => {
     router.post(
       route('admin.kasir.menus.update', menu.id),
@@ -68,13 +77,16 @@ export default function Index({ menus }) {
         <div className="flex justify-between items-center mb-8">
           <div className="flex gap-4">
             <div className="relative w-56">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+              <Search
+                className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"
+                size={16}
+              />
               <input
                 type="text"
                 placeholder="Cari menu..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                class="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-50 shadow-[0_2px_10px_rgba(0,0,0,0.02)] rounded-2xl text-sm text-gray-600 placeholder-gray-400 appearance-none focus:outline-none focus:ring-0 focus:border-gray-50"
+                className="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-50 shadow-[0_2px_10px_rgba(0,0,0,0.02)] rounded-2xl text-sm text-gray-600 placeholder-gray-400 appearance-none focus:outline-none focus:ring-0 focus:border-gray-50"
               />
             </div>
 
@@ -99,7 +111,9 @@ export default function Index({ menus }) {
                         setShowFilterDropdown(false);
                       }}
                       className={`w-full text-left px-4 py-3 text-sm ${
-                        selectedFilter === filter.value ? 'bg-red-50 text-[#ef5350]' : 'text-gray-600'
+                        selectedFilter === filter.value
+                          ? 'bg-red-50 text-[#ef5350]'
+                          : 'text-gray-600'
                       }`}
                     >
                       {filter.label}
@@ -119,14 +133,14 @@ export default function Index({ menus }) {
           </Link>
         </div>
 
-        {filteredMenus.length === 0 ? (
+        {sortedMenus.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-32 bg-white/50 rounded-3xl border border-dashed border-gray-200">
             <h3 className="text-xl text-gray-600 mb-2">Belum Ada Menu</h3>
           </div>
         ) : (
           <>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              {filteredMenus.map((menu) => (
+              {sortedMenus.map((menu) => (
                 <motion.div
                   key={menu.id}
                   whileHover={menu.is_available ? { scale: 1.02 } : {}}
@@ -137,15 +151,21 @@ export default function Index({ menus }) {
                 >
                   <div className="aspect-square bg-gray-100 relative overflow-hidden">
                     <div className="absolute top-3 left-3 z-20 flex items-center gap-2">
-                      <span className={`px-3 py-1 rounded-full text-[10px] font-medium tracking-[0.12em] ${
-                        menu.is_available ? 'bg-emerald-50 text-emerald-600' : 'bg-gray-200 text-gray-500'
-                      }`}>
+                      <span
+                        className={`px-3 py-1 rounded-full text-[10px] font-medium tracking-[0.12em] ${
+                          menu.is_available
+                            ? 'bg-emerald-50 text-emerald-600'
+                            : 'bg-gray-200 text-gray-500'
+                        }`}
+                      >
                         {menu.is_available ? 'Tersedia' : 'Habis'}
                       </span>
                       <button
                         onClick={() => toggleAvailability(menu)}
                         className={`w-7 h-7 flex items-center justify-center rounded-full shadow-sm transition-all ${
-                          menu.is_available ? 'bg-white/90 text-gray-500 hover:text-red-500' : 'bg-gray-800 text-white'
+                          menu.is_available
+                            ? 'bg-white/90 text-gray-500 hover:text-red-500'
+                            : 'bg-gray-800 text-white'
                         }`}
                       >
                         <ToggleLeft size={13} />
@@ -155,7 +175,9 @@ export default function Index({ menus }) {
                     {!menu.is_available && (
                       <div className="absolute inset-0 z-10 flex items-center justify-center bg-gray-900/10 backdrop-blur-[2px]">
                         <div className="px-4 py-1.5 rounded-full border border-white/20 bg-black/20 backdrop-blur-md">
-                          <span className="text-[10px] text-white/80 font-medium tracking-[0.2em] uppercase">Habis</span>
+                          <span className="text-[10px] text-white/80 font-medium tracking-[0.2em] uppercase">
+                            Habis
+                          </span>
                         </div>
                       </div>
                     )}
@@ -165,34 +187,60 @@ export default function Index({ menus }) {
                         src={`/storage/${menu.image}`}
                         alt={menu.name}
                         className={`w-full h-full object-cover transition-all duration-700 ${
-                          !menu.is_available ? 'saturate-[0.2] brightness-90' : 'group-hover:scale-110'
+                          !menu.is_available
+                            ? 'saturate-[0.2] brightness-90'
+                            : 'group-hover:scale-110'
                         }`}
                       />
                     ) : (
-                      <div className="flex items-center justify-center h-full bg-gray-50 text-3xl opacity-30">🍽️</div>
+                      <div className="flex items-center justify-center h-full bg-gray-50 text-3xl opacity-30">
+                        🍽️
+                      </div>
                     )}
                   </div>
 
                   <div className={`p-5 ${!menu.is_available ? 'bg-gray-50/50' : ''}`}>
-                    <h3 className={`truncate text-base leading-tight mb-2 font-medium tracking-tight ${
-                      !menu.is_available ? 'text-gray-400' : 'text-gray-800'
-                    }`}>
+                    <h3
+                      className={`truncate text-base leading-tight mb-2 font-medium tracking-tight ${
+                        !menu.is_available ? 'text-gray-400' : 'text-gray-800'
+                      }`}
+                    >
                       {menu.name}
                     </h3>
 
-                    <p className={`text-sm mb-2 ${!menu.is_available ? 'text-gray-400' : 'text-gray-900'}`}>
-                      Rp <span className="font-semibold">{Number(menu.price).toLocaleString('id-ID')}</span>
+                    <p
+                      className={`text-sm mb-2 ${
+                        !menu.is_available ? 'text-gray-400' : 'text-gray-900'
+                      }`}
+                    >
+                      Rp{' '}
+                      <span className="font-semibold">
+                        {Number(menu.price).toLocaleString('id-ID')}
+                      </span>
                     </p>
 
                     <div className="mb-4 h-6 flex items-center">
                       {menu.is_best_seller && (
-                        <div className={`inline-flex items-center gap-1 rounded-full px-3 py-1 ${
-                          !menu.is_available ? 'bg-gray-100/50 grayscale' : 'bg-yellow-50'
-                        }`}>
-                          <Star size={10} className={!menu.is_available ? 'fill-gray-300 text-gray-300' : 'fill-[#f59e0b] text-[#f59e0b]'} />
-                          <span className={`text-[10px] font-sfPro uppercase tracking-[0.18em] ${
-                            !menu.is_available ? 'text-gray-300' : 'text-[#b45309]'
-                          }`}>Best Seller</span>
+                        <div
+                          className={`inline-flex items-center gap-1 rounded-full px-3 py-1 ${
+                            !menu.is_available ? 'bg-gray-100/50 grayscale' : 'bg-yellow-50'
+                          }`}
+                        >
+                          <Star
+                            size={10}
+                            className={
+                              !menu.is_available
+                                ? 'fill-gray-300 text-gray-300'
+                                : 'fill-[#f59e0b] text-[#f59e0b]'
+                            }
+                          />
+                          <span
+                            className={`text-[10px] font-sfPro uppercase tracking-[0.18em] ${
+                              !menu.is_available ? 'text-gray-300' : 'text-[#b45309]'
+                            }`}
+                          >
+                            Best Seller
+                          </span>
                         </div>
                       )}
                     </div>
@@ -201,7 +249,9 @@ export default function Index({ menus }) {
                       <Link
                         href={route('admin.kasir.menus.edit', menu.id)}
                         className={`flex-1 flex items-center justify-center py-2 rounded-xl border transition-all ${
-                          !menu.is_available ? 'bg-white text-gray-400' : 'bg-[#f26c66] text-white hover:bg-[#e53935]'
+                          !menu.is_available
+                            ? 'bg-white text-gray-400'
+                            : 'bg-[#f26c66] text-white hover:bg-[#e53935]'
                         }`}
                       >
                         <Pencil size={13} />
@@ -209,7 +259,9 @@ export default function Index({ menus }) {
                       <button
                         onClick={() => handleDelete(menu)}
                         className={`flex-1 flex items-center justify-center py-2 rounded-xl border transition-all ${
-                          !menu.is_available ? 'bg-white text-gray-400' : 'bg-[#ef5350] text-white hover:bg-[#d32f2f]'
+                          !menu.is_available
+                            ? 'bg-white text-gray-400'
+                            : 'bg-[#ef5350] text-white hover:bg-[#d32f2f]'
                         }`}
                       >
                         <Trash2 size={13} />
@@ -234,7 +286,9 @@ export default function Index({ menus }) {
                       disabled={!link.url}
                       preserveScroll
                       className={`w-8 h-8 flex items-center justify-center rounded-lg text-xs font-sfPro transition-all ${
-                        link.active ? 'bg-[#ef5350] text-white' : 'bg-gray-50 text-gray-500 hover:bg-gray-100'
+                        link.active
+                          ? 'bg-[#ef5350] text-white'
+                          : 'bg-gray-50 text-gray-500 hover:bg-gray-100'
                       } ${!link.url ? 'opacity-30 cursor-not-allowed' : 'active:scale-95'}`}
                     >
                       {isPrev ? '<' : isNext ? '>' : link.label}

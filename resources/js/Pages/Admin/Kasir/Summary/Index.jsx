@@ -3,21 +3,40 @@ import AdminLayout from '@/Layouts/AdminLayout';
 import { Head, Link, router } from '@inertiajs/react';
 import { motion } from 'framer-motion';
 import { Search } from 'lucide-react';
+import { DatePicker, ConfigProvider } from 'antd';
+import idID from 'antd/lib/locale/id_ID';
+import dayjs from 'dayjs';
+import 'dayjs/locale/id';
+
+// set locale dayjs
+dayjs.locale('id');
 
 export default function Index({ menus, type, filters }) {
   const [searchTerm, setSearchTerm] = useState(filters?.search || '');
+  const [startDate, setStartDate] = useState(
+    filters?.start_date ? dayjs(filters.start_date) : dayjs()
+  );
+  const [endDate, setEndDate] = useState(
+    filters?.end_date ? dayjs(filters.end_date) : dayjs()
+  );
 
   const handleSearch = (e) => {
     const value = e.target.value;
     setSearchTerm(value);
-    
+
     router.get(
-      route('admin.kasir.summary.index'), 
-      { type, search: value },
-      { 
-        preserveState: true, 
+      route('admin.kasir.summary.index'),
+      {
+        type,
+        search: value,
+        start_date: startDate ? startDate.format('YYYY-MM-DD') : undefined,
+        end_date: endDate ? endDate.format('YYYY-MM-DD') : undefined,
+      },
+      {
+        preserveState: true,
         preserveScroll: true,
-        only: ['menus', 'filters']
+        only: ['menus', 'filters'],
+        replace: true,
       }
     );
   };
@@ -25,11 +44,39 @@ export default function Index({ menus, type, filters }) {
   const handleTabChange = (newType) => {
     router.get(
       route('admin.kasir.summary.index', { type: newType }),
-      {},
+      {
+        search: searchTerm || undefined,
+        start_date: startDate ? startDate.format('YYYY-MM-DD') : undefined,
+        end_date: endDate ? endDate.format('YYYY-MM-DD') : undefined,
+      },
       {
         preserveState: true,
         preserveScroll: true,
-        only: ['menus', 'type']
+        only: ['menus', 'type', 'filters'],
+        replace: true,
+      }
+    );
+  };
+
+  const handleSearchByDate = () => {
+    if (!startDate || !endDate) {
+      alert('Mohon pilih tanggal mulai dan tanggal akhir');
+      return;
+    }
+
+    router.get(
+      route('admin.kasir.summary.index'),
+      {
+        type,
+        search: searchTerm || undefined,
+        start_date: startDate.format('YYYY-MM-DD'),
+        end_date: endDate.format('YYYY-MM-DD'),
+      },
+      {
+        preserveState: true,
+        preserveScroll: true,
+        only: ['menus', 'filters'],
+        replace: true,
       }
     );
   };
@@ -37,41 +84,87 @@ export default function Index({ menus, type, filters }) {
   return (
     <AdminLayout>
       <Head title="Summary Menu" />
-      
+
       <div className="relative font-sfPro bg-gray-50/50 min-h-screen">
         <div className="max-w-7xl mx-auto px-4 pt-16 pb-6">
-          
-          <div className="mb-8">
-            <h1 className="text-2xl font-telegraf text-gray-800 mb-6">Summary Menu</h1>
-            
-            <div className="flex justify-between items-center gap-4 mb-6">
-              {/* tabs */}
-              <div className="flex gap-3">
+          <div className="mb-8 space-y-4">
+            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+              <h1 className="text-2xl font-telegraf text-gray-800">Summary Menu</h1>
+
+              <div className="flex items-center gap-2 bg-white p-2 rounded-2xl border border-gray-100 w-full md:w-auto">
+                <ConfigProvider locale={idID}>
+                  <div className="flex items-center gap-2 px-2 h-full">
+                    <span className="text-[10px] text-gray-500 font-sfPro tracking-wider leading-none">
+                      Dari Tanggal
+                    </span>
+                    <DatePicker
+                      value={startDate}
+                      onChange={(date) => setStartDate(date)}
+                      format="DD MMM YYYY"
+                      allowClear={false}
+                      variant="borderless"
+                      className="p-0 font-medium text-sm flex items-center"
+                      style={{ lineHeight: '1' }}
+                    />
+                  </div>
+                  <div className="w-px h-5 bg-gray-200 self-center" />
+                  <div className="flex items-center gap-2 px-2 h-full">
+                    <span className="text-[10px] text-gray-500 font-sfPro tracking-wider leading-none">
+                      Sampai Tanggal
+                    </span>
+                    <DatePicker
+                      value={endDate}
+                      onChange={(date) => setEndDate(date)}
+                      format="DD MMM YYYY"
+                      allowClear={false}
+                      variant="borderless"
+                      className="p-0 font-medium text-sm flex items-center"
+                      style={{ lineHeight: '1' }}
+                    />
+                  </div>
+                </ConfigProvider>
+
                 <button
-                  onClick={() => handleTabChange('top')}
-                  className={`px-6 py-2.5 rounded-xl text-sm font-telegraf transition-all ${
-                    type === 'top'
-                      ? 'bg-[#ef5350] text-white'
-                      : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-100'
-                  }`}
+                  onClick={handleSearchByDate}
+                  className="bg-gray-900 text-white px-6 py-2.5 rounded-xl text-xs font-sfPro hover:bg-black transition-all active:scale-95 shadow-sm whitespace-nowrap"
                 >
-                  Menu Terlaris
-                </button>
-                <button
-                  onClick={() => handleTabChange('least')}
-                  className={`px-6 py-2.5 rounded-xl text-sm font-telegraf transition-all ${
-                    type === 'least'
-                      ? 'bg-[#ef5350] text-white'
-                      : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-100'
-                  }`}
-                >
-                  Menu Kurang Diminati
+                  Cari
                 </button>
               </div>
+            </div>
 
-              {/* search */}
-              <div className="relative w-56">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+            {/* tabs + search kanan */}
+            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+              <div className="flex items-center gap-3 flex-wrap">
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => handleTabChange('top')}
+                    className={`px-6 py-2.5 rounded-xl text-sm font-telegraf transition-all ${
+                      type === 'top'
+                        ? 'bg-[#ef5350] text-white'
+                        : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-100'
+                    }`}
+                  >
+                    Menu Terlaris
+                  </button>
+                  <button
+                    onClick={() => handleTabChange('least')}
+                    className={`px-6 py-2.5 rounded-xl text-sm font-telegraf transition-all ${
+                      type === 'least'
+                        ? 'bg-[#ef5350] text-white'
+                        : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-100'
+                    }`}
+                  >
+                    Menu Kurang Diminati
+                  </button>
+                </div>
+              </div>
+
+              <div className="relative w-full md:w-64">
+                <Search
+                  className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"
+                  size={16}
+                />
                 <input
                   type="text"
                   placeholder="Cari menu..."
@@ -115,11 +208,15 @@ export default function Index({ menus, type, filters }) {
                         Rp {Number(menu.price).toLocaleString('id-ID')}
                       </p>
                     )}
-                    
+
                     <div className="mt-auto pt-3 border-t border-gray-100">
                       <div className="flex items-center justify-between">
-                        <span className="text-xs text-gray-500 font-telegraf">Total Terjual</span>
-                        <span className="text-lg font-sfPro text-gray-900">{menu.total_sold}</span>
+                        <span className="text-xs text-gray-500 font-telegraf">
+                          Total Terjual
+                        </span>
+                        <span className="text-lg font-sfPro text-gray-900">
+                          {menu.total_sold}
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -132,10 +229,13 @@ export default function Index({ menus, type, filters }) {
                 </div>
                 <h3 className="text-lg font-telegraf text-gray-700 mb-2">Belum ada data</h3>
                 <p className="text-sm text-gray-400 font-sfPro text-center">
-                  {searchTerm 
-                    ? 'Tidak ada menu yang sesuai dengan pencarian Anda' 
-                    : `Belum ada menu yang ${type === 'top' ? 'terjual' : 'masuk kategori kurang diminati'}`
-                  }
+                  {searchTerm || filters?.start_date || filters?.end_date
+                    ? 'Tidak ada menu yang sesuai dengan pencarian / rentang tanggal Anda'
+                    : `Belum ada menu yang ${
+                        type === 'top'
+                          ? 'terjual pada periode ini'
+                          : 'masuk kategori kurang diminati pada periode ini'
+                      }`}
                 </p>
               </div>
             )}
@@ -156,7 +256,11 @@ export default function Index({ menus, type, filters }) {
                       preserveScroll
                       className={`
                         w-8 h-8 flex items-center justify-center rounded-lg text-xs font-sfPro transition-all
-                        ${link.active ? 'bg-[#ef5350] text-white' : 'bg-gray-50 text-gray-500 hover:bg-gray-200'}
+                        ${
+                          link.active
+                            ? 'bg-[#ef5350] text-white'
+                            : 'bg-gray-50 text-gray-500 hover:bg-gray-200'
+                        }
                         ${!link.url ? 'opacity-30 cursor-not-allowed' : 'active:scale-95'}
                       `}
                     >
@@ -167,7 +271,6 @@ export default function Index({ menus, type, filters }) {
               </div>
             </div>
           )}
-
         </div>
       </div>
     </AdminLayout>
