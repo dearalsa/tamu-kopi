@@ -12,21 +12,29 @@ use Carbon\Carbon;
 
 class MenuPromoController extends Controller
 {
+    /**
+     * Generate slug unik untuk promo paket dengan format nama-promo-randomstring. Ini untuk memastikan slug tidak bentrok dengan menu biasa dan mudah diidentifikasi sebagai promo paket.
+     */
     protected function generateSlugForPromo(string $name): string
     {
         return Str::slug($name . '-' . Str::random(5));
     }
 
-    public function index()
+    /**
+     * Tampilkan daftar promo (baik paket maupun satuan). Promo paket adalah menu dengan is_package=true, sedangkan promo satuan adalah menu dengan promo_price tidak null. Tampilkan informasi terkait promo seperti nama, kategori, harga normal, harga promo, tanggal mulai promo, tanggal berakhir promo, dan apakah promo sedang aktif atau tidak.
+     */
+    public function index(Request $request)
     {
+        $perPage = 20; // jumlah item per halaman untuk pagination
+
         $menus = Menu::with('category')
             ->where(function($query) {
                 $query->where('is_package', true)
                       ->orWhereNotNull('promo_price');
             })
             ->latest()
-            ->get()
-            ->map(function ($menu) {
+            ->paginate($perPage)
+            ->through(function ($menu) {
                 return [
                     'id'               => $menu->id,
                     'name'             => $menu->name,
@@ -46,10 +54,15 @@ class MenuPromoController extends Controller
         ]);
     }
 
+    /**
+     * Tampilkan form buat promo baru. Form ini bisa digunakan untuk membuat promo paket maupun promo satuan. Jika paket, admin bisa memilih beberapa menu untuk dimasukkan ke dalam paket. Jika satuan, admin hanya memilih 1 menu dan mengisi harga promo serta tanggal promo.
+     */
     public function create()
     {
         $categories = Category::where('is_active', true)->get();
-        $allMenus = Menu::where('is_package', false)->where('is_available', true)->get();
+        $allMenus = Menu::where('is_package', false)
+                        ->where('is_available', true)
+                        ->get();
 
         return Inertia::render('Admin/Kasir/Promo/Create', [
             'categories' => $categories,
@@ -57,6 +70,9 @@ class MenuPromoController extends Controller
         ]);
     }
 
+    /**
+     * Simpan promo baru (baik paket maupun satuan). Jika paket, simpan data menu dengan is_package=true dan relasi ke menu-menu yang termasuk dalam paket. Jika satuan, update menu tersebut dengan harga promo dan tanggal promo.
+     */
     public function store(Request $request)
     {
         $validated = $request->validate([
@@ -74,7 +90,7 @@ class MenuPromoController extends Controller
         $promoStartAt = ($validated['promo_start_date'] && $validated['promo_start_time']) 
             ? Carbon::createFromFormat('Y-m-d H:i', $validated['promo_start_date'] . ' ' . $validated['promo_start_time']) 
             : null;
-            
+
         $promoEndAt = ($validated['promo_end_date'] && $validated['promo_end_time']) 
             ? Carbon::createFromFormat('Y-m-d H:i', $validated['promo_end_date'] . ' ' . $validated['promo_end_time']) 
             : null;
@@ -89,7 +105,9 @@ class MenuPromoController extends Controller
                 'promo_start_at' => $promoStartAt,
                 'promo_end_at'   => $promoEndAt,
             ]);
-            return redirect()->route('admin.kasir.promo.index')->with('success', 'Promo Satuan berhasil dibuat!');
+
+            return redirect()->route('admin.kasir.promo.index')
+                             ->with('success', 'Promo Satuan berhasil dibuat!');
         } else {
             if (empty($validated['name'])) return back()->withErrors(['name' => 'Nama Paket wajib diisi.']);
             if (empty($validated['category_id'])) return back()->withErrors(['category_id' => 'Kategori wajib dipilih.']);
@@ -109,15 +127,21 @@ class MenuPromoController extends Controller
             ]);
 
             $package->packageItems()->sync($validated['package_items']);
-            return redirect()->route('admin.kasir.promo.index')->with('success', 'Paket Bundling berhasil dibuat!');
+            return redirect()->route('admin.kasir.promo.index')
+                             ->with('success', 'Paket Bundling berhasil dibuat!');
         }
     }
 
+    /**
+     * Tampilkan form edit promo (baik paket maupun satuan). Jika paket, tampilkan seluruh item dalam paket. Jika satuan, tampilkan data menu tersebut saja.
+     */
     public function edit($id)
     {
         $menu = Menu::with(['packageItems', 'category'])->findOrFail($id);
         $categories = Category::where('is_active', true)->get();
-        $allMenus = Menu::where('is_package', false)->where('is_available', true)->get();
+        $allMenus = Menu::where('is_package', false)
+                        ->where('is_available', true)
+                        ->get();
 
         $promoData = [
             'id'               => $menu->id,
@@ -141,6 +165,9 @@ class MenuPromoController extends Controller
         ]);
     }
 
+    /**
+     * Update promo (baik paket maupun satuan). Jika paket, update berlaku untuk seluruh item dalam paket. Jika satuan, update hanya berlaku untuk menu tersebut.
+     */
     public function update(Request $request, $id)
     {
         $menu = Menu::findOrFail($id);
@@ -155,7 +182,7 @@ class MenuPromoController extends Controller
         $promoStartAt = ($validated['promo_start_date'] && $validated['promo_start_time']) 
             ? Carbon::createFromFormat('Y-m-d H:i', $validated['promo_start_date'] . ' ' . $validated['promo_start_time']) 
             : null;
-            
+
         $promoEndAt = ($validated['promo_end_date'] && $validated['promo_end_time']) 
             ? Carbon::createFromFormat('Y-m-d H:i', $validated['promo_end_date'] . ' ' . $validated['promo_end_time']) 
             : null;
@@ -166,9 +193,13 @@ class MenuPromoController extends Controller
             'promo_end_at'   => $promoEndAt,
         ]);
 
-        return redirect()->route('admin.kasir.promo.index')->with('success', 'Promo berhasil diperbarui!');
+        return redirect()->route('admin.kasir.promo.index')
+                         ->with('success', 'Promo berhasil diperbarui!');
     }
 
+    /**
+     * toggle status promo (aktif/nonaktif) dengan memanipulasi tanggal mulai dan berakhir promo. jika promo satuan, toggle hanya berlaku untuk menu tersebut. jika paket, toggle berlaku untuk seluruh item dalam paket.
+     */
     public function toggle($id)
     {
         $menu = Menu::findOrFail($id);
@@ -184,9 +215,13 @@ class MenuPromoController extends Controller
                 'promo_end_at'   => $now->copy()->addDay()
             ]);
         }
+
         return back();
     }
 
+    /**
+     * hapus promo (jika paket, hapus seluruh data paket; jika promo satuan, reset harga promo dan tanggal promo menjadi null)
+     */
     public function destroy($id)
     {
         $menu = Menu::findOrFail($id);
@@ -194,8 +229,13 @@ class MenuPromoController extends Controller
             if ($menu->image) Storage::disk('public')->delete($menu->image);
             $menu->delete();
         } else {
-            $menu->update(['promo_price' => null, 'promo_start_at' => null, 'promo_end_at' => null]);
+            $menu->update([
+                'promo_price'    => null,
+                'promo_start_at' => null,
+                'promo_end_at'   => null
+            ]);
         }
+
         return redirect()->route('admin.kasir.promo.index');
     }
 }

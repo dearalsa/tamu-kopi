@@ -1,5 +1,5 @@
 import { useState, useMemo, useRef, useEffect } from 'react'
-import { Head, router } from '@inertiajs/react'
+import { Head, router, Link } from '@inertiajs/react'
 import AdminLayout from '@/Layouts/AdminLayout'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
@@ -15,7 +15,7 @@ import {
   CheckCircle,
 } from 'lucide-react'
 
-export default function CatalogIndex({ menus, categories, auth }) {
+export default function CatalogIndex({ menus = [], categories = [], auth }) {
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('all')
   const [showCategoryDropdown, setShowCategoryDropdown] = useState(false)
@@ -27,9 +27,7 @@ export default function CatalogIndex({ menus, categories, auth }) {
   const [showSuccessPopup, setShowSuccessPopup] = useState(false)
   const [orderType, setOrderType] = useState('dine-in')
 
-  // untuk data struk
   const [printData, setPrintData] = useState(null)
-
   const printRef = useRef(null)
 
   const categoryFilters = [
@@ -48,20 +46,7 @@ export default function CatalogIndex({ menus, categories, auth }) {
   const formatDate = () => {
     const now = new Date()
     const day = now.getDate()
-    const monthNames = [
-      'Januari',
-      'Februari',
-      'Maret',
-      'April',
-      'Mei',
-      'Juni',
-      'Juli',
-      'Agustus',
-      'September',
-      'Oktober',
-      'November',
-      'Desember',
-    ]
+    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des']
     const month = monthNames[now.getMonth()]
     const year = now.getFullYear()
     return `${day} ${month} ${year}`
@@ -84,27 +69,18 @@ export default function CatalogIndex({ menus, categories, auth }) {
   }
 
   const filteredAndSortedMenus = useMemo(() => {
-    let result = menus.filter(menu => {
-      const matchesSearch = menu.name
-        .toLowerCase()
-        .includes(searchTerm.toLowerCase())
+    const menuData = Array.isArray(menus) ? menus : (menus?.data || [])
+    
+    let result = menuData.filter(menu => {
+      const matchesSearch = menu.name.toLowerCase().includes(searchTerm.toLowerCase())
       const categoryId = menu.category?.id || menu.category_id
-      const matchesCategory =
-        selectedCategory === 'all' ||
-        String(categoryId) === String(selectedCategory)
+      const matchesCategory = selectedCategory === 'all' || String(categoryId) === String(selectedCategory)
       return matchesSearch && matchesCategory
     })
 
     result.sort((a, b) => {
-      const scoreA =
-        (a.promo_price && a.is_best_seller ? 3 : 0) +
-        (a.is_best_seller ? 2 : 0) +
-        (a.promo_price ? 1 : 0)
-      const scoreB =
-        (b.promo_price && b.is_best_seller ? 3 : 0) +
-        (b.is_best_seller ? 2 : 0) +
-        (b.promo_price ? 1 : 0)
-
+      const scoreA = (a.promo_price && a.is_best_seller ? 3 : 0) + (a.is_best_seller ? 2 : 0) + (a.promo_price ? 1 : 0)
+      const scoreB = (b.promo_price && b.is_best_seller ? 3 : 0) + (b.is_best_seller ? 2 : 0) + (b.promo_price ? 1 : 0)
       if (scoreB !== scoreA) return scoreB - scoreA
       return a.name.localeCompare(b.name)
     })
@@ -112,43 +88,30 @@ export default function CatalogIndex({ menus, categories, auth }) {
     return result
   }, [menus, searchTerm, selectedCategory])
 
-  const getEffectivePrice = menu =>
-    menu.promo_price ? menu.promo_price : menu.price
+  const getEffectivePrice = menu => menu.promo_price ? menu.promo_price : menu.price
 
   const addToCart = menu => {
     const price = getEffectivePrice(menu)
     setCart(prev => {
       const existing = prev.find(item => item.id === menu.id)
       if (existing) {
-        return prev.map(item =>
-          item.id === menu.id
-            ? { ...item, quantity: item.quantity + 1 }
-            : item,
-        )
+        return prev.map(item => item.id === menu.id ? { ...item, quantity: item.quantity + 1 } : item)
       }
-      return [
-        ...prev,
-        { ...menu, price, original_price: menu.price, quantity: 1 },
-      ]
+      return [...prev, { ...menu, price, original_price: menu.price, quantity: 1 }]
     })
   }
 
   const updateQuantity = (id, change) => {
-    setCart(prev =>
-      prev
-        .map(item => {
-          if (item.id === id) {
-            const newQty = item.quantity + change
-            return newQty > 0 ? { ...item, quantity: newQty } : item
-          }
-          return item
-        })
-        .filter(item => item.quantity > 0),
-    )
+    setCart(prev => prev.map(item => {
+      if (item.id === id) {
+        const newQty = item.quantity + change
+        return newQty > 0 ? { ...item, quantity: newQty } : item
+      }
+      return item
+    }).filter(item => item.quantity > 0))
   }
 
-  const removeFromCart = id =>
-    setCart(prev => prev.filter(item => item.id !== id))
+  const removeFromCart = id => setCart(prev => prev.filter(item => item.id !== id))
 
   const clearCart = () => {
     if (confirm('Hapus semua pesanan?')) {
@@ -158,19 +121,11 @@ export default function CatalogIndex({ menus, categories, auth }) {
     }
   }
 
-  const subtotalNormal = cart.reduce(
-    (sum, item) => sum + item.original_price * item.quantity,
-    0,
-  )
-  const totalDiscount = cart.reduce(
-    (sum, item) =>
-      sum + (item.original_price - item.price) * item.quantity,
-    0,
-  )
+  const subtotalNormal = cart.reduce((sum, item) => sum + item.original_price * item.quantity, 0)
+  const totalDiscount = cart.reduce((sum, item) => sum + (item.original_price - item.price) * item.quantity, 0)
   const total = Math.max(0, subtotalNormal - totalDiscount)
   const changeAmount = cashAmount ? parseInt(cashAmount) - total : 0
 
-  // auto print ketika printData terisi
   useEffect(() => {
     if (!printData || !printRef.current) return
 
@@ -206,7 +161,6 @@ export default function CatalogIndex({ menus, categories, auth }) {
   const processPayment = () => {
     if (!paymentMethod) return
 
-    // validasi cash sebelum kirim ke backend
     if (paymentMethod === 'cash') {
       const cash = parseInt(cashAmount || 0)
       if (!cashAmount || isNaN(cash)) {
@@ -226,8 +180,7 @@ export default function CatalogIndex({ menus, categories, auth }) {
       discount: totalDiscount,
       total: total,
       payment_method: paymentMethod,
-      cash_amount:
-        paymentMethod === 'cash' ? parseInt(cashAmount || 0) : 0,
+      cash_amount: paymentMethod === 'cash' ? parseInt(cashAmount || 0) : 0,
       change: paymentMethod === 'cash' ? changeAmount : 0,
       order_type: orderType,
       cart: cart.map(item => ({
@@ -290,117 +243,56 @@ export default function CatalogIndex({ menus, categories, auth }) {
         {printData && (
           <>
             <div className="text-center">
-              <img
-                src="/asset/Tamu.svg"
-                alt="Logo"
-                style={{
-                  width: '120px',
-                  margin: '0 auto 5px auto',
-                  display: 'block',
-                }}
-              />
-              <p
-                style={{
-                  fontSize: '9px',
-                  margin: '0',
-                  lineHeight: '1.3',
-                }}
-              >
-                Jl. Dadali No.7, RT. 03/RW. 05,
-                <br /> Tanah Sereal, Kec. Tanah Sereal, Kota Bogor, Jawa
-                Barat 16161 Indonesia
-                <br /> 081218420963
+              <img src="/asset/Tamu.svg" alt="Logo" style={{ width: '120px', margin: '0 auto 5px auto', display: 'block' }} />
+              <p style={{ fontSize: '9px', margin: '0', lineHeight: '1.3' }}>
+                Jl. Dadali No.7, RT. 03/RW. 05,<br /> Tanah Sereal, Kec. Tanah Sereal, Kota Bogor, Jawa Barat 16161 Indonesia<br /> 081218420963
               </p>
             </div>
 
-            {/* header tanggal / jam */}
             <div className="line" />
             <div style={{ fontSize: '10px', marginTop: '4px' }}>
-              <div
-                style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  marginBottom: '6px',
-                  width: '100%',
-                }}
-              >
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px', width: '100%' }}>
                 <span>{printData.date}</span>
                 <span>{printData.time}</span>
               </div>
 
               <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '2px', fontSize: '12px', fontFamily: 'monospace' }}>
-                
-                {/* baris transaksi */}
                 <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
                   <span style={{ fontWeight: 'bold' }}>Transaksi</span>
                   <span style={{ textAlign: 'right' }}>{printData.invoice_number}</span>
                 </div>
-
-                {/* baris pesanan */}
                 <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
                   <span style={{ fontWeight: 'bold' }}>Pesanan</span>
                   <span style={{ textAlign: 'right' }}>{printData.queue_number}</span>
                 </div>
-
-                {/* baris kasir */}
                 <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
                   <span style={{ fontWeight: 'bold' }}>Kasir</span>
                   <span style={{ textAlign: 'right' }}>{printData.kasir}</span>
                 </div>
-
-                {/* baris metode pembayaran */}
                 <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
                   <span style={{ fontWeight: 'bold' }}>Metode</span>
                   <span style={{ textAlign: 'right' }}>{printData.payment_method}</span>
                 </div>
               </div>
-              {/* akhir dari bagian detail transaksi */}
-
             </div>
 
             <div className="line" />
 
-            <div
-              style={{
-                textAlign: 'center',
-                fontSize: '11px',
-                fontWeight: 'bold',
-                margin: '5px 0',
-              }}
-            >
-              {printData.order_type === 'dine-in'
-                ? 'MAKAN DITEMPAT'
-                : 'TAKE AWAY'}
+            <div style={{ textAlign: 'center', fontSize: '11px', fontWeight: 'bold', margin: '5px 0' }}>
+              {printData.order_type === 'dine-in' ? 'MAKAN DITEMPAT' : 'TAKE AWAY'}
             </div>
             <div className="line" />
 
             {printData.cart.map(item => (
-              <div
-                key={item.id}
-                style={{ fontSize: '10px', marginBottom: '3px' }}
-              >
+              <div key={item.id} style={{ fontSize: '10px', marginBottom: '3px' }}>
                 <div>{item.name}</div>
-                <div
-                  style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    paddingLeft: '10px',
-                  }}
-                >
-                  <span>
-                    {item.quantity}x
-                    {Number(item.price).toLocaleString('id-ID')}
-                  </span>
-                  <span>
-                    {(item.price * item.quantity).toLocaleString(
-                      'id-ID',
-                    )}
-                  </span>
+                <div style={{ display: 'flex', justifyContent: 'space-between', paddingLeft: '10px' }}>
+                  <span>{item.quantity}x{Number(item.price).toLocaleString('id-ID')}</span>
+                  <span>{(item.price * item.quantity).toLocaleString('id-ID')}</span>
                 </div>
               </div>
             ))}
 
-            {/* subtotal, diskon, total */}
             <div className="line" />
             <div className="item" style={{ fontSize: '10px' }}>
               <span>Subtotal</span>
@@ -409,42 +301,21 @@ export default function CatalogIndex({ menus, categories, auth }) {
             {printData.discount > 0 && (
               <div className="item" style={{ fontSize: '10px' }}>
                 <span>Diskon</span>
-                <span>
-                  - {printData.discount.toLocaleString('id-ID')}
-                </span>
+                <span>- {printData.discount.toLocaleString('id-ID')}</span>
               </div>
             )}
-            <div
-              className="item total"
-              style={{ fontSize: '11px', marginTop: '4px' }}
-            >
+            <div className="item total" style={{ fontSize: '11px', marginTop: '4px' }}>
               <span>Total</span>
               <span>{printData.total.toLocaleString('id-ID')}</span>
             </div>
             <div className="item" style={{ fontSize: '10px' }}>
-              <span>
-                {printData.payment_method === 'Tunai'
-                  ? 'TUNAI'
-                  : 'NON TUNAI'}
-              </span>
+              <span>{printData.payment_method === 'Tunai' ? 'TUNAI' : 'NON TUNAI'}</span>
               <span>{printData.total.toLocaleString('id-ID')}</span>
             </div>
             <div className="line" />
 
-            <div
-              className="text-center"
-              style={{
-                marginTop: '10px',
-                fontSize: '9px',
-                lineHeight: '1.5',
-              }}
-            >
-              Wifi
-              <br />
-              Indoor: Tataptemu
-              <br />
-              Outdoor: tatapku
-              <br />
+            <div className="text-center" style={{ marginTop: '10px', fontSize: '9px', lineHeight: '1.5' }}>
+              Wifi<br />Indoor: Tataptemu<br />Outdoor: tatapaku<br />
               <p>Terima kasih telah berkunjung!</p>
             </div>
           </>
@@ -455,33 +326,21 @@ export default function CatalogIndex({ menus, categories, auth }) {
         <div className="max-w-7xl mx-auto px-4 pt-16 pb-6">
           <div className="flex justify-start items-center mb-8 gap-4">
             <div className="relative w-56">
-              <Search
-                className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"
-                size={16}
-              />
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
               <input
                 type="text"
                 placeholder="Cari menu..."
                 value={searchTerm}
                 onChange={e => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-50 shadow-[0_2px_10px_rgba(0,0,0,0.02)] rounded-2xl focus:outline-none text-sm text-gray-600 font-normal"
+                className="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-50 shadow-[0_2px_10px_rgba(0,0,0,0.02)] rounded-2xl text-sm text-gray-600 placeholder-gray-400 appearance-none focus:outline-none focus:ring-0 focus:border-gray-50"
               />
             </div>
             <div className="relative w-56">
               <button
-                onClick={() =>
-                  setShowCategoryDropdown(!showCategoryDropdown)
-                }
-                className="w-full flex itemscenter justify-between px-5 py-2.5 bg-white border border-gray-50 shadow-[0_2px_10px_rgba(0,0,0,0.02)] rounded-2xl text-sm text-gray-500 font-normal"
+                onClick={() => setShowCategoryDropdown(!showCategoryDropdown)}
+                className="w-full flex items-center justify-between px-5 py-2.5 bg-white border border-gray-50 shadow-[0_2px_10px_rgba(0,0,0,0.02)] rounded-2xl text-sm text-gray-500 font-normal"
               >
-                <span className="truncate">
-                  {
-                    categoryFilters.find(
-                      f =>
-                        f.value === String(selectedCategory),
-                    )?.label
-                  }
-                </span>
+                <span className="truncate">{categoryFilters.find(f => f.value === String(selectedCategory))?.label}</span>
                 <ChevronDown size={16} className="text-gray-400" />
               </button>
               {showCategoryDropdown && (
@@ -494,10 +353,7 @@ export default function CatalogIndex({ menus, categories, auth }) {
                         setShowCategoryDropdown(false)
                       }}
                       className={`w-full text-left px-4 py-3 text-sm transition-colors font-normal ${
-                        String(selectedCategory) ===
-                        String(filter.value)
-                          ? 'bg-red-50 text-[#ef5350]'
-                          : 'text-gray-600 hover:bg-gray-50'
+                        String(selectedCategory) === String(filter.value) ? 'bg-red-50 text-[#ef5350]' : 'text-gray-600 hover:bg-gray-50'
                       }`}
                     >
                       {filter.label}
@@ -509,93 +365,93 @@ export default function CatalogIndex({ menus, categories, auth }) {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 pb-10">
-            {filteredAndSortedMenus.map(menu => (
-              <motion.div
-                key={menu.id}
-                whileHover={{ scale: 1.03 }}
-                whileTap={{ scale: 0.97 }}
-                className="bg-white rounded-[1.5rem] overflow-hidden shadow-[0_8px_30px_rgba(0,0,0,0.02)] border border-gray-50 flex flex-col h-full cursor-pointer"
-              >
-                <div className="aspect-square bg-gray-50 relative">
-                  <div className="absolute top-3 left-3 z-10 flex flex-col items-start gap-1.5">
-                    {menu.is_best_seller && (
-                      <div className="inline-flex items-center gap-1 rounded-full bg-yellow-50 px-2.5 py-1 border border-yellow-100">
-                        <Star
-                          size={10}
-                          className="fill-[#f59e0b] text-[#f59e0b]"
-                        />
-                        <span className="text-[10px] uppercase tracking-wider text-[#b45309]">
-                          BEST SELLER
-                        </span>
-                      </div>
-                    )}
-                    {menu.promo_price && (
-                      <div className="inline-flex items-center gap-1 rounded-full bg-red-50 px-2.5 py-1 border border-red-100">
-                        <Tag
-                          size={10}
-                          className="fill-red-500 text-red-500"
-                        />
-                        <span className="text-[10px] uppercase tracking-wider text-red-500">
-                          PROMO
-                        </span>
-                      </div>
-                    )}
+            {filteredAndSortedMenus.length > 0 ? (
+              filteredAndSortedMenus.map(menu => (
+                <motion.div
+                  key={menu.id}
+                  whileHover={{ scale: 1.03 }}
+                  whileTap={{ scale: 0.97 }}
+                  className="bg-white rounded-[1.5rem] overflow-hidden shadow-[0_8px_30px_rgba(0,0,0,0.02)] border border-gray-50 flex flex-col h-full cursor-pointer"
+                >
+                  <div className="aspect-square bg-gray-50 relative">
+                    <div className="absolute top-3 left-3 z-10 flex flex-col items-start gap-1.5">
+                      {menu.is_best_seller && (
+                        <div className="inline-flex items-center gap-1 rounded-full bg-yellow-50 px-2.5 py-1 border border-yellow-100">
+                          <Star size={10} className="fill-[#f59e0b] text-[#f59e0b]" />
+                          <span className="text-[10px] uppercase tracking-wider text-[#b45309]">BEST SELLER</span>
+                        </div>
+                      )}
+                      {menu.promo_price && (
+                        <div className="inline-flex items-center gap-1 rounded-full bg-red-50 px-2.5 py-1 border border-red-100">
+                          <Tag size={10} className="fill-red-500 text-red-500" />
+                          <span className="text-[10px] uppercase tracking-wider text-red-500">PROMO</span>
+                        </div>
+                      )}
+                    </div>
+                    <img src={menu.image ? `/storage/${menu.image}` : '/asset/no-image.png'} alt={menu.name} className="w-full h-full object-cover" />
                   </div>
-                  <img
-                    src={
-                      menu.image
-                        ? `/storage/${menu.image}`
-                        : '/asset/no-image.png'
-                    }
-                    alt={menu.name}
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-                <div className="p-5 flex flex-col flex-1">
-                  <h3 className="text-gray-800 truncate text-base mb-1 font-normal">
-                    {menu.name}
-                  </h3>
-                  <p className="text-xs text-gray-400 mb-3 font-sfPro">
-                    {typeof menu.category === 'object'
-                      ? menu.category?.name
-                      : menu.category}
-                  </p>
-                  <div className="mt-auto mb-4">
-                    {menu.promo_price ? (
-                      <div className="flex flex-col items-start">
-                        <span className="text-xs text-gray-400 line-through font-sfPro">
-                          Rp{' '}
-                          {Number(
-                            menu.price,
-                          ).toLocaleString('id-ID')}
-                        </span>
-                        <span className="text-lg text-[#ef5350] font-sfPro">
-                          Rp{' '}
-                          {Number(
-                            menu.promo_price,
-                          ).toLocaleString('id-ID')}
-                        </span>
-                      </div>
-                    ) : (
-                      <p className="text-lg text-gray-900 font-normal">
-                        Rp{' '}
-                        {Number(
-                          menu.price,
-                        ).toLocaleString('id-ID')}
-                      </p>
-                    )}
+                  <div className="p-5 flex flex-col flex-1">
+                    <h3 className="text-gray-800 truncate text-base mb-1 font-normal">{menu.name}</h3>
+                    <p className="text-xs text-gray-400 mb-3 font-sfPro">{typeof menu.category === 'object' ? menu.category?.name : menu.category}</p>
+                    <div className="mt-auto mb-4">
+                      {menu.promo_price ? (
+                        <div className="flex flex-col items-start">
+                          <span className="text-xs text-gray-400 line-through font-sfPro">Rp {Number(menu.price).toLocaleString('id-ID')}</span>
+                          <span className="text-lg text-[#ef5350] font-sfPro">Rp {Number(menu.promo_price).toLocaleString('id-ID')}</span>
+                        </div>
+                      ) : (
+                        <p className="text-lg text-gray-900 font-normal">Rp {Number(menu.price).toLocaleString('id-ID')}</p>
+                      )}
+                    </div>
+                    <button onClick={() => addToCart(menu)} className="w-full bg-gray-900 text-white py-3 rounded-xl flex items-center justify-center gap-2 hover:bg-black transition-all">
+                      <ShoppingCart size={16} />
+                      <span className="text-sm font-sfPro">Tambah</span>
+                    </button>
                   </div>
-                  <button
-                    onClick={() => addToCart(menu)}
-                    className="w-full bg-gray-900 text-white py-3 rounded-xl flex items-center justify-center gap-2 hover:bg-black transition-all"
-                  >
-                    <ShoppingCart size={16} />
-                    <span className="text-sm font-sfPro">Tambah</span>
-                  </button>
+                </motion.div>
+              ))
+            ) : (
+              <div className="col-span-full flex flex-col items-center justify-center py-20">
+                <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                  <Search size={40} className="text-gray-300" />
                 </div>
-              </motion.div>
-            ))}
+                <h3 className="text-lg font-telegraf text-gray-700 mb-2">Belum ada menu</h3>
+                <p className="text-sm text-gray-400 font-sfPro text-center">
+                  {searchTerm || selectedCategory !== 'all' 
+                    ? 'Tidak ada menu yang sesuai dengan pencarian Anda' 
+                    : 'Belum ada menu tersedia'}
+                </p>
+              </div>
+            )}
           </div>
+
+          {/* pagination */}
+          {menus?.links && filteredAndSortedMenus.length > 0 && (
+            <div className="flex justify-start pb-6">
+              <div className="flex gap-1.5 p-1.5 bg-white rounded-xl shadow-sm border border-gray-100">
+                {menus.links.map((link, index) => {
+                  const isPrev = link.label.includes('Previous')
+                  const isNext = link.label.includes('Next')
+                  const label = isPrev ? '<' : isNext ? '>' : link.label
+
+                  return (
+                    <Link
+                      key={index}
+                      href={link.url || '#'}
+                      preserveScroll
+                      className={`
+                        w-8 h-8 flex items-center justify-center rounded-lg text-xs font-sfPro transition-all
+                        ${link.active ? 'bg-[#ef5350] text-white' : 'bg-gray-50 text-gray-500 hover:bg-gray-200'}
+                        ${!link.url ? 'opacity-30 cursor-not-allowed' : 'active:scale-95'}
+                      `}
+                    >
+                      {label}
+                    </Link>
+                  )
+                })}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* success popup */}
@@ -612,18 +468,9 @@ export default function CatalogIndex({ menus, categories, auth }) {
                 animate={{ scale: 1, opacity: 1 }}
                 className="bg-white rounded-[2.5rem] p-10 max-w-sm w-full text-center"
               >
-                <CheckCircle
-                  size={48}
-                  className="text-green-600 mx-auto mb-6"
-                />
-                <h3 className="text-2xl font-telegraf text-gray-900 mb-2">
-                  Berhasil!
-                </h3>
-                <p className="text-gray-500">
-                  Pesanan telah diproses
-                  <br />
-                  dan struk dicetak.
-                </p>
+                <CheckCircle size={48} className="text-green-600 mx-auto mb-6" />
+                <h3 className="text-2xl font-telegraf text-gray-900 mb-2">Berhasil!</h3>
+                <p className="text-gray-500">Pesanan telah diproses<br />dan struk dicetak.</p>
               </motion.div>
             </motion.div>
           )}
@@ -640,31 +487,17 @@ export default function CatalogIndex({ menus, categories, auth }) {
             >
               <div className="p-7 pb-4 flex justify-between items-center">
                 {paymentMethod ? (
-                  <button
-                    onClick={() => setPaymentMethod(null)}
-                    className="flex items-center gap-2 text-gray-500 hover:text-black transition-colors text-sm"
-                  >
+                  <button onClick={() => setPaymentMethod(null)} className="flex items-center gap-2 text-gray-500 hover:text-black transition-colors text-sm">
                     <ArrowLeft size={18} /> Kembali
                   </button>
                 ) : (
                   <div>
-                    <h2 className="text-xl font-telegraf text-gray-800">
-                      Pesanan
-                    </h2>
-                    <p className="text-[10px] text-gray-400 uppercase font-telegraf">
-                      {cart.reduce(
-                        (a, b) => a + b.quantity,
-                        0,
-                      )}{' '}
-                      Item Terpilih
-                    </p>
+                    <h2 className="text-xl font-telegraf text-gray-800">Pesanan</h2>
+                    <p className="text-[10px] text-gray-400 uppercase font-telegraf">{cart.reduce((a, b) => a + b.quantity, 0)} Item Terpilih</p>
                   </div>
                 )}
                 {!paymentMethod && (
-                  <button
-                    onClick={clearCart}
-                    className="p-2.5 rounded-2xl bg-red-50 text-red-500"
-                  >
+                  <button onClick={clearCart} className="p-2.5 rounded-2xl bg-red-50 text-red-500">
                     <Trash2 size={18} />
                   </button>
                 )}
@@ -675,21 +508,13 @@ export default function CatalogIndex({ menus, categories, auth }) {
                   <div className="grid grid-cols-2 gap-2">
                     <button
                       onClick={() => setOrderType('dine-in')}
-                      className={`py-2.5 rounded-xl text-xs transition-all font-telegraf ${
-                        orderType === 'dine-in'
-                          ? 'bg-black text-white'
-                          : 'bg-gray-100 font-telegrad'
-                      }`}
+                      className={`py-2.5 rounded-xl text-xs transition-all font-telegraf ${orderType === 'dine-in' ? 'bg-black text-white' : 'bg-gray-100'}`}
                     >
                       Dine In
                     </button>
                     <button
                       onClick={() => setOrderType('takeaway')}
-                      className={`py-2.5 rounded-xl text-xs transition-all font-telegraf ${
-                        orderType === 'takeaway'
-                          ? 'bg-black text-white'
-                          : 'bg-gray-100'
-                      }`}
+                      className={`py-2.5 rounded-xl text-xs transition-all font-telegraf ${orderType === 'takeaway' ? 'bg-black text-white' : 'bg-gray-100'}`}
                     >
                       Take Away
                     </button>
@@ -700,51 +525,20 @@ export default function CatalogIndex({ menus, categories, auth }) {
               <div className="flex-1 overflow-y-auto px-6 space-y-4 py-2">
                 {paymentMethod === null ? (
                   cart.map(item => (
-                    <div
-                      key={item.id}
-                      className="flex gap-4 p-3 rounded-3xl bg-white/50 border"
-                    >
+                    <div key={item.id} className="flex gap-4 p-3 rounded-3xl bg-white/50 border">
                       <div className="w-16 h-16 rounded-2xl overflow-hidden">
-                        <img
-                          src={
-                            item.image
-                              ? `/storage/${item.image}`
-                              : '/asset/no-image.png'
-                          }
-                          className="w-full h-full object-cover"
-                        />
+                        <img src={item.image ? `/storage/${item.image}` : '/asset/no-image.png'} className="w-full h-full object-cover" />
                       </div>
                       <div className="flex-1">
-                        <h3 className="text-sm truncate">
-                          {item.name}
-                        </h3>
-                        <p className="text-xs text-red-500">
-                          Rp {item.price.toLocaleString()}
-                        </p>
+                        <h3 className="text-sm truncate">{item.name}</h3>
+                        <p className="text-xs text-red-500">Rp {item.price.toLocaleString()}</p>
                         <div className="flex justify-between mt-2">
                           <div className="flex gap-2 items-center bg-gray-100 rounded-lg px-2">
-                            <button
-                              onClick={() =>
-                                updateQuantity(item.id, -1)
-                              }
-                            >
-                              <Minus size={12} />
-                            </button>
-                            <span className="text-xs">
-                              {item.quantity}
-                            </span>
-                            <button
-                              onClick={() =>
-                                updateQuantity(item.id, 1)
-                              }
-                            >
-                              <Plus size={12} />
-                            </button>
+                            <button onClick={() => updateQuantity(item.id, -1)}><Minus size={12} /></button>
+                            <span className="text-xs">{item.quantity}</span>
+                            <button onClick={() => updateQuantity(item.id, 1)}><Plus size={12} /></button>
                           </div>
-                          <button
-                            onClick={() => removeFromCart(item.id)}
-                            className="text-gray-300 hover:text-red-500"
-                          >
+                          <button onClick={() => removeFromCart(item.id)} className="text-gray-300 hover:text-red-500">
                             <Trash2 size={14} />
                           </button>
                         </div>
@@ -754,25 +548,15 @@ export default function CatalogIndex({ menus, categories, auth }) {
                 ) : paymentMethod === 'cash' ? (
                   <div className="space-y-6 pt-4 text-center">
                     <div className="bg-gray-50 p-6 rounded-[2rem]">
-                      <p className="text-[12px] text-gray-600 uppercase font-telegraf">
-                        Total Pembayaran
-                      </p>
-                      <p className="text-[23px] font-sfPro">
-                        Rp {total.toLocaleString('id-ID')}
-                      </p>
+                      <p className="text-[12px] text-gray-600 uppercase font-telegraf">Total Pembayaran</p>
+                      <p className="text-[23px] font-sfPro">Rp {total.toLocaleString('id-ID')}</p>
                     </div>
                     <div className="text-left">
-                      <label className="text-xs font-sfPro px-2">
-                        Uang Diterima
-                      </label>
+                      <label className="text-xs font-sfPro px-2">Uang Diterima</label>
                       <input
                         type="text"
                         value={formatRupiah(cashAmount)}
-                        onChange={e =>
-                          setCashAmount(
-                            cleanNumber(e.target.value),
-                          )
-                        }
+                        onChange={e => setCashAmount(cleanNumber(e.target.value))}
                         className="w-full mt-2 p-4 border rounded-2xl text-lg font-sfPro border-gray-500 focus:border-black focus:ring-0"
                         placeholder="0"
                         autoFocus
@@ -780,46 +564,28 @@ export default function CatalogIndex({ menus, categories, auth }) {
                     </div>
                     {cashAmount && (
                       <div className="flex justify-between p-4 rounded-2xl bg-emerald-100/25 backdrop-blur-md">
-                        <span className="text-xs font-sfPro">
-                          Kembalian
-                        </span>
-                        <span className="font-sfPro">
-                          Rp {changeAmount.toLocaleString()}
-                        </span>
+                        <span className="text-xs font-sfPro">Kembalian</span>
+                        <span className="font-sfPro">Rp {changeAmount.toLocaleString()}</span>
                       </div>
                     )}
                   </div>
                 ) : (
                   <div className="pt-4">
                     <div className="bg-gray-50 p-4 rounded-2xl mb-4 text-center">
-                      <p className="text-[12px] text-gray-600 uppercase font-telegraf">
-                        Total Pembayaran
-                      </p>
-                      <p className="text-xl font-sfPro text-gray-900">
-                        Rp {total.toLocaleString('id-ID')}
-                      </p>
+                      <p className="text-[12px] text-gray-600 uppercase font-telegraf">Total Pembayaran</p>
+                      <p className="text-xl font-sfPro text-gray-900">Rp {total.toLocaleString('id-ID')}</p>
                     </div>
 
                     <div className="flex flex-col items-center">
-                      <img
-                        src="/asset/qris.jpg"
-                        className="w-48 mx-auto rounded-2xl border mb-3"
-                      />
+                      <img src="/asset/qris.jpg" className="w-48 mx-auto rounded-2xl border mb-3" />
 
                       <div className="mt-1 w-full flex items-start gap-2 rounded-2xl bg-sky-100/60 px-3 py-2">
                         <div className="mt-0.5 flex h-6 w-6 items-center justify-center rounded-full bg-sky-500/80 shrink-0">
-                          <span className="text-[11px] font-bold text-white">
-                            !
-                          </span>
+                          <span className="text-[11px] font-bold text-white">!</span>
                         </div>
                         <p className="text-[11px] text-sky-900 font-sfPro text-left leading-relaxed">
-                          Silakan scan kode QR terlebih dahulu dan
-                          tunggu hingga transaksi berhasil, lalu tekan
-                          tombol{' '}
-                          <span className="font-telegraf">
-                            Konfirmasi Pembayaran
-                          </span>
-                          .
+                          Silakan scan kode QR terlebih dahulu dan tunggu hingga transaksi berhasil, lalu tekan tombol{' '}
+                          <span className="font-telegraf">Konfirmasi Pembayaran</span>.
                         </p>
                       </div>
                     </div>
@@ -827,82 +593,43 @@ export default function CatalogIndex({ menus, categories, auth }) {
                 )}
               </div>
 
-              {/* footer: subtotal, diskon, total pembayaran */}
               <div className="p-8 bg-white/40 border-t">
                 {!paymentMethod ? (
                   <>
                     {totalDiscount > 0 ? (
                       <div className="mb-4 text-xs space-y-2">
                         <div className="flex justify-between">
-                          <span className="font-telegraf text-[12px]">
-                            Subtotal
-                          </span>
-                          <span>
-                            Rp{' '}
-                            {subtotalNormal.toLocaleString(
-                              'id-ID',
-                            )}
-                          </span>
+                          <span className="font-telegraf text-[12px]">Subtotal</span>
+                          <span>Rp {subtotalNormal.toLocaleString('id-ID')}</span>
                         </div>
                         <div className="flex justify-between text-red-500 pt-2">
-                          <span className="font-telegraf text-[12px]">
-                            Diskon
-                          </span>
-                          <span>
-                            - Rp{' '}
-                            {totalDiscount.toLocaleString(
-                              'id-ID',
-                            )}
-                          </span>
+                          <span className="font-telegraf text-[12px]">Diskon</span>
+                          <span>- Rp {totalDiscount.toLocaleString('id-ID')}</span>
                         </div>
                         <div className="flex justify-between pt-2 border-gray-200 mt-1">
-                          <span className="font-telegraf text-[15px]">
-                            Total Pembayaran
-                          </span>
-                          <span className="font-sfPro text-[19px]">
-                            Rp {total.toLocaleString('id-ID')}
-                          </span>
+                          <span className="font-telegraf text-[15px]">Total Pembayaran</span>
+                          <span className="font-sfPro text-[19px]">Rp {total.toLocaleString('id-ID')}</span>
                         </div>
                       </div>
                     ) : (
                       <div className="flex justify-between mb-4">
-                        <span className="text-sm font-telegraf">
-                          Total Pembayaran
-                        </span>
-                        <span className="text-xl font-sfPro text-gray-900">
-                          Rp {total.toLocaleString('id-ID')}
-                        </span>
+                        <span className="text-sm font-telegraf">Total Pembayaran</span>
+                        <span className="text-xl font-sfPro text-gray-900">Rp {total.toLocaleString('id-ID')}</span>
                       </div>
                     )}
 
                     <div className="grid grid-cols-2 gap-3">
-                      <button
-                        onClick={() => setPaymentMethod('cash')}
-                        className="bg-gray-200 py-3 rounded-2xl text-[12px] font-telegraf"
-                      >
-                        CASH
-                      </button>
-                      <button
-                        onClick={() => setPaymentMethod('qris')}
-                        className="bg-black text-white py-3 rounded-2xl text-[12px] font-poppins"
-                      >
-                        QRIS
-                      </button>
+                      <button onClick={() => setPaymentMethod('cash')} className="bg-gray-200 py-3 rounded-2xl text-[12px] font-telegraf">CASH</button>
+                      <button onClick={() => setPaymentMethod('qris')} className="bg-black text-white py-3 rounded-2xl text-[12px] font-poppins">QRIS</button>
                     </div>
                   </>
                 ) : (
                   <button
                     onClick={processPayment}
-                    disabled={
-                      isProcessing ||
-                      (paymentMethod === 'cash' &&
-                        (!cashAmount || changeAmount < 0)) // disable kalau belum isi / kurang
-                    }
+                    disabled={isProcessing || (paymentMethod === 'cash' && (!cashAmount || changeAmount < 0))}
                     className="w-full bg-black text-white py-4 rounded-2xl font-telegraf text-[12px] disabled:bg-gray-400"
                   >
-                    {isProcessing
-                      ? 'Memproses...'
-                      : 'Konfirmasi Pembayaran'}
+                    {isProcessing ? 'Memproses...' : 'Konfirmasi Pembayaran'}
                   </button>
                 )}
               </div>

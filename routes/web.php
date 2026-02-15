@@ -6,6 +6,7 @@ use App\Http\Controllers\GoogleReviewController;
 use App\Http\Controllers\MenuController;
 use App\Http\Controllers\MenuPromoController;
 use App\Http\Controllers\CatalogController;
+use App\Http\Controllers\SummaryController;
 use App\Http\Controllers\TransactionController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
@@ -83,6 +84,10 @@ Route::middleware(['auth:admin'])->prefix('admin')->name('admin.')->group(functi
             Route::get('/', [TransactionController::class, 'index'])->name('index');
             Route::post('/', [TransactionController::class, 'store'])->name('store');
         });
+
+        // Summary Menu
+        Route::get('/summary', [SummaryController::class, 'index'])->name('summary.index');
+        
     });
 
     Route::get('/reviews', [GoogleReviewController::class, 'index']);

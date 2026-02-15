@@ -12,7 +12,7 @@ import {
   ClipboardList,
   Tag,
   BarChart3,
-  CircleDollarSign, // Icon Dollar di dalam Lingkaran
+  CircleDollarSign, 
   Wallet,
   Clipboard
 } from 'lucide-react'
@@ -32,7 +32,7 @@ export default function AdminSidebar() {
         { label: 'Kelola Menu', icon: UtensilsCrossed, href: '/admin/kasir/menus' },
         { label: 'Menu Promo', icon: Tag, href: '/admin/kasir/promo' },
         { label: 'Katalog Menu', icon: ClipboardList, href: '/admin/kasir/katalog' },
-        { label: 'Summary Menu', icon: BarChart3, href: '/admin/summary' },
+        { label: 'Summary Menu', icon: BarChart3, href: '/admin/kasir/summary' },
         { label: 'Transaksi', icon: CircleDollarSign, href: '/admin/kasir/transaksi' }
       ]
     },
@@ -42,22 +42,25 @@ export default function AdminSidebar() {
     },
     { label: 'Kategori', icon: Clipboard, href: '/admin/categories' },
     {
-    label: 'Laporan',
-    icon: FileText,
-    children: [
-      { label: 'Pemasukan', icon: BarChart3, href: '/admin/reports/income' },
-      { label: 'Pengeluaran', icon: Wallet, href: '/admin/reports/expenses' },
-      { label: 'Ringkasan Kas', icon: ClipboardList, href: '/admin/reports/summary' }
-    ]
-  }
+      label: 'Laporan',
+      icon: FileText,
+      children: [
+        { label: 'Pemasukan', icon: BarChart3, href: '/admin/reports/income' },
+        { label: 'Pengeluaran', icon: Wallet, href: '/admin/reports/expenses' },
+        { label: 'Ringkasan Kas', icon: ClipboardList, href: '/admin/reports/summary' }
+      ]
+    }
   ]
 
   // Logika supaya dropdown tidak menutup sendiri
   useEffect(() => {
     const activeIndices = menuItems
       .map((item, index) => {
-        if (item.children && item.children.some(child => child.href === url)) {
-          return index;
+        if (item.children) {
+          const hasActiveChild = item.children.some(child => {
+            return url === child.href || url.startsWith(child.href + '?')
+          })
+          if (hasActiveChild) return index
         }
         return null;
       })
@@ -110,9 +113,14 @@ export default function AdminSidebar() {
           {menuItems.map((item, index) => {
             const hasChildren = !!item.children
             const isOpen = openDropdowns.includes(index)
-            const isActive =
-              item.href === url ||
-              (hasChildren && item.children.some(child => child.href === url))
+            
+            // Cek active untuk parent
+            let isActive = false
+            if (item.href) {
+              isActive = url === item.href
+            } else if (hasChildren) {
+              isActive = item.children.some(child => url === child.href || url.startsWith(child.href + '?'))
+            }
 
             return (
               <div key={index} className="relative">
@@ -155,31 +163,31 @@ export default function AdminSidebar() {
                           transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
                           className="ml-6 mt-1 space-y-1 overflow-hidden"
                         >
-                         {item.children.map((child, idx) => {
-                          const isChildActive = child.href === url
+                          {item.children.map((child, idx) => {
+                            const isChildActive = url === child.href || url.startsWith(child.href + '?')
 
-                          return (
-                            <Link
-                              key={idx}
-                              href={child.href}
-                              className="block"
-                            >
-                              <motion.div
-                                whileHover={{ x: 4 }}
-                                className={`flex items-center gap-3 py-2.5 px-4 text-[13px] rounded-lg font-sfPro cursor-pointer transition-colors ${
-                                  isChildActive ? 'text-[#EF5350]' : 'text-[#374151]'
-                                }`}
+                            return (
+                              <Link
+                                key={idx}
+                                href={child.href}
+                                className="block"
                               >
-                                <child.icon
-                                  size={16}
-                                  strokeWidth={2}
-                                  className="opacity-70"
-                                />
-                                {child.label}
-                              </motion.div>
-                            </Link>
-                          )
-                        })}
+                                <motion.div
+                                  whileHover={{ x: 4 }}
+                                  className={`flex items-center gap-3 py-2.5 px-4 text-[13px] rounded-lg font-sfPro cursor-pointer transition-colors ${
+                                    isChildActive ? 'text-[#EF5350]' : 'text-[#374151]'
+                                  }`}
+                                >
+                                  <child.icon
+                                    size={16}
+                                    strokeWidth={2}
+                                    className="opacity-70"
+                                  />
+                                  {child.label}
+                                </motion.div>
+                              </Link>
+                            )
+                          })}
                         </motion.div>
                       )}
                     </AnimatePresence>
