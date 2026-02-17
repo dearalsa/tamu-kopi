@@ -194,33 +194,38 @@ export default function TransactionIndex({ transactions, stats, filters }) {
         </div>
 
         {/* pagination */}
-        <div className="mt-10 flex justify-end pb-10">
-          <div className="flex gap-1.5 p-1.5 bg-white rounded-xl shadow-sm border border-gray-50">
-            {transactions.links.map((link, index) => {
-              const isPrevious = link.label.includes('Previous');
-              const isNext = link.label.includes('Next');
-              const label = isPrevious ? '<' : isNext ? '>' : link.label;
+        <div className="mt-10 flex flex-col md:flex-row justify-between items-center gap-4 pb-10">
+        <p className="text-xs text-gray-500 font-sfPro">
+            Menampilkan {transactions.from || 0}–{transactions.to || 0} dari {transactions.total || 0} data
+        </p>
 
-              return (
+        {/* tombol-tombol angka */}
+        <div className="flex gap-1.5 p-1.5 bg-white rounded-xl shadow-sm border border-gray-50">
+            {transactions.links.map((link, index) => {
+            const isPrevious = link.label.includes('Previous');
+            const isNext = link.label.includes('Next');
+            const label = isPrevious ? '<' : isNext ? '>' : link.label;
+
+            return (
                 <Link
-                  key={index}
-                  href={link.url || '#'}
-                  as="button"
-                  disabled={!link.url}
-                  preserveScroll
-                  className={`
+                key={index}
+                href={link.url || '#'}
+                as="button"
+                disabled={!link.url}
+                preserveScroll
+                className={`
                     w-8 h-8 flex items-center justify-center rounded-lg text-xs font-sfPro transition-all
                     ${link.active 
-                      ? 'bg-[#E5534B] text-white shadow-md shadow-red-100' 
-                      : 'bg-gray-50 text-gray-500 hover:bg-gray-100'}
+                    ? 'bg-[#E5534B] text-white' 
+                    : 'bg-gray-50 text-gray-500 hover:bg-gray-100'}
                     ${!link.url ? 'opacity-30 cursor-not-allowed' : 'active:scale-95'}
-                  `}
+                `}
                 >
-                  {label}
+                <span dangerouslySetInnerHTML={{ __html: label }} />
                 </Link>
-              );
+            );
             })}
-          </div>
+    </div>
         </div>
       </div>
 

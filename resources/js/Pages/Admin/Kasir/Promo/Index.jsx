@@ -205,12 +205,17 @@ export default function Index({ menus }) {
               })}
             </div>
 
-            {/* pagination */}
-            <div className="mt-10 flex justify-end">
+           {/* pagination */}
+            <div className="mt-10 flex flex-col md:flex-row justify-between items-center gap-4 pb-10">
+              <p className="text-xs text-gray-500 font-sfPro">
+                Menampilkan {menus.from || 0}–{menus.to || 0} dari {menus.total || 0} data
+              </p>
               <div className="flex gap-1.5 p-1.5 bg-white rounded-xl shadow-sm border border-gray-50">
                 {menus.links.map((link, index) => {
                   const isPrev = link.label.includes('Previous');
                   const isNext = link.label.includes('Next');
+                  const label = isPrev ? '<' : isNext ? '>' : link.label;
+
                   return (
                     <Link
                       key={index}
@@ -218,11 +223,15 @@ export default function Index({ menus }) {
                       as="button"
                       disabled={!link.url}
                       preserveScroll
-                      className={`w-8 h-8 flex items-center justify-center rounded-lg text-xs font-sfPro transition-all ${
-                        link.active ? 'bg-[#ef5350] text-white' : 'bg-gray-50 text-gray-500 hover:bg-gray-100'
-                      } ${!link.url ? 'opacity-30 cursor-not-allowed' : 'active:scale-95'}`}
+                      className={`
+                        w-8 h-8 flex items-center justify-center rounded-lg text-xs font-sfPro transition-all
+                        ${link.active 
+                          ? 'bg-[#ef5350] text-white' 
+                          : 'bg-gray-50 text-gray-500 hover:bg-gray-100'}
+                        ${!link.url ? 'opacity-30 cursor-not-allowed' : 'active:scale-95'}
+                      `}
                     >
-                      {isPrev ? '<' : isNext ? '>' : link.label}
+                      <span dangerouslySetInnerHTML={{ __html: label }} />
                     </Link>
                   );
                 })}

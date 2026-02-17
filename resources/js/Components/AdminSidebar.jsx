@@ -36,7 +36,11 @@ export default function AdminSidebar() {
         { label: 'Transaksi', icon: CircleDollarSign, href: '/admin/kasir/transaksi' }
       ]
     },
-    { label: 'Kelola Produk', icon: PackageSearch },
+    {
+      label: 'Kelola Produk',
+      icon: PackageSearch,
+      href: '/admin/kelola-produk', 
+    },
     { label: 'Kategori', icon: Clipboard, href: '/admin/categories' },
     {
       label: 'Laporan',
@@ -49,13 +53,13 @@ export default function AdminSidebar() {
     }
   ]
 
-  // Logika supaya dropdown tidak menutup sendiri
+  // logika otomatis membuka dropdown jika ada anak yang aktif
   useEffect(() => {
     const activeIndices = menuItems
       .map((item, index) => {
         if (item.children) {
           const hasActiveChild = item.children.some(child => {
-            return url === child.href || url.startsWith(child.href + '?')
+            return url === child.href || url.startsWith(child.href + '/') || url.startsWith(child.href + '?')
           })
           if (hasActiveChild) return index
         }
@@ -115,12 +119,15 @@ export default function AdminSidebar() {
           {menuItems.map((item, index) => {
             const hasChildren = !!item.children
             const isOpen = openDropdowns.includes(index)
-            
+            const currentPath = url.split('?')[0]
             let isActive = false
+            
             if (item.href) {
-              isActive = url === item.href
+              isActive = currentPath === item.href || currentPath.startsWith(item.href + '/')
             } else if (hasChildren) {
-              isActive = item.children.some(child => url === child.href || url.startsWith(child.href + '?'))
+              isActive = item.children.some(child => 
+                currentPath === child.href || currentPath.startsWith(child.href + '/')
+              )
             }
 
             return (
@@ -160,7 +167,7 @@ export default function AdminSidebar() {
                           className="ml-6 mt-1 space-y-1 overflow-hidden"
                         >
                           {item.children.map((child, idx) => {
-                            const isChildActive = url === child.href || url.startsWith(child.href + '?')
+                            const isChildActive = currentPath === child.href || currentPath.startsWith(child.href + '/')
 
                             return (
                               <Link key={idx} href={child.href} className="block">
