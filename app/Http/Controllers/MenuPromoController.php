@@ -16,6 +16,7 @@ class MenuPromoController extends Controller
     {
         return Str::slug($name . '-' . Str::random(5));
     }
+
     protected function updateExpiredPromos()
     {
         $now = Carbon::now();
@@ -70,7 +71,7 @@ class MenuPromoController extends Controller
                     'image'           => $menu->image,
                     'promo_start_at'  => $menu->promo_start_at ? $menu->promo_start_at->toIso8601String() : null,
                     'promo_end_at'    => $menu->promo_end_at ? $menu->promo_end_at->toIso8601String() : null,
-                    'is_promo_active' => $isPromoActive, // buat bedain "masih berjalan" / "sudah habis"
+                    'is_promo_active' => $isPromoActive,
                 ];
             });
 
@@ -83,7 +84,6 @@ class MenuPromoController extends Controller
     {
         $categories = Category::where('is_active', true)->get();
 
-        // menu normal yang bisa dijadikan isi paket / target promo
         $allMenus = Menu::where('is_package', false)
             ->where('is_available', true)
             ->get();
@@ -97,15 +97,15 @@ class MenuPromoController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'name'              => 'nullable|string|max:255',
-            'category_id'       => 'nullable|exists:categories,id',
-            'price'             => 'required|numeric|min:0',
-            'package_items'     => 'required|array|min:1',
-            'promo_start_date'  => 'nullable|date',
-            'promo_start_time'  => 'nullable',
-            'promo_end_date'    => 'nullable|date',
-            'promo_end_time'    => 'nullable',
-            'image'             => 'nullable|file|image|max:2048',
+            'name'             => 'nullable|string|max:255',
+            'category_id'      => 'nullable|exists:categories,id',
+            'price'            => 'required|numeric|min:0',
+            'package_items'    => 'required|array|min:1',
+            'promo_start_date' => 'nullable|date',
+            'promo_start_time' => 'nullable',
+            'promo_end_date'   => 'nullable|date',
+            'promo_end_time'   => 'nullable',
+            'image'            => 'nullable|file|image|max:2048',
         ]);
 
         $promoStartAt = ($validated['promo_start_date'] && $validated['promo_start_time'])
@@ -116,7 +116,6 @@ class MenuPromoController extends Controller
             ? Carbon::createFromFormat('Y-m-d H:i', $validated['promo_end_date'].' '.$validated['promo_end_time'])
             : null;
 
-        // mode paket kalau lebih dari satu isi atau ada nama paket
         $isPackageMode = count($validated['package_items']) > 1 || !empty($validated['name']);
 
         // mode diskon satuan
@@ -152,7 +151,7 @@ class MenuPromoController extends Controller
             'name'           => $validated['name'],
             'slug'           => $this->generateSlugForPromo($validated['name']),
             'category_id'    => $validated['category_id'],
-            'price'          => $validated['price'], 
+            'price'          => $validated['price'],
             'image'          => $imagePath,
             'is_available'   => true,
             'is_package'     => true,
@@ -183,6 +182,7 @@ class MenuPromoController extends Controller
             'is_available'     => (bool) $menu->is_available,
             'is_package'       => (bool) $menu->is_package,
             'image_url'        => $menu->image ? asset('storage/'.$menu->image) : null,
+            'image_path'       => $menu->image,
             'price'            => $menu->is_package ? (float) $menu->price : (float) $menu->promo_price,
             'package_items'    => $menu->is_package ? $menu->packageItems->pluck('id') : [$menu->id],
             'promo_start_date' => $menu->promo_start_at ? $menu->promo_start_at->format('Y-m-d') : '',
@@ -203,31 +203,51 @@ class MenuPromoController extends Controller
         $menu = Menu::findOrFail($id);
 
         $validated = $request->validate([
-            'price'             => 'required|numeric|min:0',
-            'promo_start_date'  => 'nullable|date',
-            'promo_start_time'  => 'nullable',
-            'promo_end_date'    => 'nullable|date',
-            'promo_end_time'    => 'nullable',
+            'price'            => 'required|numeric|min:0',
+            'promo_start_date' => 'nullable|date',
+            'promo_start_time' => 'nullable',
+            'promo_end_date'   => 'nullable|date',
+            'promo_end_time'   => 'nullable',
+            'image'            => 'nullable|image|max:2048',
+            'keep_old_image'   => 'nullable|string',
         ]);
 
-        $promoStartAt = ($validated['promo_start_date'] && $validated['promo_start_time'])
-            ? Carbon::createFromFormat('Y-m-d H:i', $validated['promo_start_date'].' '.$validated['promo_start_time'])
+        // fallback: kalau request kosong, pakai nilai lama
+        $startDate = $validated['promo_start_date'] ?? ($menu->promo_start_at ? $menu->promo_start_at->format('Y-m-d') : null);
+        $startTime = $validated['promo_start_time'] ?? ($menu->promo_start_at ? $menu->promo_start_at->format('H:i') : null);
+        $endDate   = $validated['promo_end_date']   ?? ($menu->promo_end_at ? $menu->promo_end_at->format('Y-m-d') : null);
+        $endTime   = $validated['promo_end_time']   ?? ($menu->promo_end_at ? $menu->promo_end_at->format('H:i') : null);
+
+        $promoStartAt = ($startDate && $startTime)
+            ? Carbon::createFromFormat('Y-m-d H:i', $startDate.' '.$startTime)
             : null;
 
-        $promoEndAt = ($validated['promo_end_date'] && $validated['promo_end_time'])
-            ? Carbon::createFromFormat('Y-m-d H:i', $validated['promo_end_date'].' '.$validated['promo_end_time'])
+        $promoEndAt = ($endDate && $endTime)
+            ? Carbon::createFromFormat('Y-m-d H:i', $endDate.' '.$endTime)
             : null;
 
         if ($menu->is_package) {
-            // paket: update harga paket & periode
-            $menu->update([
-                'price'          => $validated['price'],
-                'promo_start_at' => $promoStartAt,
-                'promo_end_at'   => $promoEndAt,
-                'is_available'   => true,
-            ]);
+            // proses gambar paket
+            if ($request->hasFile('image')) {
+                if ($menu->image) {
+                    Storage::disk('public')->delete($menu->image);
+                }
+                $menu->image = $request->file('image')->store('menus', 'public');
+            } else {
+                if (!$request->keep_old_image && $menu->image) {
+                    Storage::disk('public')->delete($menu->image);
+                    $menu->image = null;
+                }
+            }
+
+            // paket: update harga & periode
+            $menu->price          = $validated['price'];
+            $menu->promo_start_at = $promoStartAt;
+            $menu->promo_end_at   = $promoEndAt;
+            $menu->is_available   = true;
+            $menu->save();
         } else {
-            // promo satuan: update promo_price & periode
+            // promo satuan: tidak pakai gambar
             $menu->update([
                 'promo_price'    => $validated['price'],
                 'promo_start_at' => $promoStartAt,
@@ -243,15 +263,13 @@ class MenuPromoController extends Controller
     public function toggle($id)
     {
         $menu = Menu::findOrFail($id);
-        $now = Carbon::now();
+        $now  = Carbon::now();
 
-        $isExpired = $menu->promo_end_at && $menu->promo_end_at->isPast();
-        $hasPromo  = $menu->promo_price || $menu->is_package;
-
+        $isExpired     = $menu->promo_end_at && $menu->promo_end_at->isPast();
+        $hasPromo      = $menu->promo_price || $menu->is_package;
         $isPromoActive = $hasPromo && !$isExpired;
 
         if ($isPromoActive) {
-            // matikan promo sekarang (anggap selesai)
             $menu->update([
                 'promo_end_at' => $now->copy()->subMinute(),
             ]);
@@ -262,7 +280,6 @@ class MenuPromoController extends Controller
             ]);
         }
 
-        // tidak ubah is_available: menu tetap ada di Kelola Menu
         return back();
     }
 
@@ -274,9 +291,8 @@ class MenuPromoController extends Controller
             if ($menu->image) {
                 Storage::disk('public')->delete($menu->image);
             }
-            $menu->delete(); // paket hilang dari sistem promo & menu (karena memang entitas paket)
+            $menu->delete();
         } else {
-            // hapus promo satuan, menu kembali normal
             $menu->update([
                 'promo_price'    => null,
                 'promo_start_at' => null,
