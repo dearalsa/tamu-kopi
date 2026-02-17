@@ -94,8 +94,9 @@ export default function Create({ categories }) {
             <form onSubmit={handleSubmit} className="p-10 space-y-7">
               <div className="mb-4">
                 <h1 className="text-2xl font-sfPro text-gray-900 text-center tracking-tight">
-                  Tambah Produk Baru
+                  Tambah Produk
                 </h1>
+                <p className="text-sm text-gray-500 text-center mt-1">Tambahkan produk yang baru saja dibeli</p>
               </div>
 
               {/* nama produk */}

@@ -101,6 +101,7 @@ export default function Edit({ product, categories }) {
                 <h1 className="text-2xl font-sfPro text-gray-900 text-center tracking-tight">
                   Edit Produk
                 </h1>
+                <p className="text-sm text-gray-500 text-center mt-1">Edit produk yang sudah dibeli</p>
               </div>
 
               {/* nama produk */}
