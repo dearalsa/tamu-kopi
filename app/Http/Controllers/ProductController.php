@@ -6,6 +6,7 @@ use App\Models\Product;
 use App\Models\Category;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 
 class ProductController extends Controller
@@ -23,16 +24,17 @@ class ProductController extends Controller
             ->paginate(10)
             ->withQueryString()
             ->through(fn ($product) => [
-                'id'          => $product->id,
-                'name'        => $product->name,
-                'date'        => $product->date,
-                'price'       => $product->price,
-                'status'      => $product->status,
-                'description' => $product->description,
-                'category'    => $product->category?->name,
-                'proof'       => $product->proof
+                'id'              => $product->id,
+                'name'            => $product->name,
+                'date'            => $product->date,
+                'price'           => $product->price,
+                'status'          => $product->status,
+                'description'     => $product->description,
+                'category'        => $product->category?->name,
+                'proof'           => $product->proof
                     ? asset('storage/' . $product->proof)
                     : null,
+                'created_by_name' => $product->created_by_name,
             ]);
 
         return Inertia::render('Admin/KelolaProduk/Index', [
@@ -64,6 +66,8 @@ class ProductController extends Controller
             $data['proof'] = $request->file('proof')->store('products', 'public');
         }
 
+        $data['created_by_name'] = Auth::guard('admin')->user()?->name;
+
         Product::create($data);
 
         return redirect()->route('admin.kelola-produk.index');
@@ -75,16 +79,17 @@ class ProductController extends Controller
 
         return Inertia::render('Admin/KelolaProduk/Show', [
             'product' => [
-                'id'          => $product->id,
-                'name'        => $product->name,
-                'date'        => $product->date,
-                'price'       => $product->price,
-                'status'      => $product->status,
-                'description' => $product->description,
-                'category'    => $product->category?->name,
-                'proof'       => $product->proof
+                'id'              => $product->id,
+                'name'            => $product->name,
+                'date'            => $product->date,
+                'price'           => $product->price,
+                'status'          => $product->status,
+                'description'     => $product->description,
+                'category'        => $product->category?->name,
+                'proof'           => $product->proof
                     ? asset('storage/' . $product->proof)
                     : null,
+                'created_by_name' => $product->created_by_name,
             ],
         ]);
     }
@@ -100,7 +105,7 @@ class ProductController extends Controller
                 'status'      => $product->status,
                 'description' => $product->description,
                 'category_id' => $product->category_id,
-                'proof'       => $product->proof, 
+                'proof'       => $product->proof,
             ],
             'categories' => Category::all(),
         ]);

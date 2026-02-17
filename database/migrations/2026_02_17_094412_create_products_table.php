@@ -15,14 +15,16 @@ return new class extends Migration {
                   ->constrained('categories')
                   ->cascadeOnDelete();
 
-            $table->date('date'); 
+            $table->date('date');
             $table->integer('price');
 
             $table->enum('status', ['tersedia', 'habis'])
                   ->default('tersedia');
 
-            $table->text('description')->nullable(); 
-            $table->string('proof')->nullable(); 
+            $table->text('description')->nullable();
+            $table->string('proof')->nullable();
+
+            $table->string('created_by_name')->nullable();
 
             $table->timestamps();
         });

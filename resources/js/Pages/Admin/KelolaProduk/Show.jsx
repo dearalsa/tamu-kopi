@@ -10,6 +10,7 @@ import {
   CheckCircle2,
   XCircle,
   Image as ImageIcon,
+  User,
 } from 'lucide-react';
 import dayjs from 'dayjs';
 import 'dayjs/locale/id';
@@ -44,6 +45,7 @@ export default function Show({ product }) {
 
         <div className="bg-white rounded-3xl shadow-[0_12px_40px_rgba(15,23,42,0.06)] border border-gray-100 p-6 md:p-8">
           <div className="grid grid-cols-1 md:grid-cols-[250px_minmax(0,1fr)] gap-8 items-start">
+            {/* Foto / Proof */}
             <div className="w-full flex justify-center md:justify-start">
               <div className="w-full max-w-xs rounded-2xl bg-gray-100 border border-gray-100 overflow-hidden">
                 <div className="aspect-[4/5] w-full">
@@ -65,6 +67,7 @@ export default function Show({ product }) {
               </div>
             </div>
 
+            {/* detail */}
             <div className="space-y-6">
               <div className="space-y-3">
                 <div className="flex justify-between items-start gap-4">
@@ -72,7 +75,19 @@ export default function Show({ product }) {
                     <h1 className="text-xl md:text-2xl font-sfPro text-gray-900 leading-snug">
                       {product.name}
                     </h1>
+
+                    {/* nama admin yang menambahkan produk yang baru saja dibeli */}
+                    <div className="flex items-center gap-1.5 text-gray-600 mt-1">
+                      <User size={14} className="text-gray-400" />
+                      <span className="text-[13px] font-sfPro">
+                        Ditambahkan oleh:{' '}
+                        <span className="font-sfPro text-gray-900">
+                          {product.created_by_name || 'Tidak diketahui'}
+                        </span>
+                      </span>
+                    </div>
                   </div>
+
                   <span
                     className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-sfPro uppercase tracking-widest ${
                       product.status === 'tersedia'
@@ -117,7 +132,7 @@ export default function Show({ product }) {
                   <div className="flex items-center gap-2 text-gray-400 mb-1.5">
                     <Calendar size={16} />
                     <span className="text-[15px] font-telegraf text-gray-600">
-                      Tanggal 
+                      Tanggal
                     </span>
                   </div>
                   <p className="text-sm font-medium text-gray-800">

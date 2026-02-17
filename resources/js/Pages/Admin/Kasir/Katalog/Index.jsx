@@ -79,17 +79,25 @@ export default function CatalogIndex({ menus = [], categories = [], auth }) {
     })
 
     result.sort((a, b) => {
+    const aIsPackage = a.is_package;
+    const bIsPackage = b.is_package;
+    if (aIsPackage !== bIsPackage) {
+      return aIsPackage ? 1 : -1;
+      }
       const scoreA =
-        (a.promo_price && a.is_best_seller ? 3 : 0) +
-        (a.is_best_seller ? 2 : 0) +
-        (a.promo_price ? 1 : 0)
-      const scoreB =
-        (b.promo_price && b.is_best_seller ? 3 : 0) +
-        (b.is_best_seller ? 2 : 0) +
-        (b.promo_price ? 1 : 0)
-      if (scoreB !== scoreA) return scoreB - scoreA
-      return a.name.localeCompare(b.name)
-    })
+      (!aIsPackage && a.promo_price && a.is_best_seller ? 3 : 0) +
+      (!aIsPackage && a.is_best_seller ? 2 : 0) +
+      (!aIsPackage && a.promo_price ? 1 : 0);
+
+    const scoreB =
+      (!bIsPackage && b.promo_price && b.is_best_seller ? 3 : 0) +
+      (!bIsPackage && b.is_best_seller ? 2 : 0) +
+      (!bIsPackage && b.promo_price ? 1 : 0);
+
+    if (scoreB !== scoreA) return scoreB - scoreA;
+    
+    return a.name.localeCompare(b.name);
+  });
 
     return result
   }, [menus, searchTerm, selectedCategory])

@@ -17,6 +17,7 @@ class Product extends Model
         'status',
         'description',
         'proof',
+        'created_by_name',
     ];
 
     public function category()
