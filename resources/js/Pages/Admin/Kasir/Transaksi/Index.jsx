@@ -98,7 +98,7 @@ export default function TransactionIndex({ transactions, stats, filters }) {
               <DollarSign size={24} className="text-red-500" strokeWidth={2.5} />
             </div>
             <div>
-              <p className="text-[10px] text-gray-600 uppercase tracking-widest font-telegraf mb-1">Pendapatan</p>
+              <p className="text-[10px] text-gray-600 uppercase tracking-widest font-sfPro mb-1">Pendapatan</p>
               <p className="text-xl font-sfPro text-gray-800 font-black">Rp {formatIDR(stats?.total_income)}</p>
             </div>
           </div>
@@ -108,7 +108,7 @@ export default function TransactionIndex({ transactions, stats, filters }) {
               <Coffee size={24} className="text-red-500" strokeWidth={2.5} />
             </div>
             <div>
-              <p className="text-[10px] text-gray-600 uppercase tracking-widest font-telegraf mb-1">Total Pesanan</p>
+              <p className="text-[10px] text-gray-600 uppercase tracking-widest font-sfPro mb-1">Total Pesanan</p>
               <p className="text-xl font-sfPro text-gray-800 font-black">{stats?.total_orders || '0'}</p>
             </div>
           </div>
@@ -118,14 +118,14 @@ export default function TransactionIndex({ transactions, stats, filters }) {
               <Clock size={24} className="text-red-500" strokeWidth={2.5} />
             </div>
             <div>
-              <p className="text-[10px] text-gray-600 uppercase tracking-widest font-telegraf mb-1">Jam Tersibuk</p>
+              <p className="text-[10px] text-gray-600 uppercase tracking-widest font-sfPro mb-1">Jam Tersibuk</p>
               <p className="text-xl font-sfPro text-gray-800 font-black">{stats?.busy_hours || '-'}</p>
             </div>
           </div>
         </div>
 
         {/* search & table */}
-        <div className="bg-white rounded-[2.5rem] shadow-[0_8px_40px_rgba(0,0,0,0.03)] border border-gray-50 overflow-hidden">
+        <div className="bg-white rounded-[25px] shadow-[0_8px_40px_rgba(0,0,0,0.03)] border border-gray-50 overflow-hidden">
           <div className="p-8 pb-0">
             <div className="relative w-full max-w-md mb-6">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
@@ -143,7 +143,7 @@ export default function TransactionIndex({ transactions, stats, filters }) {
             <table className="w-full text-left border-separate border-spacing-0">
               <thead>
                 <tr className="bg-gray-50/50">
-                  <th className="px-8 py-5 text-[10px] font-sfPro font-medium text-gray-800 uppercase tracking-widest">Invoice</th>
+                  <th className="px-8 py-5 text-[10px] font-sfPro font-medium text-gray-800 uppercase tracking-widest">ID Transaksi</th>
                   <th className="px-8 py-5 text-[10px] font-sfPro font-medium text-gray-800 uppercase tracking-widest">Waktu</th>
                   <th className="px-8 py-5 text-[10px] font-sfPro font-medium text-gray-800 uppercase tracking-widest">Tipe</th>
                   <th className="px-8 py-5 text-[10px] font-sfPro font-medium text-gray-800 uppercase tracking-widest">Metode</th>
@@ -195,37 +195,37 @@ export default function TransactionIndex({ transactions, stats, filters }) {
 
         {/* pagination */}
         <div className="mt-10 flex flex-col md:flex-row justify-between items-center gap-4 pb-10">
-        <p className="text-xs text-gray-500 font-sfPro">
+          <p className="text-xs text-gray-500 font-sfPro">
             Menampilkan {transactions.from || 0}–{transactions.to || 0} dari {transactions.total || 0} data
-        </p>
+          </p>
 
-        {/* tombol-tombol angka */}
-        <div className="flex gap-1.5 p-1.5 bg-white rounded-xl shadow-sm border border-gray-50">
+          {/* tombol-tombol angka */}
+          <div className="flex gap-1.5 p-1.5 bg-white rounded-xl shadow-sm border border-gray-50">
             {transactions.links.map((link, index) => {
-            const isPrevious = link.label.includes('Previous');
-            const isNext = link.label.includes('Next');
-            const label = isPrevious ? '<' : isNext ? '>' : link.label;
+              const isPrevious = link.label.includes('Previous');
+              const isNext = link.label.includes('Next');
+              const label = isPrevious ? '<' : isNext ? '>' : link.label;
 
-            return (
+              return (
                 <Link
-                key={index}
-                href={link.url || '#'}
-                as="button"
-                disabled={!link.url}
-                preserveScroll
-                className={`
+                  key={index}
+                  href={link.url || '#'}
+                  as="button"
+                  disabled={!link.url}
+                  preserveScroll
+                  className={`
                     w-8 h-8 flex items-center justify-center rounded-lg text-xs font-sfPro transition-all
                     ${link.active 
-                    ? 'bg-[#E5534B] text-white' 
-                    : 'bg-gray-50 text-gray-500 hover:bg-gray-100'}
+                      ? 'bg-[#E5534B] text-white' 
+                      : 'bg-gray-50 text-gray-500 hover:bg-gray-100'}
                     ${!link.url ? 'opacity-30 cursor-not-allowed' : 'active:scale-95'}
-                `}
+                  `}
                 >
-                <span dangerouslySetInnerHTML={{ __html: label }} />
+                  <span dangerouslySetInnerHTML={{ __html: label }} />
                 </Link>
-            );
+              );
             })}
-    </div>
+          </div>
         </div>
       </div>
 
@@ -275,14 +275,20 @@ export default function TransactionIndex({ transactions, stats, filters }) {
                     <p className="text-[11px] font-sfPro text-gray-700 leading-tight">
                       {dayjs(selectedTransaction.created_at).format('DD MMM YYYY')}
                     </p>
-                    <p className="text-[10px] text-gray-500 font-sfPro">{dayjs(selectedTransaction.created_at).format('HH:mm')} WIB</p>
+                    <p className="text-[10px] text-gray-500 font-sfPro">
+                      {dayjs(selectedTransaction.created_at).format('HH:mm')} WIB
+                    </p>
                   </div>
                   <div className="bg-gray-50/80 p-4 rounded-2xl border border-gray-100">
                     <p className="text-[9px] uppercase font-sfPro text-gray-600 tracking-widest mb-1 flex items-center gap-1.5">
                       <User size={10} /> Operator
                     </p>
-                    <p className="text-[11px] font-sfPro text-gray-700 leading-tight truncate">{selectedTransaction.user?.name || 'Kasir'}</p>
-                    <div className={`inline-flex items-center gap-1 mt-1 text-[10px] uppercase tracking-tighter ${selectedTransaction.order_type === 'dine-in' ? 'text-red-500' : 'text-orange-500'}`}>
+                    <p className="text-[11px] font-sfPro text-gray-700 leading-tight truncate">
+                      {selectedTransaction.cashier_name || 'Kasir'}
+                    </p>
+                    <div className={`inline-flex items-center gap-1 mt-1 text-[10px] uppercase tracking-tighter ${
+                      selectedTransaction.order_type === 'dine-in' ? 'text-red-500' : 'text-orange-500'
+                    }`}>
                       {selectedTransaction.order_type}
                     </div>
                   </div>
@@ -294,10 +300,16 @@ export default function TransactionIndex({ transactions, stats, filters }) {
                   {selectedTransaction.items?.map((item, idx) => (
                     <div key={idx} className="flex justify-between items-start">
                       <div className="flex-1">
-                        <p className="text-sm font-sfPro text-gray-800 leading-tight mb-0.5">{item.menu_name || item.name}</p>
-                        <p className="text-[10px] text-gray-500 font-sfPro">{item.quantity} x Rp {formatIDR(item.price)}</p>
+                        <p className="text-sm font-sfPro text-gray-800 leading-tight mb-0.5">
+                          {item.menu_name || item.name}
+                        </p>
+                        <p className="text-[10px] text-gray-500 font-sfPro">
+                          {item.quantity} x Rp {formatIDR(item.price)}
+                        </p>
                       </div>
-                      <p className="text-sm font-sfPro text-gray-900 ml-4">Rp {formatIDR(item.price * item.quantity)}</p>
+                      <p className="text-sm font-sfPro text-gray-900 ml-4">
+                        Rp {formatIDR(item.price * item.quantity)}
+                      </p>
                     </div>
                   ))}
                 </div>
@@ -306,30 +318,44 @@ export default function TransactionIndex({ transactions, stats, filters }) {
                 <div className="border-t-2 border-dashed border-gray-100 pt-5 space-y-2.5">
                   <div className="flex justify-between text-xs font-telegraf text-gray-600 px-1">
                     <span>Subtotal</span>
-                    <span className="text-gray-600 font-sfPro">Rp {formatIDR(selectedTransaction.subtotal)}</span>
+                    <span className="text-gray-600 font-sfPro">
+                      Rp {formatIDR(selectedTransaction.subtotal)}
+                    </span>
                   </div>
                   {selectedTransaction.discount > 0 && (
                     <div className="flex justify-between text-xs font-telegraf text-red-500 bg-red-50/50 p-2 rounded-xl border border-red-100">
                       <span className="tracking-widest text-[10px]">Diskon</span>
-                      <span className="font-sfPro">- Rp {formatIDR(selectedTransaction.discount)}</span>
+                      <span className="font-sfPro">
+                        - Rp {formatIDR(selectedTransaction.discount)}
+                      </span>
                     </div>
                   )}
                   <div className="flex justify-between items-center pt-2 px-1">
-                    <span className="text-[15px] font-telegraf text-gray-800 tracking-widest">Total Bayar</span>
-                    <span className="text-xl font-sfPro text-gray-900 tracking-tighter">Rp {formatIDR(selectedTransaction.total)}</span>
+                    <span className="text-[15px] font-telegraf text-gray-800 tracking-widest">
+                      Total Bayar
+                    </span>
+                    <span className="text-xl font-sfPro text-gray-900 tracking-tighter">
+                      Rp {formatIDR(selectedTransaction.total)}
+                    </span>
                   </div>
                 </div>
 
                 <div className="mt-6 pt-5 border-t border-gray-50 flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center text-gray-400">
-                      {selectedTransaction.payment_method === 'qris' ? <CreditCard size={16} /> : <Wallet size={16} />}
+                      {selectedTransaction.payment_method === 'qris'
+                        ? <CreditCard size={16} />
+                        : <Wallet size={16} />}
                     </div>
-                    <span className="text-[9px] font-telegraf uppercase text-gray-400 tracking-wider">Metode: {selectedTransaction.payment_method}</span>
+                    <span className="text-[9px] font-telegraf uppercase text-gray-400 tracking-wider">
+                      Metode: {selectedTransaction.payment_method}
+                    </span>
                   </div>
                   {selectedTransaction.payment_method === 'cash' && (
                     <div className="text-right font-sfPro">
-                      <p className="text-[12px] text-green-600 font-sfPro tracking-tighter">Kembali: Rp {formatIDR(selectedTransaction.change)}</p>
+                      <p className="text-[12px] text-green-600 font-sfPro tracking-tighter">
+                        Kembali: Rp {formatIDR(selectedTransaction.change)}
+                      </p>
                     </div>
                   )}
                 </div>

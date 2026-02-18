@@ -37,7 +37,7 @@ export default function AdminSidebar() {
       ]
     },
     {
-      label: 'Kelola Produk',
+      label: 'Kelola Bahan',
       icon: PackageSearch,
       href: '/admin/kelola-produk', 
     },
@@ -46,9 +46,8 @@ export default function AdminSidebar() {
       label: 'Laporan',
       icon: FileText,
       children: [
-        { label: 'Pemasukan', icon: BarChart3, href: '/admin/reports/income' },
-        { label: 'Pengeluaran', icon: Wallet, href: '/admin/reports/expenses' },
-        { label: 'Ringkasan Kas', icon: ClipboardList, href: '/admin/reports/summary' }
+        { label: 'Pemasukan', icon: BarChart3, href: '/admin/laporan/pemasukan' },
+        { label: 'Pengeluaran', icon: Wallet, href: '/admin/laporan/pengeluaran' },
       ]
     }
   ]

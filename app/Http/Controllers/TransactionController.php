@@ -16,16 +16,16 @@ class TransactionController extends Controller
     {
         // ambil input tanggal atau default ke hari ini
         $start_date = $request->query('start_date') ?? Carbon::today()->toDateString();
-        $end_date = $request->query('end_date') ?? Carbon::today()->toDateString();
+        $end_date   = $request->query('end_date')   ?? Carbon::today()->toDateString();
 
         // query dasar untuk filter tanggal (untuk statistik dan tabel)
         $dateFilter = [$start_date . ' 00:00:00', $end_date . ' 23:59:59'];
-        $baseQuery = Transaction::whereBetween('created_at', $dateFilter);
+        $baseQuery  = Transaction::whereBetween('created_at', $dateFilter);
 
         // hitung statistik berdasarkan filter
         $total_income = (int) $baseQuery->sum('total');
         $total_orders = $baseQuery->count();
-        
+
         // logika jam tersibuk
         $busy_hour_query = Transaction::whereBetween('created_at', $dateFilter)
             ->select(DB::raw('HOUR(created_at) as hour'), DB::raw('count(*) as count'))
@@ -33,16 +33,35 @@ class TransactionController extends Controller
             ->orderBy('count', 'desc')
             ->first();
 
-        $busy_hours = $busy_hour_query 
-            ? str_pad($busy_hour_query->hour, 2, '0', STR_PAD_LEFT) . ':00' 
+        $busy_hours = $busy_hour_query
+            ? str_pad($busy_hour_query->hour, 2, '0', STR_PAD_LEFT) . ':00'
             : '-';
 
         // ambil data transaksi untuk tabel (paginated)
-        $transactions = Transaction::with(['user', 'items'])
+        $transactions = Transaction::with(['items'])
             ->whereBetween('created_at', $dateFilter)
             ->latest()
             ->paginate(10)
-            ->withQueryString();
+            ->withQueryString()
+            ->through(fn ($trx) => [
+                'id'             => $trx->id,
+                'invoice_number' => $trx->invoice_number,
+                'queue_number'   => $trx->queue_number,
+                'subtotal'       => $trx->subtotal,
+                'discount'       => $trx->discount,
+                'total'          => $trx->total,
+                'payment_method' => $trx->payment_method,
+                'cash_amount'    => $trx->cash_amount,
+                'change'         => $trx->change,
+                'order_type'     => $trx->order_type,
+                'created_at'     => $trx->created_at,
+                'cashier_name'   => $trx->cashier_name, // nama kasir yang “dibekukan”
+                'items'          => $trx->items->map(fn ($item) => [
+                    'menu_name' => $item->menu_name,
+                    'price'     => $item->price,
+                    'quantity'  => $item->quantity,
+                ]),
+            ]);
 
         return Inertia::render('Admin/Kasir/Transaksi/Index', [
             'transactions' => $transactions,
@@ -52,8 +71,8 @@ class TransactionController extends Controller
                 'busy_hours'   => $busy_hours,
             ],
             'filters' => [
-                'start_date' => $start_date, 
-                'end_date'   => $end_date
+                'start_date' => $start_date,
+                'end_date'   => $end_date,
             ],
         ]);
     }
@@ -71,14 +90,17 @@ class TransactionController extends Controller
 
         try {
             $transaction = DB::transaction(function () use ($request) {
-                $invoice = 'TRX-' . now()->format('ymdHis') . rand(10, 99);
+                $invoice    = 'TRX-' . now()->format('ymdHis') . rand(10, 99);
                 $todayCount = Transaction::whereDate('created_at', Carbon::today())->count();
                 $orderNumber = 'C' . str_pad($todayCount + 1, 3, '0', STR_PAD_LEFT);
 
+                $admin = Auth::guard('admin')->user();
+
                 $newTransaction = Transaction::create([
-                    'user_id'        => Auth::guard('admin')->id(), 
+                    'user_id'        => $admin?->id,
+                    'cashier_name'   => $admin?->name, // snapshot nama kasir di saat itu
                     'invoice_number' => $invoice,
-                    'queue_number'   => $orderNumber, 
+                    'queue_number'   => $orderNumber,
                     'subtotal'       => $request->subtotal,
                     'discount'       => $request->discount,
                     'total'          => $request->total,

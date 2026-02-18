@@ -62,14 +62,14 @@ export default function ProductIndex({ products, filters }) {
 
   return (
     <AdminLayout>
-      <Head title="Kelola Produk" />
+      <Head title="Kelola Bahan" />
 
       <div className="max-w-7xl mx-auto px-4 pt-16 pb-6 font-sfPro bg-gray-50/30 min-h-screen">
         {/* header & date filter */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
           <div>
             <h1 className="text-2xl font-telegraf text-gray-800 tracking-tight">
-              Kelola Produk
+              Kelola Bahan
             </h1>
           </div>
 
@@ -138,7 +138,7 @@ export default function ProductIndex({ products, filters }) {
         </div>
 
         {/* table */}
-        <div className="bg-white rounded-[2.5rem] shadow-[0_8px_40px_rgba(0,0,0,0.03)] border border-gray-50 overflow-hidden">
+        <div className="bg-white rounded-[25px] shadow-[0_8px_40px_rgba(0,0,0,0.03)] border border-gray-50 overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-left border-separate border-spacing-0">
               <thead>
