@@ -12,25 +12,31 @@ use Inertia\Response;
 
 class AuthenticatedSessionController extends Controller
 {
+    /**
+     * Menampilkan halaman login.
+     */
     public function create(): Response
     {
         return Inertia::render('Auth/Login', [
             'status' => session('status'),
         ]);
     }
+
+    /**
+     * Menangani permintaan autentikasi masuk.
+     */
     public function store(LoginRequest $request): RedirectResponse
     {
-        $request->authenticateAdmin();
+        $request->authenticate();
+
         $request->session()->regenerate();
-        $admin = Auth::guard('admin')->user();
-        
-        if ($admin->role === 'owner') {
-            return redirect()->intended(route('owner.dashboard'));
-        } elseif ($admin->role === 'admin') {
-            return redirect()->intended(route('admin.dashboard'));
-        }
-        return redirect()->intended(route('dashboard'));
+
+        return redirect()->intended(route('admin.dashboard'));
     }
+
+    /**
+     * Menangani permintaan keluar (logout).
+     */
     public function destroy(Request $request): RedirectResponse
     {
         Auth::guard('admin')->logout();

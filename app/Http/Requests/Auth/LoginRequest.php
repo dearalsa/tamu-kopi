@@ -11,15 +11,16 @@ use Illuminate\Validation\ValidationException;
 
 class LoginRequest extends FormRequest
 {
+    /**
+     * Tentukan apakah pengguna diizinkan untuk membuat permintaan ini.
+     */
     public function authorize(): bool
     {
         return true;
     }
 
     /**
-     * Get the validation rules that apply to the request.
-     *
-     * @return array<string, \Illuminate\Contracts\Validation\Rule|array|string>
+     * Aturan validasi untuk permintaan login.
      */
     public function rules(): array
     {
@@ -30,19 +31,18 @@ class LoginRequest extends FormRequest
     }
 
     /**
-     * Attempt to authenticate the request's credentials (for regular users).
+     * Melakukan autentikasi menggunakan guard 'admin'.
      *
      * @throws \Illuminate\Validation\ValidationException
      */
     public function authenticate(): void
     {
         $this->ensureIsNotRateLimited();
-
-        if (! Auth::attempt($this->only('email', 'password'), $this->boolean('remember'))) {
+        if (! Auth::guard('admin')->attempt($this->only('email', 'password'), $this->boolean('remember'))) {
             RateLimiter::hit($this->throttleKey());
 
             throw ValidationException::withMessages([
-                'email' => trans('auth.failed'),
+                'email' => 'Email atau password admin salah.',
             ]);
         }
 
@@ -50,24 +50,8 @@ class LoginRequest extends FormRequest
     }
 
     /**
-     * Attempt to authenticate admin credentials.
-     *
-     * @throws \Illuminate\Validation\ValidationException
+     * Memastikan permintaan login tidak dibatasi (rate limited).
      */
-    public function authenticateAdmin(): void
-    {
-        $this->ensureIsNotRateLimited();
-
-        if (! Auth::guard('admin')->attempt($this->only('email', 'password'), $this->boolean('remember'))) {
-            RateLimiter::hit($this->throttleKey());
-
-            throw ValidationException::withMessages([
-                'email' => 'Email atau password salah.',
-            ]);
-        }
-
-        RateLimiter::clear($this->throttleKey());
-    }
     public function ensureIsNotRateLimited(): void
     {
         if (! RateLimiter::tooManyAttempts($this->throttleKey(), 5)) {
@@ -85,6 +69,10 @@ class LoginRequest extends FormRequest
             ]),
         ]);
     }
+
+    /**
+     * Mendapatkan kunci throttle untuk pembatasan rate limit.
+     */
     public function throttleKey(): string
     {
         return Str::transliterate(Str::lower($this->string('email')).'|'.$this->ip());
