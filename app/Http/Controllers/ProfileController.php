@@ -13,9 +13,6 @@ use Inertia\Response;
 
 class ProfileController extends Controller
 {
-    /**
-     * Menampilkan form edit profil.
-     */
     public function edit(Request $request): Response
     {
         $admin = Auth::guard('admin')->user();
@@ -27,39 +24,38 @@ class ProfileController extends Controller
         ]);
     }
 
-    /**
-     * Memperbarui Nama, Email, dan Password.
-     */
     public function update(Request $request): RedirectResponse
     {
         $admin = Auth::guard('admin')->user();
 
+        // Email tidak divalidasi karena tidak dikirim/diubah
         $rules = [
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'lowercase', 'email', 'max:255', 'unique:admins,email,' . $admin->id],
         ];
 
-        // Validasi password hanya jika field password diisi
         if ($request->filled('password')) {
-            $rules['current_password'] = ['required', 'current_password:admin'];
+            $rules['current_password'] = [
+                'required',
+                function ($attribute, $value, $fail) use ($admin) {
+                    if (!Hash::check($value, $admin->password)) {
+                        $fail('Password saat ini tidak cocok.');
+                    }
+                },
+            ];
             $rules['password'] = ['required', Password::defaults(), 'confirmed'];
         }
 
         $validated = $request->validate($rules);
 
-        // Update data profil
+        // Hanya update Nama (Email diabaikan agar tetap admin@gmail.com)
         $admin->name = $validated['name'];
-        $admin->email = $validated['email'];
 
-        // Update password jika ada input baru
         if ($request->filled('password')) {
-            $admin->password = Hash::make($validated['password']);
+            $admin->password = $validated['password'];
         }
 
         $admin->save();
 
-        // Redirect back dengan membawa status sukses
-        // Inertia akan otomatis mengirimkan data admin yang terbaru ke frontend
         return Redirect::back()->with('status', 'profile-updated');
     }
 }

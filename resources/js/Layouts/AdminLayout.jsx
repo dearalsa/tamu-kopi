@@ -6,10 +6,9 @@ import { HiOutlineLogout, HiOutlineUserCircle, HiOutlineBell } from 'react-icons
 export default function AdminLayout({ children }) {
   const { auth, statusBahan = 'aman' } = usePage().props
   const [profileOpen, setProfileOpen] = useState(false)
-  const [notifOpen, setNotifOpen] = useState(false) 
-  
-  const isDashboard = window.location.pathname.includes('/dashboard')
+  const [notifOpen, setNotifOpen] = useState(false)
 
+  const isDashboard = window.location.pathname.includes('/dashboard')
   const profileRouteName = 'admin.profile.edit'
 
   return (
@@ -24,9 +23,9 @@ export default function AdminLayout({ children }) {
               <div className="relative">
                 <button
                   onClick={() => {
-                    setNotifOpen(!notifOpen);
-                    setProfileOpen(false); 
-                  }} 
+                    setNotifOpen(!notifOpen)
+                    setProfileOpen(false)
+                  }}
                   className="relative p-2.5 bg-white rounded-full shadow-[0_2px_10px_rgba(0,0,0,0.03)] border border-gray-50 flex items-center justify-center hover:bg-gray-50 transition-colors"
                 >
                   <HiOutlineBell size={20} className="text-gray-500" />
@@ -35,33 +34,41 @@ export default function AdminLayout({ children }) {
                   )}
                 </button>
 
-                {notifOpen && (
+                {notifOpen && statusBahan !== 'aman' && (
                   <div className="absolute right-0 mt-3 w-72 bg-white rounded-2xl border border-gray-100 shadow-xl overflow-hidden z-[70] animate-in fade-in slide-in-from-top-2">
-                    <div className="px-5 py-3 bg-rose-50/50 border-b border-gray-100">
-                      <p className="text-sm font-sfPro text-slate-800">
-                        {statusBahan === 'warning' ? '⚠️ Waspada' : '🚨 Habis'}
+                    <div
+                      className={`px-5 py-3 border-b border-gray-100 ${
+                        statusBahan === 'habis' ? 'bg-rose-50/50' : 'bg-amber-50/50'
+                      }`}
+                    >
+                      <p className="text-sm font-sfPro text-slate-800 font-sfPro">
+                        {statusBahan === 'habis'
+                          ? '🚨 Darurat: Habis'
+                          : '⚠️ Peringatan: Waspada'}
                       </p>
-                      <p className="text-[11px] text-slate-500">
-                        {statusBahan === 'warning' ? 'Bahan hampir habis!' : 'Bahan sudah habis!'}
+                      <p className="text-[11px] text-slate-500 leading-relaxed">
+                        {statusBahan === 'habis'
+                          ? 'Bahan-bahan sudah pada habis semua, segera beli!'
+                          : 'Bahan menipis, jangan sampai kehabisan!'}
                       </p>
                     </div>
-                    <Link 
-                        href={route('admin.kelola-produk.index')} 
-                        className="block px-5 py-3 text-xs text-red-600 hover:bg-gray-50 font-sfPro transition-all"
+                    <Link
+                      href={route('admin.kelola-produk.index')}
+                      onClick={() => setNotifOpen(false)}
+                      className="block px-5 py-3 text-xs text-center text-red-600 hover:bg-gray-50 font-sfPro transition-all"
                     >
-                        Lihat Detail Bahan →
+                      Lihat Detail Bahan →
                     </Link>
                   </div>
                 )}
               </div>
             )}
 
-            {/* profil */}
             <div className="relative font-sfPro">
               <button
                 onClick={() => {
-                    setProfileOpen(!profileOpen);
-                    setNotifOpen(false); 
+                  setProfileOpen(!profileOpen)
+                  setNotifOpen(false)
                 }}
                 className="flex items-center gap-3 pl-1 pr-5 py-1 bg-white rounded-full shadow-[0_2px_10px_rgba(0,0,0,0.03)] border border-gray-50 hover:bg-gray-50 transition-colors"
               >
@@ -77,11 +84,17 @@ export default function AdminLayout({ children }) {
 
               {profileOpen && (
                 <div
-                  className={`absolute top-full mt-2 w-52 bg-white rounded-2xl border border-gray-100 shadow-xl z-[70] ${isDashboard ? 'right-0' : 'left-0'}`}
+                  className={`absolute top-full mt-2 w-52 bg-white rounded-2xl border border-gray-100 shadow-xl z-[70] ${
+                    isDashboard ? 'right-0' : 'left-0'
+                  }`}
                 >
                   <div className="px-5 py-4 border-b border-gray-50">
-                    <p className="text-sm font-sfPro text-gray-900 truncate font-sfPro">{auth.user.name}</p>
-                    <p className="text-xs text-gray-400 truncate">{auth.user.email}</p>
+                    <p className="text-sm font-sfPro text-gray-900 truncate">
+                      {auth.user.name}
+                    </p>
+                    <p className="text-xs text-gray-400 truncate">
+                      {auth.user.email}
+                    </p>
                   </div>
                   <div className="p-1">
                     <Link

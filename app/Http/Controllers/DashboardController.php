@@ -12,7 +12,6 @@ class DashboardController extends Controller
 {
     public function index()
     {
-        // Menggunakan guard admin
         $admin = Auth::guard('admin')->user();
 
         // Statistik Total
@@ -22,13 +21,15 @@ class DashboardController extends Controller
         // Logika Status Bahan
         $products    = Product::all();
         $statusBahan = 'aman';
-
         if ($products->isEmpty()) {
             $statusBahan = 'habis';
-        } elseif ($products->where('status', 'habis')->isNotEmpty()) {
-            $statusBahan = 'warning';
         } elseif ($products->where('status', 'tersedia')->isEmpty()) {
             $statusBahan = 'habis';
+        } elseif (
+            $products->where('status', 'habis')->isNotEmpty()
+            && $products->where('status', 'tersedia')->isNotEmpty()
+        ) {
+            $statusBahan = 'peringatan';
         }
 
         // Setup Waktu
@@ -38,8 +39,14 @@ class DashboardController extends Controller
 
         // Statistik Penjualan (Pemasukan)
         $incomeDaily   = (float) Transaction::whereDate('created_at', $today)->sum('total');
-        $incomeWeekly  = (float) Transaction::whereBetween('created_at', [$weekStart . ' 00:00:00', $today . ' 23:59:59'])->sum('total');
-        $incomeMonthly = (float) Transaction::whereBetween('created_at', [$monthStart . ' 00:00:00', $today . ' 23:59:59'])->sum('total');
+        $incomeWeekly  = (float) Transaction::whereBetween(
+            'created_at',
+            [$weekStart . ' 00:00:00', $today . ' 23:59:59']
+        )->sum('total');
+        $incomeMonthly = (float) Transaction::whereBetween(
+            'created_at',
+            [$monthStart . ' 00:00:00', $today . ' 23:59:59']
+        )->sum('total');
 
         // Statistik Belanja Bahan (Pengeluaran)
         $expenseDaily   = (float) Product::whereDate('date', $today)->sum('price');
@@ -52,11 +59,11 @@ class DashboardController extends Controller
             return [
                 'name'        => $bulan->translatedFormat('F'),
                 'pemasukan'   => (float) Transaction::whereYear('created_at', $bulan->year)
-                                    ->whereMonth('created_at', $bulan->month)
-                                    ->sum('total'),
+                    ->whereMonth('created_at', $bulan->month)
+                    ->sum('total'),
                 'pengeluaran' => (float) Product::whereYear('date', $bulan->year)
-                                    ->whereMonth('date', $bulan->month)
-                                    ->sum('price'),
+                    ->whereMonth('date', $bulan->month)
+                    ->sum('price'),
             ];
         })->values();
 
@@ -75,11 +82,11 @@ class DashboardController extends Controller
             return [
                 'name'        => str_pad($jam, 2, '0', STR_PAD_LEFT) . ':00',
                 'pemasukan'   => (float) Transaction::whereDate('created_at', $today)
-                                    ->whereRaw('HOUR(created_at) = ?', [$jam])
-                                    ->sum('total'),
+                    ->whereRaw('HOUR(created_at) = ?', [$jam])
+                    ->sum('total'),
                 'pengeluaran' => (float) Product::whereDate('date', $today)
-                                    ->whereRaw('HOUR(date) = ?', [$jam]) // Pastikan field 'date' di model Product memiliki jam jika ingin detail per jam
-                                    ->sum('price'),
+                    ->whereRaw('HOUR(date) = ?', [$jam])
+                    ->sum('price'),
             ];
         })->values();
 

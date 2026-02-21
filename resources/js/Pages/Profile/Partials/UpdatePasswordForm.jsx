@@ -5,16 +5,16 @@ export default function UpdateProfileForm({ admin, role, status }) {
     const passwordInput = useRef()
     const currentPasswordInput = useRef()
 
-    // Menginisialisasi form
+    // Inisialisasi form
     const { data, setData, errors, patch, reset, processing, recentlySuccessful } = useForm({
         name: admin?.name || '',
-        email: admin?.email || '',
+        email: admin?.email || 'admin@gmail.com', 
         current_password: '',
         password: '',
         password_confirmation: '',
     })
 
-    // Menjaga agar nama tetap ada di inputan saat halaman diakses kembali
+    // Sinkronisasi Data
     useEffect(() => {
         if (admin) {
             setData((prevData) => ({
@@ -30,10 +30,7 @@ export default function UpdateProfileForm({ admin, role, status }) {
         patch(route(role + '.profile.update'), {
             preserveScroll: true,
             onSuccess: () => {
-                // Reset kolom password saja agar aman
                 reset('current_password', 'password', 'password_confirmation');
-                
-                // Setelah 1.5 detik berhasil, otomatis kembali ke halaman sebelumnya
                 setTimeout(() => {
                     window.history.back();
                 }, 1500);
@@ -55,13 +52,14 @@ export default function UpdateProfileForm({ admin, role, status }) {
 
     const inputBase = 'w-full bg-transparent border-0 border-b py-3 pl-9 pr-2 font-sfPro text-gray-800 placeholder-gray-400 focus:ring-0 focus:ring-offset-0 focus:outline-none transition-colors duration-200'
     const inputNormal = `${inputBase} border-gray-200 focus:border-gray-700`
+    const inputReadOnly = `${inputBase} border-gray-100 text-gray-400 cursor-not-allowed` 
     const inputError = `${inputBase} border-red-500 text-red-600 placeholder-red-400 focus:border-red-500`
 
     return (
         <section className="mt-20 px-6 lg:px-12 flex justify-start pb-20">
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 lg:p-12 w-full max-w-xl text-left">
                 <header className="mb-8">
-                    <h2 className="text-2xl font-telegraf text-gray-900 tracking-tight">Profil Kasir</h2>
+                    <h2 className="text-2xl font-telegraf text-gray-900 tracking-tight">Profil Admin</h2>
                     <p className="mt-2 text-sm text-gray-500 font-telegraf leading-relaxed">
                         Perbarui identitas kasir yang bertugas saat ini.
                     </p>
@@ -79,7 +77,7 @@ export default function UpdateProfileForm({ admin, role, status }) {
                 )}
 
                 <form onSubmit={submit} className="space-y-6">
-                    {/* INPUT NAMA */}
+                    {/* kasir */}
                     <div className="group">
                         <label className="block text-[11px] uppercase tracking-[0.15em] font-sfPro text-gray-400 mb-1 group-focus-within:text-gray-800 transition-colors">
                             Nama Kasir Bertugas
@@ -94,6 +92,7 @@ export default function UpdateProfileForm({ admin, role, status }) {
                                 value={data.name}
                                 onChange={(e) => setData('name', e.target.value)}
                                 type="text"
+                                required
                                 className={errors.name ? inputError : inputNormal}
                                 placeholder="Masukkan nama kasir"
                             />
@@ -101,33 +100,31 @@ export default function UpdateProfileForm({ admin, role, status }) {
                         {errors.name && <p className="mt-2 text-xs text-red-500 font-sfPro italic">{errors.name}</p>}
                     </div>
 
-                    {/* INPUT EMAIL */}
+                    {/* email */}
                     <div className="group">
-                        <label className="block text-[11px] uppercase tracking-[0.15em] font-sfPro text-gray-400 mb-1 group-focus-within:text-gray-800 transition-colors">
-                            Email Akun
+                        <label className="block text-[11px] uppercase tracking-[0.15em] font-sfPro text-gray-400 mb-1">
+                            Email Akun (Tidak dapat diubah)
                         </label>
                         <div className="relative">
-                            <div className="absolute inset-y-0 left-0 flex items-center text-gray-400 group-focus-within:text-gray-800 transition-colors">
+                            <div className="absolute inset-y-0 left-0 flex items-center text-gray-300">
                                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                                 </svg>
                             </div>
                             <input
                                 value={data.email}
-                                onChange={(e) => setData('email', e.target.value)}
                                 type="email"
-                                className={errors.email ? inputError : inputNormal}
-                                placeholder="admin@email.com"
+                                readOnly 
+                                className={inputReadOnly}
                             />
                         </div>
-                        {errors.email && <p className="mt-2 text-xs text-red-500 font-sfPro italic">{errors.email}</p>}
                     </div>
 
                     <div className="pt-4 border-t border-gray-50">
                          <p className="text-[10px] text-gray-400 uppercase tracking-widest mb-6 font-bold">Ganti Password (Isi jika perlu)</p>
                     </div>
 
-                    {/* PASSWORD SAAT INI */}
+                    {/* password saat ini */}
                     <div className="group">
                         <label className="block text-[11px] uppercase tracking-[0.15em] font-sfPro text-gray-400 mb-1 group-focus-within:text-gray-800 transition-colors">
                             Password Saat Ini
@@ -143,6 +140,7 @@ export default function UpdateProfileForm({ admin, role, status }) {
                                 value={data.current_password}
                                 onChange={(e) => setData('current_password', e.target.value)}
                                 type="password"
+                                autoComplete="current-password"
                                 className={errors.current_password ? inputError : inputNormal}
                                 placeholder="••••••••"
                             />
@@ -150,7 +148,7 @@ export default function UpdateProfileForm({ admin, role, status }) {
                         {errors.current_password && <p className="mt-2 text-xs text-red-500 font-sfPro italic">{errors.current_password}</p>}
                     </div>
 
-                    {/* PASSWORD BARU */}
+                    {/* password baru */}
                     <div className="group">
                         <label className="block text-[11px] uppercase tracking-[0.15em] font-sfPro text-gray-400 mb-1 group-focus-within:text-gray-800 transition-colors">
                             Password Baru
@@ -166,6 +164,7 @@ export default function UpdateProfileForm({ admin, role, status }) {
                                 value={data.password}
                                 onChange={(e) => setData('password', e.target.value)}
                                 type="password"
+                                autoComplete="new-password"
                                 className={errors.password ? inputError : inputNormal}
                                 placeholder="Ketik password baru"
                             />
@@ -173,7 +172,7 @@ export default function UpdateProfileForm({ admin, role, status }) {
                         {errors.password && <p className="mt-2 text-xs text-red-500 font-sfPro italic">{errors.password}</p>}
                     </div>
 
-                    {/* KONFIRMASI PASSWORD */}
+                    {/* konfirmasi password */}
                     <div className="group">
                         <label className="block text-[11px] uppercase tracking-[0.15em] font-sfPro text-gray-400 mb-1 group-focus-within:text-gray-800 transition-colors">
                             Konfirmasi Password Baru
@@ -188,6 +187,7 @@ export default function UpdateProfileForm({ admin, role, status }) {
                                 value={data.password_confirmation}
                                 onChange={(e) => setData('password_confirmation', e.target.value)}
                                 type="password"
+                                autoComplete="new-password"
                                 className={errors.password_confirmation ? inputError : inputNormal}
                                 placeholder="Ulangi password baru"
                             />
