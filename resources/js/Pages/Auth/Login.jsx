@@ -33,7 +33,7 @@ export default function Login({ status }) {
                 <div className="relative z-10 w-full max-w-md mx-4">
                     <div className="bg-white/80 backdrop-blur-lg rounded-3xl shadow-2xl p-8 sm:p-12 border border-white/20">
                         <div className="flex justify-center mb-3">
-                            <img src="/asset/Tamu.svg" className="w-44 object-contain" />
+                            <img src="/asset/Tamu.svg" alt="Logo" className="w-44 object-contain" />
                         </div>
 
                         <h2 className="text-3xl font-poppinsBold text-center mb-8 text-gray-800">
@@ -42,7 +42,7 @@ export default function Login({ status }) {
 
                         {status && (
                             <div className="mb-6 bg-green-50 border-l-4 border-green-500 px-4 py-3 rounded-lg">
-                                <p className="text-sm font-sfPro">{status}</p>
+                                <p className="text-sm font-sfPro text-green-700">{status}</p>
                             </div>
                         )}
 
@@ -70,7 +70,7 @@ export default function Login({ status }) {
                                 <label className="block text-sm font-sfPro text-gray-700 mb-2">
                                     Password
                                 </label>
-                                <div className="relative">
+                                <div className="relative flex items-center">
                                     <input
                                         type={showPassword ? "text" : "password"}
                                         value={data.password}
@@ -81,8 +81,9 @@ export default function Login({ status }) {
                                     />
                                     <button
                                         type="button"
+                                        tabIndex="-1"
                                         onClick={() => setShowPassword(!showPassword)}
-                                        className="absolute right-0 top-1/2 -translate-y-1/2 text-gray-500 hover:text-black transition"
+                                        className="absolute right-0 flex items-center justify-center h-full text-gray-500 hover:text-black transition-colors"
                                     >
                                         {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                                     </button>
@@ -97,7 +98,7 @@ export default function Login({ status }) {
                             <button
                                 type="submit"
                                 disabled={processing}
-                                className="w-full bg-[#2D2727] text-white rounded-[15px] font-sfPro py-2"
+                                className="w-full bg-[#2D2727] hover:bg-black text-white rounded-[15px] font-sfPro py-2 transition-all active:scale-[0.98]"
                             >
                                 {processing ? "Memproses..." : "Masuk"}
                             </button>
@@ -116,6 +117,11 @@ export default function Login({ status }) {
                 .animate-blob { animation: blob 7s infinite; }
                 .animation-delay-2000 { animation-delay: 2s; }
                 .animation-delay-4000 { animation-delay: 4s; }
+                
+                input::-ms-reveal,
+                input::-ms-clear {
+                    display: none;
+                }
             `}</style>
         </>
     );

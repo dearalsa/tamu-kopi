@@ -43,6 +43,7 @@
         "react-toastify": "^11.0.5",
         "recharts": "^3.7.0",
         "sonner": "^2.0.7",
+        "sweetalert2": "^11.26.20",
         "ziggy-js": "^2.6.0"
     }
 }

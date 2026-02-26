@@ -19,7 +19,9 @@ import {
 import { Link, usePage } from '@inertiajs/react'
 
 export default function AdminSidebar() {
-  const { url } = usePage()
+  const { url, props } = usePage()
+  const { auth } = props 
+  
   const [openDropdowns, setOpenDropdowns] = useState([])
   const [isMobileOpen, setIsMobileOpen] = useState(false)
 
@@ -52,7 +54,6 @@ export default function AdminSidebar() {
     }
   ]
 
-  // logika otomatis membuka dropdown jika ada anak yang aktif
   useEffect(() => {
     const activeIndices = menuItems
       .map((item, index) => {
@@ -79,14 +80,12 @@ export default function AdminSidebar() {
 
   return (
     <>
-      {/* mobile toggle button */}
       <div className="lg:hidden fixed top-5 left-5 z-[60] font-sfPro">
         <button onClick={() => setIsMobileOpen(!isMobileOpen)} className="text-[#374151]">
           {isMobileOpen ? <X size={28} /> : <MenuIcon size={28} />}
         </button>
       </div>
 
-      {/* mobile overlay */}
       <AnimatePresence>
         {isMobileOpen && (
           <motion.div
@@ -99,7 +98,6 @@ export default function AdminSidebar() {
         )}
       </AnimatePresence>
 
-      {/* sidebar */}
       <aside
         className={`
           fixed inset-y-0 left-0 w-64 bg-white flex flex-col h-screen z-50 border-r border-gray-100 font-sfPro
@@ -209,6 +207,25 @@ export default function AdminSidebar() {
             )
           })}
         </nav>
+
+        {/* profil section */}
+        <div className="p-5 border-t border-gray-100 bg-gray-50/50">
+          <div className="flex items-center gap-3">
+            <img
+              src={`https://ui-avatars.com/api/?name=${encodeURIComponent(auth.user.name)}&background=EF5350&color=fff`}
+              className="w-9 h-9 rounded-full object-cover border border-white shadow-sm"
+              alt="avatar"
+            />
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-sfPro text-gray-800 font-bold truncate">
+                {auth.user.name}
+              </p>
+              <p className="text-[10px] text-gray-400 truncate uppercase tracking-wider">
+                Admin Kasir
+              </p>
+            </div>
+          </div>
+        </div>
       </aside>
     </>
   )

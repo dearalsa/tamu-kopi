@@ -4,6 +4,7 @@ import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import { motion } from "framer-motion";
 import emailjs from "@emailjs/browser";
+import Swal from "sweetalert2"; 
 
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
@@ -45,13 +46,32 @@ const Contact = () => {
     emailjs.send(serviceID, templateID, templateParams, publicKey)
       .then((response) => {
         console.log("SUCCESS!", response.status, response.text);
-        alert("✅ Terima kasih! Pesan kamu berhasil terkirim.");
+        
+        // Custom Alert Sukses
+        Swal.fire({
+          icon: 'success',
+          title: 'Pesan Terkirim!',
+          text: 'Terima kasih! Pesan kamu berhasil kami terima.',
+          confirmButtonColor: '#393535',
+          borderRadius: '20px',
+          fontFamily: 'Poppins'
+        });
+
         setFormData({ name: "", email: "", message: "" });
         setIsSubmitting(false);
       })
       .catch((err) => {
         console.error("FAILED...", err);
-        alert("❌ Maaf, terjadi kesalahan saat mengirim pesan. Silakan coba lagi.");
+        
+        // Custom Alert Gagal
+        Swal.fire({
+          icon: 'error',
+          title: 'Waduh...',
+          text: 'Terjadi kesalahan saat mengirim pesan. Silakan coba lagi nanti.',
+          confirmButtonColor: '#DE0F38',
+          fontFamily: 'Poppins'
+        });
+
         setIsSubmitting(false);
       });
   };
@@ -125,7 +145,7 @@ const Contact = () => {
           {[
             { id: 1, href: "https://instagram.com/tamu_kopi", icon: "instagram", label: "tamu_kopi", desc: "Ikuti kami di Instagram.", delay: 0.2 },
             { id: 2, href: "https://tiktok.com/@tamu.kopi", icon: "tiktok", label: "tamu.kopi", desc: "Lihat konten seru kami di TikTok.", delay: 0.3 },
-            { id: 3, href: "https://maps.app.goo.gl/GN79vsyfQwiwjycm8?g_st=ac", icon: "location", label: "Lokasi", desc: "Jl. Dadali No. 07, Kota Bogor", delay: 0.4 },
+            { id: 3, href: "https://www.google.com/maps/search/?api=1&query=-6.5835,106.8058", icon: "location", label: "Lokasi", desc: "Jl. Dadali No. 07, Kota Bogor", delay: 0.4 },
           ].map((item) => (
             <motion.a
               key={item.id}

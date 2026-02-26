@@ -1,15 +1,37 @@
-import React, { useState, useMemo } from 'react';
-import { Link, router } from '@inertiajs/react';
+import React, { useState, useMemo, useEffect } from 'react';
+import { Link, router, usePage } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import { Plus, Search, ChevronDown, Pencil, Trash2, Star, ToggleLeft } from 'lucide-react';
 import { motion } from 'framer-motion';
+import Swal from 'sweetalert2';
 
 export default function Index({ menus }) {
+  const { flash } = usePage().props;
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedFilter, setSelectedFilter] = useState('all');
   const [showFilterDropdown, setShowFilterDropdown] = useState(false);
 
-  // ambil data array dari object pagination
+  // SweetAlert untuk Flash Messages (Sukses)
+  useEffect(() => {
+    if (flash?.success) {
+      Swal.fire({
+        title: '<span style="font-family: SF-Pro-Display;">Berhasil!</span>',
+        html: `<span style="font-family: SF-Pro-Display; color: #666;">${flash.success}</span>`,
+        icon: 'success',
+        iconColor: '#ef5350',
+        confirmButtonColor: '#ef5350',
+        background: '#ffffff',
+        borderRadius: '20px',
+        customClass: {
+          popup: 'rounded-[2rem] shadow-2xl',
+          confirmButton: 'rounded-xl px-8 py-2.5 text-sm font-bold'
+        },
+        buttonsStyling: true,
+      });
+    }
+  }, [flash]);
+
+  // Ambil data array dari object pagination
   const menuData = menus.data;
 
   const dynamicCategoryFilters = useMemo(() => {
@@ -41,12 +63,10 @@ export default function Index({ menus }) {
     return menu.category && menu.category.slug === selectedFilter;
   });
 
-  // urutkan: best seller dulu, lalu menu biasa, dalam masing-masing grup urut nama
   const sortedMenus = [...filteredMenus].sort((a, b) => {
     if (a.is_best_seller === b.is_best_seller) {
       return a.name.localeCompare(b.name);
     }
-    // true sebelum false
     return a.is_best_seller ? -1 : 1;
   });
 
@@ -65,10 +85,30 @@ export default function Index({ menus }) {
     );
   };
 
+  // SweetAlert untuk Konfirmasi Hapus 
   const handleDelete = (menu) => {
-    if (confirm(`Yakin ingin menghapus menu "${menu.name}"?`)) {
-      router.delete(route('admin.kasir.menus.destroy', menu.id), { preserveScroll: true });
-    }
+    Swal.fire({
+      title: '<span style="font-family: SF-Pro-Display;">Hapus Menu?</span>',
+      html: `<span style="font-family: SF-Pro-Display; color: #666;">Yakin ingin menghapus menu <b>"${menu.name}"</b>? Tindakan ini tidak bisa dibatalkan.</span>`,
+      icon: 'warning',
+      iconColor: '#ef5350',
+      showCancelButton: true,
+      confirmButtonColor: '#ef5350',
+      cancelButtonColor: '#9ca3af',
+      confirmButtonText: 'Hapus',
+      cancelButtonText: 'Batal',
+      background: '#ffffff',
+      borderRadius: '20px',
+      customClass: {
+        popup: 'rounded-[2rem] shadow-2xl',
+        confirmButton: 'rounded-xl px-6 py-2.5 text-sm font-bold',
+        cancelButton: 'rounded-xl px-6 py-2.5 text-sm font-bold'
+      }
+    }).then((result) => {
+      if (result.isConfirmed) {
+        router.delete(route('admin.kasir.menus.destroy', menu.id), { preserveScroll: true });
+      }
+    });
   };
 
   return (
@@ -226,7 +266,7 @@ export default function Index({ menus }) {
                             !menu.is_available ? 'bg-gray-100/50 grayscale' : 'bg-yellow-50'
                           }`}
                         >
-                          <Star
+                          < Star
                             size={10}
                             className={
                               !menu.is_available
@@ -272,39 +312,38 @@ export default function Index({ menus }) {
               ))}
             </div>
 
-          {/* pagination */}
-          <div className="mt-10 flex flex-col md:flex-row justify-between items-center gap-4 pb-10">
-            <p className="text-xs text-gray-500 font-sfPro">
-              Menampilkan {menus.from || 0}–{menus.to || 0} dari {menus.total || 0} data
-            </p>
+            <div className="mt-10 flex flex-col md:flex-row justify-between items-center gap-4 pb-10">
+              <p className="text-xs text-gray-500 font-sfPro">
+                Menampilkan {menus.from || 0}–{menus.to || 0} dari {menus.total || 0} data
+              </p>
 
-            <div className="flex gap-1.5 p-1.5 bg-white rounded-xl shadow-sm border border-gray-50">
-              {menus.links.map((link, index) => {
-                const isPrev = link.label.includes('Previous');
-                const isNext = link.label.includes('Next');
-                const label = isPrev ? '<' : isNext ? '>' : link.label;
+              <div className="flex gap-1.5 p-1.5 bg-white rounded-xl shadow-sm border border-gray-50">
+                {menus.links.map((link, index) => {
+                  const isPrev = link.label.includes('Previous');
+                  const isNext = link.label.includes('Next');
+                  const label = isPrev ? '<' : isNext ? '>' : link.label;
 
-                return (
-                  <Link
-                    key={index}
-                    href={link.url || '#'}
-                    as="button"
-                    disabled={!link.url}
-                    preserveScroll
-                    className={`
-                      w-8 h-8 flex items-center justify-center rounded-lg text-xs font-sfPro transition-all
-                      ${link.active 
-                        ? 'bg-[#ef5350] text-white' 
-                        : 'bg-gray-50 text-gray-500 hover:bg-gray-100'}
-                      ${!link.url ? 'opacity-30 cursor-not-allowed' : 'active:scale-95'}
-                    `}
-                  >
-                    <span dangerouslySetInnerHTML={{ __html: label }} />
-                  </Link>
-                );
-              })}
+                  return (
+                    <Link
+                      key={index}
+                      href={link.url || '#'}
+                      as="button"
+                      disabled={!link.url}
+                      preserveScroll
+                      className={`
+                        w-8 h-8 flex items-center justify-center rounded-lg text-xs font-sfPro transition-all
+                        ${link.active 
+                          ? 'bg-[#ef5350] text-white' 
+                          : 'bg-gray-50 text-gray-500 hover:bg-gray-100'}
+                        ${!link.url ? 'opacity-30 cursor-not-allowed' : 'active:scale-95'}
+                      `}
+                    >
+                      <span dangerouslySetInnerHTML={{ __html: label }} />
+                    </Link>
+                  );
+                })}
+              </div>
             </div>
-          </div>
           </>
         )}
       </div>

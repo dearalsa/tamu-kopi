@@ -1,8 +1,8 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Head, Link, router } from '@inertiajs/react'
 import AdminLayout from '@/Layouts/AdminLayout'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Search, Eye, X, DollarSign, Coffee, Clock, Calendar, UtensilsCrossed, Package, User, ReceiptText, CreditCard, Wallet, Hash } from 'lucide-react'
+import { Search, Eye, X, DollarSign, Coffee, Clock, Calendar, UtensilsCrossed, Package, User, ReceiptText, CreditCard, Wallet } from 'lucide-react'
 import { DatePicker, ConfigProvider } from 'antd'
 import idID from 'antd/lib/locale/id_ID'
 import dayjs from 'dayjs'
@@ -49,6 +49,16 @@ export default function TransactionIndex({ transactions, stats, filters }) {
   return (
     <AdminLayout>
       <Head title="Data Transaksi" />
+
+      <style dangerouslySetInnerHTML={{ __html: `
+        .no-scrollbar::-webkit-scrollbar {
+          display: none;
+        }
+        .no-scrollbar {
+          -ms-overflow-style: none;  /* IE and Edge */
+          scrollbar-width: none;  /* Firefox */
+        }
+      `}} />
 
       <div className="max-w-7xl mx-auto px-4 pt-16 pb-6 font-sfPro bg-gray-50/30 min-h-screen">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
@@ -199,7 +209,6 @@ export default function TransactionIndex({ transactions, stats, filters }) {
             Menampilkan {transactions.from || 0}–{transactions.to || 0} dari {transactions.total || 0} data
           </p>
 
-          {/* tombol-tombol angka */}
           <div className="flex gap-1.5 p-1.5 bg-white rounded-xl shadow-sm border border-gray-50">
             {transactions.links.map((link, index) => {
               const isPrevious = link.label.includes('Previous');
@@ -233,20 +242,24 @@ export default function TransactionIndex({ transactions, stats, filters }) {
       <AnimatePresence>
         {selectedTransaction && (
           <motion.div 
-            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            initial={{ opacity: 0 }} 
+            animate={{ opacity: 1 }} 
+            exit={{ opacity: 0 }}
             className="fixed inset-0 bg-gray-900/60 backdrop-blur-md z-[100] flex items-center justify-center p-4 font-sfPro"
             onClick={() => setSelectedTransaction(null)}
           >
             <motion.div 
-              initial={{ scale: 0.95, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.95, opacity: 0, y: 20 }}
-              className="bg-white rounded-[2.5rem] w-full max-w-sm overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.1)]"
+              initial={{ scale: 0.95, opacity: 0, y: 20 }} 
+              animate={{ scale: 1, opacity: 1, y: 0 }} 
+              exit={{ scale: 0.95, opacity: 0, y: 20 }}
+              className="bg-white rounded-[2.5rem] w-full max-w-sm max-h-[90vh] overflow-y-auto no-scrollbar shadow-[0_20px_50px_rgba(0,0,0,0.1)]"
               onClick={e => e.stopPropagation()}
             >
               <div className="relative p-8">
                 {/* close button */}
                 <button 
                   onClick={() => setSelectedTransaction(null)}
-                  className="absolute right-6 top-6 w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 hover:text-gray-900 transition-colors"
+                  className="absolute right-6 top-6 w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 hover:text-gray-900 transition-colors z-10"
                 >
                   <X size={20} />
                 </button>
@@ -257,7 +270,7 @@ export default function TransactionIndex({ transactions, stats, filters }) {
                     <ReceiptText size={24} className="text-white" />
                   </div>
                   <h3 className="text-lg font-telegraf text-gray-900 tracking-tight">Detail Transaksi</h3>
-                  <div className="flex items-center justify-center gap-2 mt-1">
+                  <div className="flex flex-col items-center justify-center gap-1 mt-1">
                     <span className="text-[10px] font-sfPro px-2 py-0.5 bg-gray-100 text-gray-500 rounded-md uppercase tracking-wider">
                       Pesanan #{selectedTransaction.queue_number || '-'}
                     </span>
@@ -295,8 +308,8 @@ export default function TransactionIndex({ transactions, stats, filters }) {
                 </div>
 
                 {/* item list */}
-                <div className="space-y-4 mb-6 max-h-[180px] overflow-y-auto px-1 custom-scrollbar">
-                  <p className="text-[10px] font-telegraf text-gray-900 uppercase tracking-[0.2em] mb-2">Item Pesanan</p>
+                <div className="space-y-4 mb-6">
+                  <p className="text-[10px] font-telegraf text-gray-900 uppercase tracking-[0.2em] mb-2 border-b border-gray-50 pb-2">Item Pesanan</p>
                   {selectedTransaction.items?.map((item, idx) => (
                     <div key={idx} className="flex justify-between items-start">
                       <div className="flex-1">

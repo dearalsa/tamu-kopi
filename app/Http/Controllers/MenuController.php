@@ -58,15 +58,14 @@ class MenuController extends Controller
             'categories' => $categories,
         ]);
     }
+
     public function index()
     {
-        // menggunakan paginate(20) agar muncul navigasi halaman di React
         $menus = Menu::with('category')
             ->where('is_package', false)
             ->latest()
             ->paginate(20);
 
-        // transformasi data di dalam collection paginator
         $menus->getCollection()->transform(function ($menu) {
             return [
                 'id'             => $menu->id,
@@ -101,9 +100,16 @@ class MenuController extends Controller
             'name'           => 'required|string|max:255',
             'category_id'    => 'required|exists:categories,id',
             'price'          => 'required|numeric|min:0',
-            'image'          => 'nullable|file|image|max:2048',
+            'image'          => 'nullable|file|image|max:10240',
             'is_available'   => 'required|boolean',
             'is_best_seller' => 'required|boolean',
+        ], [
+            // Pesan
+            'name.required'        => 'Nama menu wajib diisi.',
+            'category_id.required' => 'Kategori wajib dipilih.',
+            'price.required'       => 'Harga wajib diisi.',
+            'image.image'          => 'File harus berupa gambar.',
+            'image.max'            => 'Ukuran gambar maksimal adalah 10 MB.',
         ]);
 
         $validated['slug']           = Str::slug($validated['name']);
@@ -140,9 +146,16 @@ class MenuController extends Controller
             'name'           => 'required|string|max:255',
             'category_id'    => 'required|exists:categories,id',
             'price'          => 'required|numeric|min:0',
-            'image'          => 'nullable|file|image|max:2048',
+            'image'          => 'nullable|file|image|max:10240',
             'is_available'   => 'required|boolean',
             'is_best_seller' => 'required|boolean',
+        ], [
+            // Pesan 
+            'name.required'        => 'Nama menu wajib diisi.',
+            'category_id.required' => 'Kategori wajib dipilih.',
+            'price.required'       => 'Harga wajib diisi.',
+            'image.image'          => 'File harus berupa gambar.',
+            'image.max'            => 'Ukuran gambar maksimal adalah 10 MB.',
         ]);
 
         $validated['slug']           = Str::slug($validated['name']);

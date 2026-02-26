@@ -59,7 +59,16 @@ class ProductController extends Controller
             'price'       => 'required|integer|min:0',
             'status'      => 'required|in:tersedia,habis',
             'description' => 'nullable|string',
-            'proof'       => 'nullable|image|max:2048',
+            'proof'       => 'nullable|image|max:10240',
+        ], [
+            // Pesan 
+            'name.required'        => 'Nama produk wajib diisi.',
+            'category_id.required' => 'Kategori wajib dipilih.',
+            'date.required'        => 'Tanggal wajib diisi.',
+            'price.required'       => 'Harga wajib diisi.',
+            'status.required'      => 'Status ketersediaan wajib dipilih.',
+            'proof.image'          => 'File yang diunggah harus berupa gambar.',
+            'proof.max'            => 'Ukuran gambar maksimal adalah 10 MB.',
         ]);
 
         if ($request->hasFile('proof')) {
@@ -70,7 +79,8 @@ class ProductController extends Controller
 
         Product::create($data);
 
-        return redirect()->route('admin.kelola-produk.index');
+        return redirect()->route('admin.kelola-produk.index')
+            ->with('success', 'Produk berhasil ditambahkan!');
     }
 
     public function show(Product $product)
@@ -120,8 +130,17 @@ class ProductController extends Controller
             'price'          => 'required|integer|min:0',
             'status'         => 'required|in:tersedia,habis',
             'description'    => 'nullable|string',
-            'proof'          => 'nullable|image|max:2048',
+            'proof'          => 'nullable|image|max:10240',
             'keep_old_proof' => 'nullable|string',
+        ], [
+            // Pesan 
+            'name.required'        => 'Nama produk wajib diisi.',
+            'category_id.required' => 'Kategori wajib dipilih.',
+            'date.required'        => 'Tanggal wajib diisi.',
+            'price.required'       => 'Harga wajib diisi.',
+            'status.required'      => 'Status ketersediaan wajib dipilih.',
+            'proof.image'          => 'File yang diunggah harus berupa gambar.',
+            'proof.max'            => 'Ukuran gambar maksimal adalah 10 MB.',
         ]);
 
         if ($request->hasFile('proof')) {
@@ -140,7 +159,8 @@ class ProductController extends Controller
 
         $product->update($data);
 
-        return redirect()->route('admin.kelola-produk.index');
+        return redirect()->route('admin.kelola-produk.index')
+            ->with('success', 'Produk berhasil diupdate!');
     }
 
     public function destroy(Product $product)
@@ -150,6 +170,6 @@ class ProductController extends Controller
         }
         $product->delete();
 
-        return back();
+        return back()->with('success', 'Produk berhasil dihapus!');
     }
 }

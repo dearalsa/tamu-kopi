@@ -1,11 +1,13 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Link, router } from '@inertiajs/react';
+import { Link, router, usePage } from '@inertiajs/react';
 import { motion } from 'framer-motion';
 import AdminLayout from '@/Layouts/AdminLayout';
 import { Plus, Search, ChevronDown, Pencil, Trash2, ToggleLeft } from 'lucide-react';
 import dayjs from 'dayjs';
+import Swal from 'sweetalert2';
 
 export default function Index({ menus }) {
+  const { flash } = usePage().props;
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedFilter, setSelectedFilter] = useState('all');
   const [showFilterDropdown, setShowFilterDropdown] = useState(false);
@@ -16,6 +18,25 @@ export default function Index({ menus }) {
     const timer = setInterval(() => setCurrentTime(dayjs()), 1000);
     return () => clearInterval(timer);
   }, []);
+
+  // SweetAlert untuk Flash Messages (Sukses) 
+  useEffect(() => {
+    if (flash?.success) {
+      Swal.fire({
+        title: '<span style="font-family: SF-Pro-Display;">Berhasil!</span>',
+        html: `<span style="font-family: SF-Pro-Display; color: #666;">${flash.success}</span>`,
+        icon: 'success',
+        iconColor: '#ef5350',
+        confirmButtonColor: '#ef5350',
+        background: '#ffffff',
+        borderRadius: '20px',
+        customClass: {
+          popup: 'rounded-[2rem] shadow-2xl',
+          confirmButton: 'rounded-xl px-8 py-2.5 text-sm font-bold'
+        },
+      });
+    }
+  }, [flash]);
 
   // Dynamic filter kategori
   const dynamicCategoryFilters = useMemo(() => {
@@ -41,10 +62,30 @@ export default function Index({ menus }) {
     router.patch(route('admin.kasir.promo.toggle', menu.id), {}, { preserveScroll: true });
   };
 
+  // SweetAlert untuk Konfirmasi Hapus 
   const handleDelete = (menu) => {
-    if (confirm("Yakin ingin menghapus menu promo ini?")) {
-      router.delete(route('admin.kasir.promo.destroy', menu.id), { preserveScroll: true });
-    }
+    Swal.fire({
+      title: '<span style="font-family: SF-Pro-Display; font-weight: bold;">Hapus Promo?</span>',
+      html: `<span style="font-family: SF-Pro-Display; color: #666;">Yakin ingin menghapus promo <b>"${menu.name}"</b>?</span>`,
+      icon: 'warning',
+      iconColor: '#ef5350',
+      showCancelButton: true,
+      confirmButtonColor: '#ef5350',
+      cancelButtonColor: '#9ca3af',
+      confirmButtonText: 'Hapus',
+      cancelButtonText: 'Batal',
+      background: '#ffffff',
+      borderRadius: '20px',
+      customClass: {
+        popup: 'rounded-[2rem] shadow-2xl',
+        confirmButton: 'rounded-xl px-6 py-2.5 text-sm font-bold',
+        cancelButton: 'rounded-xl px-6 py-2.5 text-sm font-bold'
+      }
+    }).then((result) => {
+      if (result.isConfirmed) {
+        router.delete(route('admin.kasir.promo.destroy', menu.id), { preserveScroll: true });
+      }
+    });
   };
 
   return (
@@ -191,6 +232,7 @@ export default function Index({ menus }) {
                           <Pencil size={13} />
                         </Link>
                         <button
+                          type="button"
                           onClick={() => handleDelete(menu)}
                           className={`flex-1 flex items-center justify-center py-2 rounded-xl outline-none border transition-all ${
                             showAsHabis ? 'bg-white border-gray-200 text-gray-400' : 'bg-[#ef5350] border-transparent text-white hover:bg-[#d32f2f]'
@@ -205,7 +247,7 @@ export default function Index({ menus }) {
               })}
             </div>
 
-           {/* pagination */}
+            {/* pagination */}
             <div className="mt-10 flex flex-col md:flex-row justify-between items-center gap-4 pb-10">
               <p className="text-xs text-gray-500 font-sfPro">
                 Menampilkan {menus.from || 0}–{menus.to || 0} dari {menus.total || 0} data

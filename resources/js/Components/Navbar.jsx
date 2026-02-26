@@ -1,12 +1,10 @@
 import { Link, usePage } from "@inertiajs/react"
 import { useState, useEffect } from "react"
 import { Menu, X } from "lucide-react"
-import { useTranslation } from "react-i18next"
 
 export default function Navbar() {
   const [open, setOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
-  const { t, i18n } = useTranslation()
   const { url } = usePage()
 
   useEffect(() => {
@@ -26,12 +24,6 @@ export default function Navbar() {
   useEffect(() => {
     document.body.style.overflow = open ? "hidden" : "unset"
   }, [open])
-
-  const toggleLang = () => {
-    const next = i18n.language === "id" ? "en" : "id"
-    i18n.changeLanguage(next)
-    localStorage.setItem("lang", next)
-  }
 
   const handleScrollOrLink = (section) => {
     if (url === "/") {
@@ -66,35 +58,28 @@ export default function Navbar() {
               href="/"
               className="hover:text-[#E84949] transition-colors duration-300"
             >
-              {t("home")}
+              Beranda
             </Link>
 
             <button
               onClick={() => handleScrollOrLink("menu")}
               className="hover:text-[#E84949] transition-colors duration-300"
             >
-              {t("menu")}
+              Menu
             </button>
 
             <button
               onClick={() => handleScrollOrLink("about")}
               className="hover:text-[#E84949] transition-colors duration-300"
             >
-              {t("about")}
+              Tentang
             </button>
 
             <button
               onClick={() => handleScrollOrLink("contact")}
               className="hover:text-[#E84949] transition-colors duration-300"
             >
-              {t("contact")}
-            </button>
-
-            <button
-              onClick={toggleLang}
-              className="text-sm opacity-60 hover:opacity-100 transition-opacity duration-300"
-            >
-              {i18n.language.toUpperCase()}
+              Kontak
             </button>
           </nav>
 
@@ -119,13 +104,6 @@ export default function Navbar() {
           >
             <X size={32} strokeWidth={1.5} />
           </button>
-
-          <button
-            onClick={toggleLang}
-            className="text-sm font-poppinsBold opacity-60 hover:opacity-100 transition-opacity duration-300"
-          >
-            {i18n.language.toUpperCase()}
-          </button>
         </div>
 
         <nav className="flex flex-col items-start px-10 mt-6 gap-10 text-[16px] font-poppinsBold text-[#3b2f2f]">
@@ -134,28 +112,28 @@ export default function Navbar() {
             onClick={() => setOpen(false)}
             className="w-full hover:text-[#E84949] transition-colors duration-300"
           >
-            {t("home")}
+            Beranda
           </Link>
 
           <button
             onClick={() => handleScrollOrLink("menu")}
             className="w-full text-left hover:text-[#E84949] transition-colors duration-300"
           >
-            {t("menu")}
+            Menu
           </button>
 
           <button
             onClick={() => handleScrollOrLink("about")}
             className="w-full text-left hover:text-[#E84949] transition-colors duration-300"
           >
-            {t("about")}
+            Tentang
           </button>
 
           <button
             onClick={() => handleScrollOrLink("contact")}
             className="w-full text-left hover:text-[#E84949] transition-colors duration-300"
           >
-            {t("contact")}
+            Kontak
           </button>
         </nav>
       </div>

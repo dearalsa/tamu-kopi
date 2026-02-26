@@ -1,20 +1,20 @@
 import { useRef, useEffect } from 'react'
-import { useForm } from '@inertiajs/react'
+import { useForm, usePage, router } from '@inertiajs/react'
 
 export default function UpdateProfileForm({ admin, role, status }) {
     const passwordInput = useRef()
     const currentPasswordInput = useRef()
+    
+    const { auth } = usePage().props;
 
-    // Inisialisasi form
     const { data, setData, errors, patch, reset, processing, recentlySuccessful } = useForm({
-        name: admin?.name || '',
-        email: admin?.email || 'admin@gmail.com', 
+        name: auth?.user?.name || admin?.name || '',
+        email: auth?.user?.email || admin?.email || '', 
         current_password: '',
         password: '',
         password_confirmation: '',
     })
 
-    // Sinkronisasi Data
     useEffect(() => {
         if (admin) {
             setData((prevData) => ({
@@ -32,8 +32,14 @@ export default function UpdateProfileForm({ admin, role, status }) {
             onSuccess: () => {
                 reset('current_password', 'password', 'password_confirmation');
                 setTimeout(() => {
-                    window.history.back();
-                }, 1500);
+                    router.visit(route('admin.dashboard'), {
+                        method: 'get',
+                        data: {},
+                        replace: false,
+                        preserveState: false, 
+                        preserveScroll: false,
+                    });
+                }, 1000);
             },
             onError: (errors) => {
                 if (errors.password) {
@@ -65,19 +71,18 @@ export default function UpdateProfileForm({ admin, role, status }) {
                     </p>
                 </header>
 
-                {(recentlySuccessful || status === 'profile-updated') && (
-                    <div className="mb-6 bg-emerald-50 border-l-4 border-emerald-500 p-4 rounded-r-xl">
+                {recentlySuccessful && (
+                    <div className="mb-6 bg-emerald-50 border-l-4 border-emerald-500 p-4 rounded-r-xl transition-all animate-in fade-in slide-in-from-left-4">
                         <div className="flex items-center text-emerald-800">
                             <svg className="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
                             </svg>
-                            <p className="text-sm font-sfPro">Berhasil! Kembali ke halaman sebelumnya...</p>
+                            <p className="text-sm font-sfPro font-bold">Profil Berhasil Diperbarui! Mengalihkan...</p>
                         </div>
                     </div>
                 )}
 
                 <form onSubmit={submit} className="space-y-6">
-                    {/* kasir */}
                     <div className="group">
                         <label className="block text-[11px] uppercase tracking-[0.15em] font-sfPro text-gray-400 mb-1 group-focus-within:text-gray-800 transition-colors">
                             Nama Kasir Bertugas
@@ -100,7 +105,6 @@ export default function UpdateProfileForm({ admin, role, status }) {
                         {errors.name && <p className="mt-2 text-xs text-red-500 font-sfPro italic">{errors.name}</p>}
                     </div>
 
-                    {/* email */}
                     <div className="group">
                         <label className="block text-[11px] uppercase tracking-[0.15em] font-sfPro text-gray-400 mb-1">
                             Email Akun (Tidak dapat diubah)
@@ -111,12 +115,7 @@ export default function UpdateProfileForm({ admin, role, status }) {
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                                 </svg>
                             </div>
-                            <input
-                                value={data.email}
-                                type="email"
-                                readOnly 
-                                className={inputReadOnly}
-                            />
+                            <input value={data.email} type="email" readOnly className={inputReadOnly} />
                         </div>
                     </div>
 
@@ -124,7 +123,6 @@ export default function UpdateProfileForm({ admin, role, status }) {
                          <p className="text-[10px] text-gray-400 uppercase tracking-widest mb-6 font-bold">Ganti Password (Isi jika perlu)</p>
                     </div>
 
-                    {/* password saat ini */}
                     <div className="group">
                         <label className="block text-[11px] uppercase tracking-[0.15em] font-sfPro text-gray-400 mb-1 group-focus-within:text-gray-800 transition-colors">
                             Password Saat Ini
@@ -148,7 +146,6 @@ export default function UpdateProfileForm({ admin, role, status }) {
                         {errors.current_password && <p className="mt-2 text-xs text-red-500 font-sfPro italic">{errors.current_password}</p>}
                     </div>
 
-                    {/* password baru */}
                     <div className="group">
                         <label className="block text-[11px] uppercase tracking-[0.15em] font-sfPro text-gray-400 mb-1 group-focus-within:text-gray-800 transition-colors">
                             Password Baru
@@ -172,7 +169,6 @@ export default function UpdateProfileForm({ admin, role, status }) {
                         {errors.password && <p className="mt-2 text-xs text-red-500 font-sfPro italic">{errors.password}</p>}
                     </div>
 
-                    {/* konfirmasi password */}
                     <div className="group">
                         <label className="block text-[11px] uppercase tracking-[0.15em] font-sfPro text-gray-400 mb-1 group-focus-within:text-gray-800 transition-colors">
                             Konfirmasi Password Baru
