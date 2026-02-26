@@ -77,7 +77,7 @@ export default function UpdateProfileForm({ admin, role, status }) {
                             <svg className="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
                             </svg>
-                            <p className="text-sm font-sfPro font-bold">Profil Berhasil Diperbarui! Mengalihkan...</p>
+                            <p className="text-sm font-sfPro">Profil Berhasil Diperbarui! Mengalihkan...</p>
                         </div>
                     </div>
                 )}
@@ -120,7 +120,7 @@ export default function UpdateProfileForm({ admin, role, status }) {
                     </div>
 
                     <div className="pt-4 border-t border-gray-50">
-                         <p className="text-[10px] text-gray-400 uppercase tracking-widest mb-6 font-bold">Ganti Password (Isi jika perlu)</p>
+                         <p className="text-[10px] text-gray-400 uppercase tracking-widest mb-6 font-sfPro">Ganti Password (Isi jika perlu)</p>
                     </div>
 
                     <div className="group">
