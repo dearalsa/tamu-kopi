@@ -273,7 +273,7 @@ export default function PengeluaranIndex({ products, start, end, summary }) {
                     <div className="flex flex-col items-center gap-2 opacity-30">
                       <FileText size={48} />
                       <p className="text-sm font-sfPro text-gray-900">
-                        Belum ada data pengeluaran.
+                        Tidak ada data pengeluaran.
                       </p>
                     </div>
                   </td>

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Transaction;
 use App\Models\TransactionDetail;
+use App\Models\Menu;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
@@ -14,30 +15,23 @@ class TransactionController extends Controller
 {
     public function index(Request $request)
     {
-        // ambil input tanggal atau default ke hari ini
         $start_date = $request->query('start_date') ?? Carbon::today()->toDateString();
         $end_date   = $request->query('end_date')   ?? Carbon::today()->toDateString();
 
-        // query dasar untuk filter tanggal (untuk statistik dan tabel)
         $dateFilter = [$start_date . ' 00:00:00', $end_date . ' 23:59:59'];
         $baseQuery  = Transaction::whereBetween('created_at', $dateFilter);
 
-        // hitung statistik berdasarkan filter
         $total_income = (int) $baseQuery->sum('total');
         $total_orders = $baseQuery->count();
 
-        // logika jam tersibuk
         $busy_hour_query = Transaction::whereBetween('created_at', $dateFilter)
             ->select(DB::raw('HOUR(created_at) as hour'), DB::raw('count(*) as count'))
             ->groupBy('hour')
             ->orderBy('count', 'desc')
             ->first();
 
-        $busy_hours = $busy_hour_query
-            ? str_pad($busy_hour_query->hour, 2, '0', STR_PAD_LEFT) . ':00'
-            : '-';
+        $busy_hours = $busy_hour_query ? str_pad($busy_hour_query->hour, 2, '0', STR_PAD_LEFT) . ':00' : '-';
 
-        // ambil data transaksi untuk tabel (paginated)
         $transactions = Transaction::with(['items'])
             ->whereBetween('created_at', $dateFilter)
             ->latest()
@@ -55,11 +49,12 @@ class TransactionController extends Controller
                 'change'         => $trx->change,
                 'order_type'     => $trx->order_type,
                 'created_at'     => $trx->created_at,
-                'cashier_name'   => $trx->cashier_name, // nama kasir yang “dibekukan”
+                'cashier_name'   => $trx->cashier_name, 
                 'items'          => $trx->items->map(fn ($item) => [
-                    'menu_name' => $item->menu_name,
-                    'price'     => $item->price,
-                    'quantity'  => $item->quantity,
+                    'menu_name'   => $item->menu_name,
+                    'price'       => $item->price,
+                    'quantity'    => $item->quantity,
+                    'description' => $item->description, // Mengambil catatan dari kolom description
                 ]),
             ]);
 
@@ -86,6 +81,7 @@ class TransactionController extends Controller
             'payment_method' => 'required|in:cash,qris',
             'order_type'     => 'required|in:dine-in,takeaway',
             'cart'           => 'required|array|min:1',
+            'cart.*.menu_id' => 'required|exists:menus,id', 
         ]);
 
         try {
@@ -97,17 +93,17 @@ class TransactionController extends Controller
                 $admin = Auth::guard('admin')->user();
 
                 $newTransaction = Transaction::create([
-                    'user_id'        => $admin?->id,
-                    'cashier_name'   => $admin?->name, // snapshot nama kasir di saat itu
-                    'invoice_number' => $invoice,
-                    'queue_number'   => $orderNumber,
-                    'subtotal'       => $request->subtotal,
-                    'discount'       => $request->discount,
-                    'total'          => $request->total,
-                    'payment_method' => $request->payment_method,
-                    'cash_amount'    => $request->cash_amount ?? 0,
-                    'change'         => $request->change ?? 0,
-                    'order_type'     => $request->order_type,
+                    'user_id'         => $admin?->id,
+                    'cashier_name'    => $admin?->name, 
+                    'invoice_number'  => $invoice,
+                    'queue_number'    => $orderNumber,
+                    'subtotal'        => $request->subtotal,
+                    'discount'        => $request->discount,
+                    'total'           => $request->total,
+                    'payment_method'  => $request->payment_method,
+                    'cash_amount'     => $request->cash_amount ?? 0,
+                    'change'          => $request->change ?? 0,
+                    'order_type'      => $request->order_type,
                 ]);
 
                 foreach ($request->cart as $item) {
@@ -116,15 +112,31 @@ class TransactionController extends Controller
                         'menu_name'      => $item['name'],
                         'price'          => $item['price'],
                         'quantity'       => $item['quantity'],
+                        'description'    => $item['note'] ?? null, // Simpan variabel 'note' dari frontend ke kolom 'description' DB
                     ]);
+
+                    $menu = Menu::find($item['menu_id']);
+                    if ($menu && !is_null($menu->stock)) {
+                        $menu->decrement('stock', $item['quantity']);
+                    }
                 }
 
-                return $newTransaction;
+                return $newTransaction->load('items');
             });
 
             return redirect()->back()->with('success_transaction', [
                 'invoice_number' => $transaction->invoice_number,
                 'queue_number'   => $transaction->queue_number,
+                'subtotal'       => $transaction->subtotal,
+                'discount'       => $transaction->discount,
+                'total'          => $transaction->total,
+                'payment_method' => $transaction->payment_method,
+                'cash_amount'    => $transaction->cash_amount,
+                'change'         => $transaction->change,
+                'order_type'     => $transaction->order_type,
+                'created_at'     => $transaction->created_at,
+                'cashier_name'   => $transaction->cashier_name,
+                'items'          => $transaction->items, // Data items sudah termasuk kolom description
             ]);
 
         } catch (\Exception $e) {

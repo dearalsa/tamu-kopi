@@ -12,14 +12,13 @@ export default function Index({ menus }) {
   const [selectedFilter, setSelectedFilter] = useState('all');
   const [showFilterDropdown, setShowFilterDropdown] = useState(false);
   
-  // Trigger re-render setiap detik untuk live status "Habis"
   const [currentTime, setCurrentTime] = useState(dayjs());
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(dayjs()), 1000);
     return () => clearInterval(timer);
   }, []);
 
-  // SweetAlert untuk Flash Messages (Sukses) 
+  // SweetAlert flash message
   useEffect(() => {
     if (flash?.success) {
       Swal.fire({
@@ -32,14 +31,14 @@ export default function Index({ menus }) {
         borderRadius: '20px',
         customClass: {
           popup: 'rounded-[2rem] shadow-2xl',
-          confirmButton: 'rounded-xl px-8 py-2.5 text-sm font-bold'
+          confirmButton: 'rounded-xl px-8 py-2.5 text-sm'
         },
       });
     }
   }, [flash]);
 
-  // Dynamic filter kategori
   const dynamicCategoryFilters = useMemo(() => {
+    if (!menus.data) return [];
     const map = new Map();
     menus.data.forEach((menu) => {
       if (menu.category && !map.has(menu.category.slug)) {
@@ -51,7 +50,6 @@ export default function Index({ menus }) {
 
   const filters = [{ value: 'all', label: 'Semua Paket' }, ...dynamicCategoryFilters];
 
-  // Filter berdasarkan search + kategori
   const filteredMenus = menus.data.filter((menu) => {
     const matchSearch = menu.name.toLowerCase().includes(searchTerm.toLowerCase());
     const matchCategory = selectedFilter === 'all' || (menu.category && menu.category.slug === selectedFilter);
@@ -62,7 +60,6 @@ export default function Index({ menus }) {
     router.patch(route('admin.kasir.promo.toggle', menu.id), {}, { preserveScroll: true });
   };
 
-  // SweetAlert untuk Konfirmasi Hapus 
   const handleDelete = (menu) => {
     Swal.fire({
       title: '<span style="font-family: SF-Pro-Display; font-weight: bold;">Hapus Promo?</span>',
@@ -78,12 +75,23 @@ export default function Index({ menus }) {
       borderRadius: '20px',
       customClass: {
         popup: 'rounded-[2rem] shadow-2xl',
-        confirmButton: 'rounded-xl px-6 py-2.5 text-sm font-bold',
-        cancelButton: 'rounded-xl px-6 py-2.5 text-sm font-bold'
+        confirmButton: 'rounded-xl px-6 py-2.5 text-sm',
+        cancelButton: 'rounded-xl px-6 py-2.5 text-sm'
       }
     }).then((result) => {
       if (result.isConfirmed) {
-        router.delete(route('admin.kasir.promo.destroy', menu.id), { preserveScroll: true });
+        router.delete(route('admin.kasir.promo.destroy', menu.id), { 
+            preserveScroll: true,
+            onSuccess: () => {
+                Swal.fire({
+                    title: 'Dihapus!',
+                    text: 'Promo berhasil dihapus.',
+                    icon: 'success',
+                    confirmButtonColor: '#ef5350',
+                    customClass: { popup: 'rounded-[2rem]' }
+                });
+            }
+        });
       }
     });
   };
@@ -91,10 +99,8 @@ export default function Index({ menus }) {
   return (
     <AdminLayout>
       <div className="max-w-7xl mx-auto px-4 pt-16 pb-6 font-sfPro select-none">
-        {/* search & filter */}
         <div className="flex justify-between items-center mb-8">
           <div className="flex gap-4">
-            {/* search */}
             <div className="relative w-56">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
               <input
@@ -106,7 +112,6 @@ export default function Index({ menus }) {
               />
             </div>
 
-            {/* filter */}
             <div className="relative w-56">
               <button
                 onClick={() => setShowFilterDropdown(!showFilterDropdown)}
@@ -127,7 +132,7 @@ export default function Index({ menus }) {
                         setShowFilterDropdown(false);
                       }}
                       className={`w-full text-left px-4 py-3 text-sm outline-none transition-none ${
-                        selectedFilter === filter.value ? 'bg-red-50 text-[#ef5350]' : 'text-gray-600'
+                        selectedFilter === filter.value ? 'bg-red-50 text-[#ef5350]' : 'text-gray-600 hover:bg-gray-50'
                       }`}
                     >
                       {filter.label}
@@ -138,7 +143,6 @@ export default function Index({ menus }) {
             </div>
           </div>
 
-          {/* button tambah */}
           <Link
             href={route('admin.kasir.promo.create')}
             className="flex items-center gap-2 bg-[#ef5350] text-white px-6 py-2.5 rounded-2xl shadow-sm text-sm hover:bg-[#e53935] transition-none"
@@ -147,10 +151,9 @@ export default function Index({ menus }) {
           </Link>
         </div>
 
-        {/* grid promo */}
         {filteredMenus.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-32 bg-white/50 rounded-3xl border border-dashed border-gray-200">
-            <h3 className="text-xl text-gray-600 mb-2">Belum Ada Menu</h3>
+            <h3 className="text-xl text-gray-600 mb-2 font-sfPro">Belum Ada Menu</h3>
           </div>
         ) : (
           <>
@@ -159,9 +162,14 @@ export default function Index({ menus }) {
                 const displayPrice = menu.promo_price ? menu.promo_price : menu.price;
                 const promoEnd = menu.promo_end_at ? dayjs(menu.promo_end_at) : null;
                 const promoStart = menu.promo_start_at ? dayjs(menu.promo_start_at) : null;
+                
                 const isExpired = promoEnd && currentTime.isAfter(promoEnd);
                 const isNotStarted = promoStart && currentTime.isBefore(promoStart);
-                const showAsHabis = isExpired || isNotStarted;
+                
+                // LOGIKA STOK: Stok dianggap habis HANYA jika tidak NULL dan angkanya 0
+                const isOutOfStock = menu.stock !== null && menu.stock !== undefined && menu.stock <= 0;
+                
+                const showAsHabis = isExpired || isNotStarted || isOutOfStock || !menu.is_available;
 
                 return (
                   <motion.div
@@ -174,12 +182,11 @@ export default function Index({ menus }) {
                     }`}
                   >
                     <div className="aspect-square bg-gray-100 relative overflow-hidden">
-                      {/* badge & toggle */}
                       <div className="absolute top-3 left-3 z-20 flex items-center gap-2">
                         <span className={`px-3 py-1 rounded-full text-[10px] font-medium tracking-[0.12em] shadow-sm transition-colors ${
                             !showAsHabis ? 'bg-emerald-50 text-emerald-600' : 'bg-gray-200 text-gray-500'
                         }`}>
-                          {!showAsHabis ? 'Tersedia' : 'Habis'}
+                          {!showAsHabis ? 'Tersedia' : (isOutOfStock ? 'Stok Habis' : (isExpired ? 'Expired' : 'Habis'))}
                         </span>
                         <button
                           type="button"
@@ -192,12 +199,11 @@ export default function Index({ menus }) {
                         </button>
                       </div>
 
-                      {/* overlay habis */}
                       {showAsHabis && (
                         <div className="absolute inset-0 z-10 flex items-center justify-center bg-gray-900/10 backdrop-blur-[1.5px] transition-all">
                           <div className="px-5 py-2 rounded-full border border-white/20 bg-black/20 backdrop-blur-md">
                             <span className="text-[11px] text-white/90 font-sfPro tracking-[0.25em] uppercase">
-                                {isExpired ? 'HABIS' : 'BELUM MULAI'}
+                                {isOutOfStock ? 'STOK HABIS' : (isExpired ? 'EXPIRED' : (isNotStarted ? 'BELUM MULAI' : 'NONAKTIF'))}
                             </span>
                           </div>
                         </div>
@@ -208,6 +214,7 @@ export default function Index({ menus }) {
                         className={`w-full h-full object-cover transition-all duration-300 ${
                             showAsHabis ? 'saturate-[0.1] brightness-90' : 'group-hover:scale-105'
                         }`}
+                        alt={menu.name}
                       />
                     </div>
 
@@ -217,11 +224,16 @@ export default function Index({ menus }) {
                       }`}>
                         {menu.name}
                       </h3>
-                      <p className={`text-sm mb-4 transition-colors ${
+                      <p className={`text-sm mb-1 transition-colors ${
                         showAsHabis ? 'text-gray-400' : 'text-red-500 font-semibold'
                       }`}>
                         Rp {Number(displayPrice).toLocaleString('id-ID')}
                       </p>
+                      
+                      <p className={`text-[12px] mb-3 tracking-wider font-medium ${showAsHabis ? 'text-gray-300' : 'text-gray-500'}`}>
+                        Sisa Stok: {menu.stock !== null ? menu.stock : '∞'}
+                      </p>
+
                       <div className="flex gap-2">
                         <Link
                           href={route('admin.kasir.promo.edit', menu.id)}
@@ -247,7 +259,6 @@ export default function Index({ menus }) {
               })}
             </div>
 
-            {/* pagination */}
             <div className="mt-10 flex flex-col md:flex-row justify-between items-center gap-4 pb-10">
               <p className="text-xs text-gray-500 font-sfPro">
                 Menampilkan {menus.from || 0}–{menus.to || 0} dari {menus.total || 0} data

@@ -19,8 +19,7 @@ import {
 import { Link, usePage } from '@inertiajs/react'
 
 export default function AdminSidebar() {
-  const { url, props } = usePage()
-  const { auth } = props 
+  const { url } = usePage()
   
   const [openDropdowns, setOpenDropdowns] = useState([])
   const [isMobileOpen, setIsMobileOpen] = useState(false)
@@ -111,8 +110,7 @@ export default function AdminSidebar() {
           <img src="/asset/Tamu.svg" alt="Logo" className="h-[60px] w-auto" />
         </div>
 
-        {/* navigation */}
-        <nav className="flex-1 px-5 space-y-2 overflow-y-auto">
+        <nav className="flex-1 px-5 space-y-2 overflow-y-auto pb-10">
           {menuItems.map((item, index) => {
             const hasChildren = !!item.children
             const isOpen = openDropdowns.includes(index)
@@ -207,25 +205,6 @@ export default function AdminSidebar() {
             )
           })}
         </nav>
-
-        {/* profil section */}
-        <div className="p-5 border-t border-gray-100 bg-gray-50/50">
-          <div className="flex items-center gap-3">
-            <img
-              src={`https://ui-avatars.com/api/?name=${encodeURIComponent(auth.user.name)}&background=EF5350&color=fff`}
-              className="w-9 h-9 rounded-full object-cover border border-white shadow-sm"
-              alt="avatar"
-            />
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-sfPro text-gray-800 font-bold truncate">
-                {auth.user.name}
-              </p>
-              <p className="text-[10px] text-gray-400 truncate uppercase tracking-wider">
-                Admin Kasir
-              </p>
-            </div>
-          </div>
-        </div>
       </aside>
     </>
   )

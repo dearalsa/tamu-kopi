@@ -35,6 +35,7 @@ class MenuPromoController extends Controller
     {
         $now = Carbon::now();
         $perPage = 20;
+        
         $menus = Menu::with('category')
             ->where(function ($query) {
                 $query->where('is_package', true)
@@ -45,11 +46,9 @@ class MenuPromoController extends Controller
             ->through(function ($menu) use ($now) {
                 $isPromoActive = false;
 
+                // Memastikan pengecekan waktu promo aman
                 if ($menu->promo_start_at && $menu->promo_end_at) {
-                    $isPromoActive = $now->between(
-                        Carbon::parse($menu->promo_start_at),
-                        Carbon::parse($menu->promo_end_at)
-                    );
+                    $isPromoActive = $now->between($menu->promo_start_at, $menu->promo_end_at);
                 }
 
                 return [
@@ -61,6 +60,7 @@ class MenuPromoController extends Controller
                     'is_available'    => (bool) $menu->is_available,
                     'is_package'      => (bool) $menu->is_package,
                     'image'           => $menu->image,
+                    'stock'           => $menu->stock, 
                     'promo_start_at'  => $menu->promo_start_at ? $menu->promo_start_at->toIso8601String() : null,
                     'promo_end_at'    => $menu->promo_end_at ? $menu->promo_end_at->toIso8601String() : null,
                     'is_promo_active' => $isPromoActive,
@@ -94,11 +94,19 @@ class MenuPromoController extends Controller
             'promo_start_time' => 'nullable',
             'promo_end_date'   => 'nullable|date',
             'promo_end_time'   => 'nullable',
+            'stock'            => 'nullable|integer|min:0', 
             'image'            => 'nullable|file|image|max:10240',
         ], [
-            // Pesan 
-            'image.image' => 'File yang diunggah harus berupa gambar.',
-            'image.max'   => 'Ukuran gambar terlalu besar, maksimal adalah 10 MB.',
+            'price.required'         => 'Harga wajib diisi.',
+            'price.numeric'          => 'Harga harus berupa angka.',
+            'package_items.required' => 'Silakan pilih setidaknya satu menu.',
+            'stock.integer'          => 'Stok harus berupa angka bulat.',
+            'stock.min'              => 'Stok tidak boleh kurang dari 0.',
+            'image.image'            => 'File harus berupa gambar.',
+            'image.max'              => 'Ukuran gambar maksimal adalah 10 MB.',
+            'category_id.exists'     => 'Kategori yang dipilih tidak terdaftar.',
+            'promo_start_date.date'  => 'Format tanggal mulai tidak valid.',
+            'promo_end_date.date'    => 'Format tanggal selesai tidak valid.',
         ]);
 
         $promoStartAt = ($validated['promo_start_date'] && $validated['promo_start_time'])
@@ -118,6 +126,7 @@ class MenuPromoController extends Controller
                 'promo_price'    => $validated['price'],
                 'promo_start_at' => $promoStartAt,
                 'promo_end_at'   => $promoEndAt,
+                'stock'          => $validated['stock'], 
                 'is_available'   => true,
             ]);
             return redirect()->route('admin.kasir.promo.index')->with('success', 'Promo Satuan berhasil dibuat!');
@@ -133,6 +142,7 @@ class MenuPromoController extends Controller
             'image'          => $imagePath,
             'is_available'   => true,
             'is_package'     => true,
+            'stock'          => $validated['stock'], 
             'promo_start_at' => $promoStartAt,
             'promo_end_at'   => $promoEndAt,
         ]);
@@ -155,6 +165,7 @@ class MenuPromoController extends Controller
             'is_package'       => (bool) $menu->is_package,
             'image_url'        => $menu->image ? asset('storage/'.$menu->image) : null,
             'image_path'       => $menu->image,
+            'stock'            => $menu->stock, 
             'price'            => $menu->is_package ? (float) $menu->price : (float) $menu->promo_price,
             'package_items'    => $menu->is_package ? $menu->packageItems->pluck('id') : [$menu->id],
             'promo_start_date' => $menu->promo_start_at ? $menu->promo_start_at->format('Y-m-d') : '',
@@ -178,6 +189,7 @@ class MenuPromoController extends Controller
             'name'             => 'nullable|string|max:255',
             'category_id'      => 'nullable|exists:categories,id',
             'price'            => 'required|numeric|min:0',
+            'stock'            => 'nullable|integer|min:0', 
             'promo_start_date' => 'nullable|date',
             'promo_start_time' => 'nullable',
             'promo_end_date'   => 'nullable|date',
@@ -185,22 +197,21 @@ class MenuPromoController extends Controller
             'image'            => 'nullable|image|max:10240',
             'keep_old_image'   => 'nullable|string',
         ], [
-            // Pesan 
-            'image.image' => 'File yang diunggah harus berupa gambar.',
-            'image.max'   => 'Ukuran gambar terlalu besar, maksimal adalah 10 MB.',
+            'price.required'     => 'Harga wajib diisi.',
+            'price.numeric'      => 'Harga harus berupa angka.',
+            'stock.integer'      => 'Stok harus berupa angka bulat.',
+            'stock.min'          => 'Stok tidak boleh kurang dari 0.',
+            'image.image'        => 'File harus berupa gambar.',
+            'image.max'          => 'Ukuran gambar maksimal adalah 10 MB.',
+            'category_id.exists' => 'Kategori tidak valid.',
         ]);
 
-        $startDate = !empty($validated['promo_start_date']) ? $validated['promo_start_date'] : null;
-        $startTime = !empty($validated['promo_start_time']) ? $validated['promo_start_time'] : null;
-        $endDate   = !empty($validated['promo_end_date']) ? $validated['promo_end_date'] : null;
-        $endTime   = !empty($validated['promo_end_time']) ? $validated['promo_end_time'] : null;
-
-        $promoStartAt = ($startDate && $startTime)
-            ? Carbon::createFromFormat('Y-m-d H:i', $startDate.' '.$startTime)
+        $promoStartAt = ($validated['promo_start_date'] && $validated['promo_start_time'])
+            ? Carbon::createFromFormat('Y-m-d H:i', $validated['promo_start_date'].' '.$validated['promo_start_time'])
             : null;
 
-        $promoEndAt = ($endDate && $endTime)
-            ? Carbon::createFromFormat('Y-m-d H:i', $endDate.' '.$endTime)
+        $promoEndAt = ($validated['promo_end_date'] && $validated['promo_end_time'])
+            ? Carbon::createFromFormat('Y-m-d H:i', $validated['promo_end_date'].' '.$validated['promo_end_time'])
             : null;
 
         if ($menu->is_package) {
@@ -218,12 +229,14 @@ class MenuPromoController extends Controller
             }
 
             $menu->price = $validated['price'];
+            $menu->stock = $validated['stock']; 
             $menu->promo_start_at = $promoStartAt;
             $menu->promo_end_at = $promoEndAt;
             $menu->save();
         } else {
             $menu->update([
                 'promo_price'    => $validated['price'],
+                'stock'          => $validated['stock'], 
                 'promo_start_at' => $promoStartAt,
                 'promo_end_at'   => $promoEndAt,
             ]);
@@ -257,8 +270,14 @@ class MenuPromoController extends Controller
             if ($menu->image) Storage::disk('public')->delete($menu->image);
             $menu->delete();
         } else {
-            $menu->update(['promo_price' => null, 'promo_start_at' => null, 'promo_end_at' => null, 'is_available' => true]);
+            $menu->update([
+                'promo_price'    => null, 
+                'promo_start_at' => null, 
+                'promo_end_at'   => null, 
+                'stock'          => null, 
+                'is_available'   => true
+            ]);
         }
-        return redirect()->route('admin.kasir.promo.index');
+        return redirect()->route('admin.kasir.promo.index')->with('success', 'Promo berhasil dihapus!');
     }
 }

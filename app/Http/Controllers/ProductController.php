@@ -8,18 +8,20 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
+use Carbon\Carbon;
 
 class ProductController extends Controller
 {
     public function index(Request $request)
     {
+        // Default filter ke rentang BULAN INI agar sinkron dengan lonceng notifikasi
+        $startDate = $request->start_date ?? Carbon::now()->startOfMonth()->toDateString();
+        $endDate = $request->end_date ?? Carbon::now()->endOfMonth()->toDateString();
+
+        // Ambil data produk berdasarkan rentang tanggal
         $products = Product::with('category')
-            ->when($request->start_date, function ($query, $startDate) {
-                $query->whereDate('date', '>=', $startDate);
-            })
-            ->when($request->end_date, function ($query, $endDate) {
-                $query->whereDate('date', '<=', $endDate);
-            })
+            ->whereDate('date', '>=', $startDate)
+            ->whereDate('date', '<=', $endDate)
             ->latest()
             ->paginate(10)
             ->withQueryString()
@@ -39,7 +41,10 @@ class ProductController extends Controller
 
         return Inertia::render('Admin/KelolaProduk/Index', [
             'products' => $products,
-            'filters'  => $request->only(['start_date', 'end_date']),
+            'filters'  => [
+                'start_date' => $startDate,
+                'end_date'   => $endDate,
+            ],
         ]);
     }
 
@@ -57,11 +62,10 @@ class ProductController extends Controller
             'category_id' => 'required|exists:categories,id',
             'date'        => 'required|date',
             'price'       => 'required|integer|min:0',
-            'status'      => 'required|in:tersedia,habis',
+            'status'      => 'required|in:tersedia,habis,menipis', 
             'description' => 'nullable|string',
             'proof'       => 'nullable|image|max:10240',
         ], [
-            // Pesan 
             'name.required'        => 'Nama produk wajib diisi.',
             'category_id.required' => 'Kategori wajib dipilih.',
             'date.required'        => 'Tanggal wajib diisi.',
@@ -128,12 +132,11 @@ class ProductController extends Controller
             'category_id'    => 'required|exists:categories,id',
             'date'           => 'required|date',
             'price'          => 'required|integer|min:0',
-            'status'         => 'required|in:tersedia,habis',
+            'status'         => 'required|in:tersedia,habis,menipis', 
             'description'    => 'nullable|string',
             'proof'          => 'nullable|image|max:10240',
             'keep_old_proof' => 'nullable|string',
         ], [
-            // Pesan 
             'name.required'        => 'Nama produk wajib diisi.',
             'category_id.required' => 'Kategori wajib dipilih.',
             'date.required'        => 'Tanggal wajib diisi.',
@@ -150,7 +153,6 @@ class ProductController extends Controller
             $data['proof'] = $request->file('proof')->store('products', 'public');
         } else {
             unset($data['proof']);
-
             if (!$request->keep_old_proof && $product->proof) {
                 Storage::disk('public')->delete($product->proof);
                 $data['proof'] = null;

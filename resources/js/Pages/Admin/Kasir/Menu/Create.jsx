@@ -266,8 +266,8 @@ export default function Create({ categories }) {
                     <option value="" disabled>
                       Apakah menu ini Best Seller?
                     </option>
-                    <option value="0">Bukan Best Seller</option>
-                    <option value="1">Best Seller</option>
+                    <option value="0">Ya</option>
+                    <option value="1">Tidak</option>
                   </select>
 
                   <svg

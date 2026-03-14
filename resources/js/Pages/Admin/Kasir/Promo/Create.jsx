@@ -1,11 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useForm, Link } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
-import { ArrowLeft, CheckSquare, Square, Download, X, AlertCircle } from 'lucide-react';
+import { ArrowLeft, CheckSquare, Download, X, AlertCircle } from 'lucide-react';
 import { DatePicker, TimePicker, ConfigProvider } from 'antd';
 import idID from 'antd/lib/locale/id_ID';
 import dayjs from 'dayjs';
 import 'dayjs/locale/id';
+import Swal from 'sweetalert2';
 
 export default function Create({ categories, allMenus }) {
   const [isPackageMode, setIsPackageMode] = useState(false);
@@ -16,6 +17,7 @@ export default function Create({ categories, allMenus }) {
     name: '',
     category_id: '',
     price: '',
+    stock: '', // State awal stok kosong (opsional)
     image: null,
     is_available: 1,
     package_items: [],
@@ -29,7 +31,6 @@ export default function Create({ categories, allMenus }) {
     clearErrors();
   }, [isPackageMode]);
 
-  // Fungsi untuk format titik ribuan (Gaya Indonesia)
   const formatRupiah = (value) => {
     if (value === null || value === undefined || value === '') return '';
     const numberString = value.toString().replace(/[^,\d]/g, '');
@@ -46,16 +47,47 @@ export default function Create({ categories, allMenus }) {
     return split[1] !== undefined ? rupiah + ',' + split[1] : rupiah;
   };
 
-  // Fungsi untuk membersihkan titik sebelum disimpan ke state data
   const cleanThousandSeparator = (value) => {
     return value.toString().replace(/\./g, '');
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    
+    // REVISI LOGIKA STOK OPSIONAL:
+    // Jika stok kosong (''), kita kirim null agar Laravel membacanya sebagai opsional.
+    const finalData = {
+        ...data,
+        stock: data.stock === '' ? null : data.stock
+    };
+
     post(route('admin.kasir.promo.store'), {
+      data: finalData, // Menggunakan data yang sudah diformat
       forceFormData: true,
       preserveScroll: true,
+      onSuccess: () => {
+        Swal.fire({
+          title: '<span style="font-family: SF-Pro-Display;">Berhasil!</span>',
+          html: `<span style="font-family: SF-Pro-Display; color: #666;">Promo berhasil ditambahkan.</span>`,
+          icon: 'success',
+          iconColor: '#ef5350',
+          confirmButtonColor: '#ef5350',
+          borderRadius: '20px',
+          customClass: {
+            popup: 'rounded-[2rem] shadow-2xl',
+            confirmButton: 'rounded-xl px-8 py-2.5 text-sm font-bold'
+          },
+        });
+      },
+      onError: () => {
+        Swal.fire({
+          title: '<span style="font-family: SF-Pro-Display;">Gagal!</span>',
+          html: `<span style="font-family: SF-Pro-Display; color: #666;">Mohon periksa kembali inputan Anda.</span>`,
+          icon: 'error',
+          confirmButtonColor: '#ef5350',
+          borderRadius: '20px',
+        });
+      }
     });
   };
 
@@ -64,12 +96,10 @@ export default function Create({ categories, allMenus }) {
     const exists = current.includes(menuId);
     
     if (!isPackageMode) {
-        // ini hanya boleh milih satu menu
         setData('package_items', [menuId]);
         return;
     }
 
-    // ini untuk mode paket, bisa milih banyak
     const updated = exists
       ? current.filter((id) => id !== menuId)
       : [...current, menuId];
@@ -91,7 +121,6 @@ export default function Create({ categories, allMenus }) {
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
-  // helper class untuk input agar konsisten (gray-400 ke gray-500, no blue, no shadow, no bold)
   const inputClass = "w-full bg-white border border-gray-300 rounded-xl px-3.5 py-2.5 text-sm outline-none transition-all focus:border-gray-500 focus:ring-0 shadow-none font-normal";
 
   return (
@@ -99,19 +128,19 @@ export default function Create({ categories, allMenus }) {
       locale={idID}
       theme={{
         token: {
-          colorPrimary: '#9ca3af', // gray-400 sebagai warna utama saat aktif
+          colorPrimary: '#9ca3af',
           borderRadius: 12,
           controlOutline: 'transparent', 
         },
         components: {
           DatePicker: {
-            activeBorderColor: '#6b7280', // gray-500 pas diklik
-            hoverBorderColor: '#9ca3af', // gray-400 pas hover
+            activeBorderColor: '#6b7280',
+            hoverBorderColor: '#9ca3af',
             activeShadow: 'none', 
           },
           TimePicker: {
-            activeBorderColor: '#6b7280', // gray-500 pas diklik
-            hoverBorderColor: '#9ca3af', // gray-400 pas hover
+            activeBorderColor: '#6b7280',
+            hoverBorderColor: '#9ca3af',
             activeShadow: 'none', 
           },
         },
@@ -121,7 +150,6 @@ export default function Create({ categories, allMenus }) {
         <div className="min-h-screen flex items-start justify-center">
           <div className="w-full max-w-2xl px-6 pt-8 pb-12 font-sfPro">
             
-            {/* header link */}
             <div className="mb-6 mt-4">
               <Link
                 href={route('admin.kasir.promo.index')}
@@ -143,25 +171,23 @@ export default function Create({ categories, allMenus }) {
                   </p>
                 </div>
 
-                {/* toggle menu */}
                 <div className="bg-gray-50 p-1.5 rounded-2xl flex relative">
                    <button
                       type="button"
                       onClick={() => { setIsPackageMode(false); setData('package_items', []); }}
-                      className={`flex-1 py-2.5 text-sm font-sfPro rounded-xl transition-all relative z-10 ${!isPackageMode ? 'bg-white text-red-500 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                      className={`flex-1 py-2.5 text-sm font-sfPro rounded-xl transition-all relative z-10 ${!isPackageMode ? 'bg-white text-[#ef5350] shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
                    >
-                      Promo Satuan
+                     Promo Satuan
                    </button>
                    <button
                       type="button"
                       onClick={() => { setIsPackageMode(true); setData('package_items', []); }}
-                      className={`flex-1 py-2.5 text-sm font-medium rounded-xl transition-all relative z-10 ${isPackageMode ? 'bg-white text-red-500 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                      className={`flex-1 py-2.5 text-sm font-medium rounded-xl transition-all relative z-10 ${isPackageMode ? 'bg-white text-[#ef5350] shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
                    >
-                      Paket Bundling
+                     Paket Bundling
                    </button>
                 </div>
 
-                {/* input form nama dan kategori (hanya muncul di mode paket) */}
                 {isPackageMode && (
                     <div className="space-y-5 border-b border-gray-100 pb-6">
                         <div className="space-y-2">
@@ -193,7 +219,6 @@ export default function Create({ categories, allMenus }) {
                     </div>
                 )}
 
-                {/* pilih menu (logic berbeda tergantung mode) */}
                 <div className="space-y-2">
                   <label className="block text-sm text-gray-900 font-sfPro">
                     {isPackageMode ? 'Pilih Isi Paket (Bisa Banyak):' : 'Pilih 1 Menu yang Didiskon:'}
@@ -216,7 +241,7 @@ export default function Create({ categories, allMenus }) {
                           }`}
                         >
                           <div className="flex items-center gap-3 font-sfPro">
-                            <div className={`w-5 h-5 rounded-md border flex items-center justify-center transition-colors ${checked ? 'bg-red-500 border-red-500' : 'bg-white border-gray-300'}`}>
+                            <div className={`w-5 h-5 rounded-md border flex items-center justify-center transition-colors ${checked ? 'bg-[#ef5350] border-[#ef5350]' : 'bg-white border-gray-300'}`}>
                                {checked && <CheckSquare className="w-3.5 h-3.5 text-white" />}
                             </div>
                             <div>
@@ -230,7 +255,6 @@ export default function Create({ categories, allMenus }) {
                   </div>
                   {errors.package_items && <p className="text-xs text-red-500">{errors.package_items}</p>}
                   
-                  {/* info box untuk single mode */}
                   {!isPackageMode && data.package_items.length > 0 && (
                       <div className="flex gap-2 items-start bg-blue-50 text-blue-700 p-3 rounded-xl text-xs mt-2 font-sfPro">
                           <AlertCircle size={16} className="mt-0.5 shrink-0"/>
@@ -239,61 +263,73 @@ export default function Create({ categories, allMenus }) {
                   )}
                 </div>
 
-                {/* harga promo */}
-                <div className="space-y-2">
-                  <label className="block text-sm text-gray-900 font-sfPro">
-                    {isPackageMode ? 'Harga Paket:' : 'Harga Setelah Diskon (Rp):'}
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="0"
-                    value={formatRupiah(data.price)}
-                    onChange={(e) => {
-                      const rawValue = cleanThousandSeparator(e.target.value);
-                      setData('price', rawValue);
-                    }}
-                    className={`${inputClass} text-lg font-normal`}
-                  />
-                  {errors.price && <p className="text-xs text-red-500">{errors.price}</p>}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                    <div className="space-y-2">
+                        <label className="block text-sm text-gray-900 font-sfPro">
+                            {isPackageMode ? 'Harga Paket:' : 'Harga Setelah Diskon (Rp):'}
+                        </label>
+                        <input
+                            type="text"
+                            placeholder="0"
+                            value={formatRupiah(data.price)}
+                            onChange={(e) => {
+                                const rawValue = cleanThousandSeparator(e.target.value);
+                                setData('price', rawValue);
+                            }}
+                            className={`${inputClass} text-lg`}
+                        />
+                        {errors.price && <p className="text-xs text-red-500">{errors.price}</p>}
+                    </div>
+
+                    <div className="space-y-2">
+                        <label className="block text-sm text-gray-900 font-sfPro">
+                            Stok {isPackageMode ? 'Paket' : 'Promo'} (Opsional):
+                        </label>
+                        <input
+                            type="number"
+                            placeholder="Biarkan kosong jika tidak dibatasi"
+                            value={data.stock}
+                            onChange={(e) => setData('stock', e.target.value)}
+                            className={`${inputClass} text-lg`}
+                        />
+                        {errors.stock && <p className="text-xs text-red-500">{errors.stock}</p>}
+                    </div>
                 </div>
 
-                {/* periode promo, input jam di bawah tanggal */}
                 <div className="bg-gray-50 rounded-xl p-6 space-y-6">
-                   <h3 className="text-xs font-sfPro text-gray-500 uppercase font-sfPro tracking-widest font-normal">Jadwal Promo</h3>
+                   <h3 className="text-xs font-sfPro text-gray-500 uppercase tracking-widest font-normal">Jadwal Promo</h3>
                    <div className="grid grid-cols-2 gap-8">
-                      {/* bagian mulai */}
                       <div className="flex flex-col gap-4">
                           <label className="text-[11px] text-gray-400 font-sfPro uppercase block font-normal">Waktu Mulai</label>
                           <div className="space-y-3">
                               <DatePicker 
                                 placeholder="Tanggal Mulai"
                                 format="YYYY-MM-DD"
-                                className="w-full rounded-xl border-gray-400 transition-all focus:border-gray-500 shadow-none py-2.5 font-normal"
+                                className="w-full rounded-xl border-gray-400 py-2.5 font-normal"
                                 onChange={(date, dateString) => setData('promo_start_date', dateString)}
                               />
                               <TimePicker 
                                 placeholder="Jam Mulai"
                                 format="HH:mm"
-                                className="w-full rounded-xl border-gray-400 transition-all focus:border-gray-500 shadow-none py-2.5 font-normal"
+                                className="w-full rounded-xl border-gray-400 py-2.5 font-normal"
                                 onChange={(time, timeString) => setData('promo_start_time', timeString)}
                               />
                           </div>
                       </div>
 
-                      {/* bagian selesai */}
                       <div className="flex flex-col gap-4">
                           <label className="text-[11px] text-gray-400 font-sfPro uppercase block font-normal">Waktu Selesai</label>
                           <div className="space-y-3">
                               <DatePicker 
                                 placeholder="Tanggal Selesai"
                                 format="YYYY-MM-DD"
-                                className="w-full rounded-xl border-gray-400 transition-all focus:border-gray-500 shadow-none py-2.5 font-normal"
+                                className="w-full rounded-xl border-gray-400 py-2.5 font-normal"
                                 onChange={(date, dateString) => setData('promo_end_date', dateString)}
                               />
                               <TimePicker 
                                 placeholder="Jam Selesai"
                                 format="HH:mm"
-                                className="w-full rounded-xl border-gray-400 transition-all focus:border-gray-500 shadow-none py-2.5 font-normal"
+                                className="w-full rounded-xl border-gray-400 py-2.5 font-normal"
                                 onChange={(time, timeString) => setData('promo_end_time', timeString)}
                               />
                           </div>
@@ -301,7 +337,6 @@ export default function Create({ categories, allMenus }) {
                    </div>
                 </div>
 
-                {/* image (hanya untuk paket) */}
                 {isPackageMode && (
                   <div className="space-y-2 font-sfPro">
                       <label className="block text-sm text-gray-900 font-normal">Gambar Paket:</label>
@@ -319,14 +354,14 @@ export default function Create({ categories, allMenus }) {
                           )}
                           <input ref={fileInputRef} type="file" accept="image/*" onChange={handleImageChange} className="hidden" />
                       </div>
+                      {errors.image && <p className="text-xs text-red-500">{errors.image}</p>}
                   </div>
                 )}
 
-                {/* button simpan */}
                 <button
                   type="submit"
                   disabled={processing || data.package_items.length === 0}
-                  className="w-full bg-[#EF5350] text-white py-4 rounded-xl font-sfPro text-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-red-100"
+                  className="w-full bg-[#ef5350] text-white py-4 rounded-xl font-sfPro text-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-red-100 active:scale-[0.98]"
                 >
                   {processing ? 'Menyimpan...' : (isPackageMode ? 'Buat Paket Baru' : 'Simpan Diskon')}
                 </button>

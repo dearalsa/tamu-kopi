@@ -41,3 +41,12 @@ html {
     src: url("../../public/fonts/Telegraf-Regular.otf") format("truetype");
     font-weight: normal; font-style: normal;
 }
+
+input, button, a, div {
+    -webkit-tap-highlight-color: transparent;
+}
+
+button:focus, button:active, input:focus {
+    outline: 0 !important;
+    box-shadow: none !important;
+}

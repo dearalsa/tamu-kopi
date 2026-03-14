@@ -230,7 +230,7 @@ export default function Index({ menus, type, filters }) {
                 <h3 className="text-lg font-telegraf text-gray-700 mb-2">Belum ada data</h3>
                 <p className="text-sm text-gray-400 font-sfPro text-center">
                   {searchTerm || filters?.start_date || filters?.end_date
-                    ? 'Tidak ada menu yang sesuai dengan pencarian / rentang tanggal Anda'
+                    ? 'Tidak ada menu yang sesuai dengan pencarian atau rentang tanggal Anda'
                     : `Belum ada menu yang ${
                         type === 'top'
                           ? 'terjual pada periode ini'

@@ -10,6 +10,7 @@ import {
   CircleDollarSign,
   Package,
   FileText,
+  AlertTriangle, 
 } from 'lucide-react';
 import { DatePicker, ConfigProvider } from 'antd';
 import idID from 'antd/lib/locale/id_ID';
@@ -74,6 +75,13 @@ export default function Create({ categories }) {
       forceFormData: true,
       preserveScroll: true,
     });
+  };
+
+  // Helper untuk menentukan ikon status di dalam select
+  const getStatusIcon = () => {
+    if (data.status === 'tersedia') return <Check className="w-4 h-4" />;
+    if (data.status === 'menipis') return <AlertTriangle className="w-4 h-4 text-amber-500" />;
+    return <XIcon className="w-4 h-4 text-red-500" />;
   };
 
   return (
@@ -228,11 +236,7 @@ export default function Create({ categories }) {
                 </label>
                 <div className="relative">
                   <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400">
-                    {data.status === 'tersedia' ? (
-                      <Check className="w-4 h-4" />
-                    ) : (
-                      <XIcon className="w-4 h-4" />
-                    )}
+                    {getStatusIcon()}
                   </span>
                   <select
                     value={data.status}
@@ -240,6 +244,7 @@ export default function Create({ categories }) {
                     className="w-full bg-white border border-gray-400 rounded-xl pl-9 pr-12 py-3 text-sm outline-none appearance-none bg-none !bg-none bg-no-repeat focus:outline-none focus:ring-0 focus:border-gray-500 font-normal text-gray-900"
                   >
                     <option value="tersedia">Tersedia</option>
+                    <option value="menipis">Menipis</option>
                     <option value="habis">Habis</option>
                   </select>
                   <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500">

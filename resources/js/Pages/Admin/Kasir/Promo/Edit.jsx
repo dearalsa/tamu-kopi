@@ -1,11 +1,12 @@
 import React, { useState, useRef } from 'react';
 import { useForm, Link } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
-import { ArrowLeft, CheckSquare, Download, AlertCircle, Save } from 'lucide-react';
+import { ArrowLeft, CheckSquare, Download, AlertCircle, Save, X } from 'lucide-react';
 import { DatePicker, TimePicker, ConfigProvider } from 'antd';
 import idID from 'antd/lib/locale/id_ID';
 import dayjs from 'dayjs';
 import 'dayjs/locale/id';
+import Swal from 'sweetalert2';
 
 dayjs.locale('id');
 
@@ -20,14 +21,15 @@ export default function Edit({ categories, allMenus, promo }) {
     name: promo.name || '',
     category_id: promo.category_id || '',
     price: promo.price || '',
+    stock: promo.stock || '', 
     image: null,
     keep_old_image: promo.image_path || null,
     is_available: promo.is_available,
     package_items: promo.package_items || [],
-    promo_start_date: promo.promo_start_date || null,
-    promo_start_time: promo.promo_start_time || null,
-    promo_end_date: promo.promo_end_date || null,
-    promo_end_time: promo.promo_end_time || null,
+    promo_start_date: promo.promo_start_date ? dayjs(promo.promo_start_date).format('YYYY-MM-DD') : null,
+    promo_start_time: promo.promo_start_time ? dayjs(promo.promo_start_time, 'HH:mm').format('HH:mm') : null,
+    promo_end_date: promo.promo_end_date ? dayjs(promo.promo_end_date).format('YYYY-MM-DD') : null,
+    promo_end_time: promo.promo_end_time ? dayjs(promo.promo_end_time, 'HH:mm').format('HH:mm') : null,
   });
 
   const formatRupiah = (value) => {
@@ -51,6 +53,29 @@ export default function Edit({ categories, allMenus, promo }) {
     post(route('admin.kasir.promo.update', promo.id), {
       forceFormData: true,
       preserveScroll: true,
+      onSuccess: () => {
+        Swal.fire({
+          title: '<span style="font-family: SF-Pro-Display;">Berhasil!</span>',
+          html: `<span style="font-family: SF-Pro-Display; color: #666;">Data promo berhasil diperbarui.</span>`,
+          icon: 'success',
+          iconColor: '#ef5350',
+          confirmButtonColor: '#ef5350',
+          borderRadius: '20px',
+          customClass: {
+            popup: 'rounded-[2rem] shadow-2xl',
+            confirmButton: 'rounded-xl px-8 py-2.5 text-sm font-bold'
+          },
+        });
+      },
+      onError: () => {
+        Swal.fire({
+          title: '<span style="font-family: SF-Pro-Display;">Gagal!</span>',
+          html: `<span style="font-family: SF-Pro-Display; color: #666;">Mohon periksa kembali inputan Anda.</span>`,
+          icon: 'error',
+          confirmButtonColor: '#ef5350',
+          borderRadius: '20px',
+        });
+      }
     });
   };
 
@@ -110,6 +135,7 @@ export default function Edit({ categories, allMenus, promo }) {
                     <div className="space-y-1.5">
                       <label className="text-xs text-gray-500 ml-1 tracking-wider uppercase font-sfPro">Nama Paket</label>
                       <input type="text" value={data.name} onChange={(e) => setData('name', e.target.value)} className={inputClass} />
+                      {errors.name && <p className="text-xs text-red-500 mt-1">{errors.name}</p>}
                     </div>
                     <div className="space-y-1.5">
                       <label className="text-xs text-gray-500 ml-1 tracking-wider uppercase font-sfPro">Kategori</label>
@@ -117,12 +143,20 @@ export default function Edit({ categories, allMenus, promo }) {
                         <option value="">Pilih Kategori</option>
                         {categories.map((cat) => <option key={cat.id} value={cat.id}>{cat.name}</option>)}
                       </select>
+                      {errors.category_id && <p className="text-xs text-red-500 mt-1">{errors.category_id}</p>}
                     </div>
                     <div className="space-y-2">
-                        <label className="block text-sm text-gray-900">Gambar Promo:</label>
+                        <label className="block text-sm text-gray-900 font-sfPro">Gambar Promo:</label>
                         <div onClick={() => fileInputRef.current?.click()} className="w-full border border-gray-300 border-dashed rounded-2xl p-5 flex flex-col items-center justify-center cursor-pointer min-h-[160px] relative overflow-hidden bg-gray-50/40 hover:bg-gray-100 transition-colors">
                             {preview ? (
-                                <><img src={preview} alt="Promo" className="absolute inset-0 w-full h-full object-cover" /><div className="absolute inset-0 bg-black/20 flex items-center justify-center"><button type="button" onClick={removeImage} className="bg-black/60 text-white rounded-full px-3 py-1.5 text-[11px] hover:bg-black/80">Hapus gambar</button></div></>
+                                <>
+                                    <img src={preview} alt="Promo" className="absolute inset-0 w-full h-full object-cover" />
+                                    <div className="absolute inset-0 bg-black/20 flex items-center justify-center group">
+                                        <button type="button" onClick={removeImage} className="bg-black/60 text-white rounded-full p-2 hover:bg-red-500 transition-colors">
+                                            <X size={18} />
+                                        </button>
+                                    </div>
+                                </>
                             ) : (
                                 <div className="flex flex-col items-center gap-2"><div className="bg-black text-white p-2.5 rounded-lg"><Download size={20} /></div><p className="text-xs text-gray-500">Pilih / ganti gambar promo</p></div>
                             )}
@@ -133,7 +167,7 @@ export default function Edit({ categories, allMenus, promo }) {
                 )}
 
                 <div className="space-y-2">
-                  <label className="block text-sm text-gray-900">{isPackageMode ? 'Pilih Isi Paket:' : 'Menu yang Didiskon:'}</label>
+                  <label className="block text-sm text-gray-900 font-sfPro">{isPackageMode ? 'Pilih Isi Paket:' : 'Menu yang Didiskon:'}</label>
                   <div className="border border-gray-200 rounded-2xl max-h-52 overflow-y-auto bg-gray-50/30 font-normal">
                     {allMenus.map((menu) => {
                       const checked = data.package_items.includes(menu.id);
@@ -144,7 +178,7 @@ export default function Edit({ categories, allMenus, promo }) {
                             <div className={`w-5 h-5 rounded-md border flex items-center justify-center transition-all ${checked ? 'bg-red-500 border-red-500' : 'bg-white border-gray-300'}`}>
                               {checked && <CheckSquare className="w-3.5 h-3.5 text-white" />}
                             </div>
-                            <div className="text-left"><p className="text-sm text-gray-800">{menu.name}</p><p className="text-[10px] text-gray-400">Normal: Rp {Number(menu.price).toLocaleString('id-ID')}</p></div>
+                            <div className="text-left"><p className="text-sm text-gray-800 font-sfPro">{menu.name}</p><p className="text-[10px] text-gray-400 font-sfPro">Normal: Rp {Number(menu.price).toLocaleString('id-ID')}</p></div>
                           </div>
                         </button>
                       );
@@ -152,28 +186,37 @@ export default function Edit({ categories, allMenus, promo }) {
                   </div>
                 </div>
 
-                <div className="space-y-1.5">
-                  <label className="text-xs text-gray-500 ml-1 tracking-wider uppercase font-sfPro">Harga Diskon Baru</label>
-                  <input type="text" value={formatRupiah(data.price)} onChange={(e) => setData('price', cleanThousandSeparator(e.target.value))} className={`${inputClass} text-lg`} placeholder="0" />
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 font-sfPro">
+                  <div className="space-y-1.5">
+                    <label className="text-xs text-gray-500 ml-1 tracking-wider uppercase font-sfPro">Harga Diskon Baru</label>
+                    <input type="text" value={formatRupiah(data.price)} onChange={(e) => setData('price', cleanThousandSeparator(e.target.value))} className={`${inputClass} text-lg font-sfPro`} placeholder="0" />
+                    {errors.price && <p className="text-xs text-red-500 mt-1">{errors.price}</p>}
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-xs text-gray-500 ml-1 tracking-wider uppercase font-sfPro">Stok {isPackageMode ? 'Paket' : 'Promo'}</label>
+                    <input type="number" value={data.stock} onChange={(e) => setData('stock', e.target.value)} className={`${inputClass} text-lg font-sfPro`} placeholder="0" />
+                    {errors.stock && <p className="text-xs text-red-500 mt-1">{errors.stock}</p>}
+                  </div>
                 </div>
 
                 <div className="bg-gray-50 rounded-2xl p-6 space-y-6 border border-gray-100 font-sfPro">
-                  <h3 className="text-xs text-gray-400 uppercase tracking-widest text-center">Periode Aktif Promo</h3>
+                  <h3 className="text-xs text-gray-400 uppercase tracking-widest text-center font-sfPro">Periode Aktif Promo</h3>
                   <div className="grid grid-cols-2 gap-8">
                     <div className="space-y-3">
-                      <label className="text-[11px] text-gray-400 uppercase block ml-1">Mulai Berlaku</label>
+                      <label className="text-[11px] text-gray-400 uppercase block ml-1 font-sfPro">Mulai Berlaku</label>
                       <DatePicker placeholder="Pilih Tanggal" format="YYYY-MM-DD" value={data.promo_start_date ? dayjs(data.promo_start_date) : null} onChange={(_, ds) => setData('promo_start_date', ds)} className="w-full rounded-xl py-2.5" />
                       <TimePicker placeholder="Pilih Jam" format="HH:mm" value={data.promo_start_time ? dayjs(data.promo_start_time, 'HH:mm') : null} onChange={(_, ts) => setData('promo_start_time', ts)} className="w-full rounded-xl py-2.5" />
                     </div>
                     <div className="space-y-3">
-                      <label className="text-[11px] text-gray-400 uppercase block ml-1">Selesai Pada</label>
+                      <label className="text-[11px] text-gray-400 uppercase block ml-1 font-sfPro">Selesai Pada</label>
                       <DatePicker placeholder="Pilih Tanggal" format="YYYY-MM-DD" value={data.promo_end_date ? dayjs(data.promo_end_date) : null} onChange={(_, ds) => setData('promo_end_date', ds)} className="w-full rounded-xl py-2.5" />
                       <TimePicker placeholder="Pilih Jam" format="HH:mm" value={data.promo_end_time ? dayjs(data.promo_end_time, 'HH:mm') : null} onChange={(_, ts) => setData('promo_end_time', ts)} className="w-full rounded-xl py-2.5" />
                     </div>
                   </div>
                 </div>
 
-                <button type="submit" disabled={processing} className="w-full bg-[#EF5350] text-white py-4 rounded-xl text-sm font-sfPro transition-all flex items-center justify-center gap-2 hover:bg-[#e53935] shadow-lg shadow-red-100">
+                <button type="submit" disabled={processing} className="w-full bg-[#EF5350] text-white py-4 rounded-xl text-sm font-sfPro transition-all flex items-center justify-center gap-2 hover:bg-[#e53935] shadow-lg shadow-red-100 active:scale-95">
                   {processing ? 'Menyimpan...' : <><Save size={18} /> Simpan Perubahan</>}
                 </button>
               </form>

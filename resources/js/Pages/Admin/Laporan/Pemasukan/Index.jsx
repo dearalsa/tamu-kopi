@@ -63,8 +63,18 @@ export default function PemasukanIndex({ transactions, start, end, summary }) {
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
           <h1 className="text-2xl font-telegraf text-gray-800 tracking-tight">Laporan Pemasukan</h1>
 
-          <div className="flex flex-wrap items-center gap-3 bg-white p-2 rounded-2xl border border-gray-100">
-            <ConfigProvider locale={idID}>
+          <div className="flex flex-wrap items-center gap-3 bg-white p-2 rounded-2xl border border-gray-100 shadow-sm">
+            <ConfigProvider 
+              locale={idID}
+              theme={{
+                components: {
+                  DatePicker: {
+                    activeShadow: 'none',
+                    activeBorderColor: 'transparent',
+                  }
+                }
+              }}
+            >
               <div className="flex items-center gap-2 px-2">
                 <span className="text-[13px] text-gray-600">Dari</span>
                 <DatePicker
@@ -72,7 +82,7 @@ export default function PemasukanIndex({ transactions, start, end, summary }) {
                   onChange={setStartDate}
                   format="DD MMM YYYY"
                   variant="borderless"
-                  className="font-medium"
+                  className="font-medium focus:outline-none"
                 />
               </div>
               <div className="w-px h-5 bg-gray-200" />
@@ -83,13 +93,13 @@ export default function PemasukanIndex({ transactions, start, end, summary }) {
                   onChange={setEndDate}
                   format="DD MMM YYYY"
                   variant="borderless"
-                  className="font-medium"
+                  className="font-medium focus:outline-none"
                 />
               </div>
             </ConfigProvider>
             <button
               onClick={handleFilter}
-              className="bg-[#1E1C1C] text-white px-8 py-2.5 rounded-xl text-xs hover:bg-black transition-all active:scale-95"
+              className="bg-[#1E1C1C] text-white px-8 py-2.5 rounded-xl text-xs hover:bg-black transition-all active:scale-95 outline-none focus:outline-none focus:ring-0 border-none"
             >
               Cari
             </button>
@@ -144,21 +154,21 @@ export default function PemasukanIndex({ transactions, start, end, summary }) {
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="Cari Kasir atau No. Transaksi..."
-              className="w-[260px] pl-10 pr-4 py-2.5 bg-white border border-gray-50 shadow-[0_2px_10px_rgba(0,0,0,0.02)] rounded-2xl text-sm text-gray-600 placeholder-gray-400 focus:outline-none focus:ring-0"
+              className="w-[260px] pl-10 pr-4 py-2.5 bg-white border border-gray-50 shadow-[0_2px_10px_rgba(0,0,0,0.02)] rounded-2xl text-sm text-gray-600 placeholder-gray-400 focus:outline-none focus:ring-0 focus:border-gray-100"
             />
           </div>
 
           <div className="flex gap-2">
             <button
               onClick={() => handleExport('pdf')}
-              className="flex items-center gap-2 bg-red-500 text-white px-6 py-3 rounded-2xl text-sm hover:bg-red-600 transition-all active:scale-95 shadow-sm"
+              className="flex items-center gap-2 bg-red-500 text-white px-6 py-3 rounded-2xl text-sm hover:bg-red-600 transition-all active:scale-95 shadow-sm focus:ring-0 outline-none"
             >
               <FontAwesomeIcon icon={faFilePdf} className="text-base" />
               <span>PDF</span>
             </button>
             <button
               onClick={() => handleExport('excel')}
-              className="flex items-center gap-2 bg-emerald-500 text-white px-6 py-3 rounded-2xl text-sm hover:bg-emerald-600 transition-all active:scale-95 shadow-sm"
+              className="flex items-center gap-2 bg-emerald-500 text-white px-6 py-3 rounded-2xl text-sm hover:bg-emerald-600 transition-all active:scale-95 shadow-sm focus:ring-0 outline-none"
             >
               <FontAwesomeIcon icon={faFileExcel} className="text-base" />
               <span>Excel</span>
@@ -166,7 +176,7 @@ export default function PemasukanIndex({ transactions, start, end, summary }) {
           </div>
         </div>
 
-        {/* Table */}
+        {/* table */}
         <div className="bg-white rounded-[25px] border border-gray-50 overflow-hidden shadow-[0_8px_30px_rgb(0,0,0,0.02)]">
           <table className="w-full text-left border-separate border-spacing-0">
             <thead>
@@ -229,7 +239,7 @@ export default function PemasukanIndex({ transactions, start, end, summary }) {
                   <td colSpan="6" className="px-8 py-20 text-center">
                     <div className="flex flex-col items-center gap-2 opacity-30">
                       <FileText size={48} />
-                      <p className="text-sm text-gray-900">Belum ada data transaksi.</p>
+                      <p className="text-sm text-gray-900">Tidak ada data transaksi.</p>
                     </div>
                   </td>
                 </tr>
@@ -258,7 +268,7 @@ export default function PemasukanIndex({ transactions, start, end, summary }) {
                   disabled={!link.url}
                   preserveScroll
                   className={`
-                    w-8 h-8 flex items-center justify-center rounded-lg text-xs transition-all
+                    w-8 h-8 flex items-center justify-center rounded-lg text-xs transition-all focus:ring-0 focus:outline-none
                     ${link.active ? 'bg-[#E5534B] text-white' : 'bg-gray-50 text-gray-500 hover:bg-gray-100'}
                     ${!link.url ? 'opacity-30 cursor-not-allowed' : 'active:scale-95'}
                   `}

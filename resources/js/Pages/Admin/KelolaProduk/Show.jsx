@@ -9,6 +9,7 @@ import {
   FileText,
   CheckCircle2,
   XCircle,
+  AlertTriangle, // Ikon tambahan untuk status menipis
   Image as ImageIcon,
   User,
 } from 'lucide-react';
@@ -27,6 +28,30 @@ export default function Show({ product }) {
       .format(amount)
       .replace('Rp', 'Rp ');
   };
+
+  // Helper untuk menentukan warna dan ikon status
+  const getStatusConfig = (status) => {
+    switch (status) {
+      case 'tersedia':
+        return {
+          classes: 'bg-emerald-50 text-emerald-600 border-emerald-100',
+          icon: <CheckCircle2 size={12} />
+        };
+      case 'menipis':
+        return {
+          classes: 'bg-amber-50 text-amber-600 border-amber-100',
+          icon: <AlertTriangle size={12} />
+        };
+      case 'habis':
+      default:
+        return {
+          classes: 'bg-red-50 text-red-600 border-red-100',
+          icon: <XCircle size={12} />
+        };
+    }
+  };
+
+  const statusConfig = getStatusConfig(product.status);
 
   return (
     <AdminLayout>
@@ -76,7 +101,7 @@ export default function Show({ product }) {
                       {product.name}
                     </h1>
 
-                    {/* nama admin yang menambahkan produk yang baru saja dibeli */}
+                    {/* nama admin yang menambahkan produk */}
                     <div className="flex items-center gap-1.5 text-gray-600 mt-1">
                       <User size={14} className="text-gray-400" />
                       <span className="text-[13px] font-sfPro">
@@ -89,17 +114,9 @@ export default function Show({ product }) {
                   </div>
 
                   <span
-                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-sfPro uppercase tracking-widest ${
-                      product.status === 'tersedia'
-                        ? 'bg-emerald-50 text-emerald-600 border border-emerald-100'
-                        : 'bg-red-50 text-red-600 border border-red-100'
-                    }`}
+                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-sfPro uppercase tracking-widest border ${statusConfig.classes}`}
                   >
-                    {product.status === 'tersedia' ? (
-                      <CheckCircle2 size={12} />
-                    ) : (
-                      <XCircle size={12} />
-                    )}
+                    {statusConfig.icon}
                     {product.status}
                   </span>
                 </div>

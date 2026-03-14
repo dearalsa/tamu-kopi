@@ -14,9 +14,9 @@ class CatalogController extends Controller
     public function index(Request $request)
     {
         $now = Carbon::now();
+
         $menus = Menu::where('is_available', true)
             ->with('category:id,name')
-            // Jika ingin filter server-side (opsional tapi disarankan untuk pagination):
             ->when($request->category && $request->category !== 'all', function ($query) use ($request) {
                 $query->where('category_id', $request->category);
             })
@@ -27,31 +27,36 @@ class CatalogController extends Controller
             ->paginate(20)
             ->withQueryString();
 
-        // Transformasi data di dalam collection pagination
         $menus->getCollection()->transform(function ($menu) use ($now) {
             $price = (float) $menu->price;
             $promoPrice = $menu->promo_price ? (float) $menu->promo_price : null;
+            $stock = $menu->stock; 
 
+            $isOutOfStock = !is_null($stock) && $stock <= 0;
+
+            // Logika Promo 
             $isPromoActive = false;
-            if ($promoPrice > 0) {
+            if ($promoPrice > 0 && !$isOutOfStock) {
+                $start = $menu->promo_start_at ? Carbon::parse($menu->promo_start_at) : null;
+                $end = $menu->promo_end_at ? Carbon::parse($menu->promo_end_at) : null;
+                
                 $isPromoActive = true;
-                if ($menu->promo_start_at && $now->lt(Carbon::parse($menu->promo_start_at))) {
-                    $isPromoActive = false;
-                }
-                if ($menu->promo_end_at && $now->gt(Carbon::parse($menu->promo_end_at))) {
-                    $isPromoActive = false;
-                }
+                if ($start && $now->lt($start)) $isPromoActive = false;
+                if ($end && $now->gt($end)) $isPromoActive = false;
             }
 
             return [
                 'id' => $menu->id,
                 'name' => $menu->name,
-                'price' => $price,
-                'promo_price' => $isPromoActive ? $promoPrice : null,
+                'description' => $menu->description, 
+                'price' => $price, 
+                'promo_price' => $isPromoActive ? $promoPrice : null, 
                 'image' => $menu->image, 
                 'category' => $menu->category?->name,
                 'category_id' => $menu->category_id,
+                'stock' => $stock,
                 'is_promo' => $isPromoActive,
+                'is_out_of_stock' => $isOutOfStock, 
                 'is_best_seller' => (bool) $menu->is_best_seller,
                 'is_package' => (bool) $menu->is_package,
             ];

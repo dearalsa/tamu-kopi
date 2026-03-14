@@ -7,12 +7,14 @@ export default function Index() {
     const { categories, flash } = usePage().props
     const [searchTerm, setSearchTerm] = useState('')
     const [currentPage, setCurrentPage] = useState(1)
-    const dataPerPage = 5
+
+    const dataPerPage = 10
 
     const filteredCategories = categories.filter(cat =>
         cat.name.toLowerCase().includes(searchTerm.toLowerCase())
     )
 
+    // Logika Paginasi
     const indexOfLastData = currentPage * dataPerPage
     const indexOfFirstData = indexOfLastData - dataPerPage
     const currentData = filteredCategories.slice(indexOfFirstData, indexOfLastData)
@@ -65,6 +67,7 @@ export default function Index() {
                             </div>
                         </div>
 
+                        {/* table section */}
                         <div className="overflow-x-auto">
                             <table className="w-full text-left min-w-[400px] sm:min-w-full">
                                 <thead>
@@ -107,6 +110,7 @@ export default function Index() {
                             </table>
                         </div>
 
+                        {/* pagination */}
                         <div className="mt-6 sm:mt-8 flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-gray-50 font-sfPro">
                             <p className="text-[11px] text-gray-300 font-normal">
                                 Menampilkan {filteredCategories.length > 0 ? indexOfFirstData + 1 : 0}-{Math.min(indexOfLastData, filteredCategories.length)} dari {filteredCategories.length} data
