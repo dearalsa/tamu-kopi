@@ -30,7 +30,9 @@ class TransactionController extends Controller
             ->orderBy('count', 'desc')
             ->first();
 
-        $busy_hours = $busy_hour_query ? str_pad($busy_hour_query->hour, 2, '0', STR_PAD_LEFT) . ':00' : '-';
+        $busy_hours = $busy_hour_query
+            ? str_pad($busy_hour_query->hour, 2, '0', STR_PAD_LEFT) . ':00'
+            : '-';
 
         $transactions = Transaction::with(['items'])
             ->whereBetween('created_at', $dateFilter)
@@ -49,12 +51,12 @@ class TransactionController extends Controller
                 'change'         => $trx->change,
                 'order_type'     => $trx->order_type,
                 'created_at'     => $trx->created_at,
-                'cashier_name'   => $trx->cashier_name, 
+                'cashier_name'   => $trx->cashier_name,
                 'items'          => $trx->items->map(fn ($item) => [
                     'menu_name'   => $item->menu_name,
                     'price'       => $item->price,
                     'quantity'    => $item->quantity,
-                    'description' => $item->description, // Mengambil catatan dari kolom description
+                    'description' => $item->description,
                 ]),
             ]);
 
@@ -81,29 +83,29 @@ class TransactionController extends Controller
             'payment_method' => 'required|in:cash,qris',
             'order_type'     => 'required|in:dine-in,takeaway',
             'cart'           => 'required|array|min:1',
-            'cart.*.menu_id' => 'required|exists:menus,id', 
+            'cart.*.menu_id' => 'required|exists:menus,id',
         ]);
 
         try {
             $transaction = DB::transaction(function () use ($request) {
-                $invoice    = 'TRX-' . now()->format('ymdHis') . rand(10, 99);
-                $todayCount = Transaction::whereDate('created_at', Carbon::today())->count();
+                $invoice     = 'TRX-' . now()->format('ymdHis') . rand(10, 99);
+                $todayCount  = Transaction::whereDate('created_at', Carbon::today())->count();
                 $orderNumber = 'C' . str_pad($todayCount + 1, 3, '0', STR_PAD_LEFT);
 
                 $admin = Auth::guard('admin')->user();
 
                 $newTransaction = Transaction::create([
-                    'user_id'         => $admin?->id,
-                    'cashier_name'    => $admin?->name, 
-                    'invoice_number'  => $invoice,
-                    'queue_number'    => $orderNumber,
-                    'subtotal'        => $request->subtotal,
-                    'discount'        => $request->discount,
-                    'total'           => $request->total,
-                    'payment_method'  => $request->payment_method,
-                    'cash_amount'     => $request->cash_amount ?? 0,
-                    'change'          => $request->change ?? 0,
-                    'order_type'      => $request->order_type,
+                    'user_id'        => $admin?->id,
+                    'cashier_name'   => $admin?->name,
+                    'invoice_number' => $invoice,
+                    'queue_number'   => $orderNumber,
+                    'subtotal'       => $request->subtotal,
+                    'discount'       => $request->discount,
+                    'total'          => $request->total,
+                    'payment_method' => $request->payment_method,
+                    'cash_amount'    => $request->cash_amount ?? 0,
+                    'change'         => $request->change ?? 0,
+                    'order_type'     => $request->order_type,
                 ]);
 
                 foreach ($request->cart as $item) {
@@ -112,7 +114,7 @@ class TransactionController extends Controller
                         'menu_name'      => $item['name'],
                         'price'          => $item['price'],
                         'quantity'       => $item['quantity'],
-                        'description'    => $item['note'] ?? null, // Simpan variabel 'note' dari frontend ke kolom 'description' DB
+                        'description'    => $item['note'] ?? null,
                     ]);
 
                     $menu = Menu::find($item['menu_id']);
@@ -124,7 +126,8 @@ class TransactionController extends Controller
                 return $newTransaction->load('items');
             });
 
-            return redirect()->back()->with('success_transaction', [
+            // Data untuk struk (dipakai di React)
+            $flashData = [
                 'invoice_number' => $transaction->invoice_number,
                 'queue_number'   => $transaction->queue_number,
                 'subtotal'       => $transaction->subtotal,
@@ -136,11 +139,23 @@ class TransactionController extends Controller
                 'order_type'     => $transaction->order_type,
                 'created_at'     => $transaction->created_at,
                 'cashier_name'   => $transaction->cashier_name,
-                'items'          => $transaction->items, // Data items sudah termasuk kolom description
-            ]);
+                'items'          => $transaction->items->map(fn ($item) => [
+                    'menu_name'   => $item->menu_name,
+                    'price'       => $item->price,
+                    'quantity'    => $item->quantity,
+                    'description' => $item->description,
+                ])->toArray(),
+            ];
+
+            // Redirect ke halaman katalog kasir yang benar
+            return redirect()
+                ->route('admin.kasir.katalog.index')
+                ->with('success_transaction', $flashData);
 
         } catch (\Exception $e) {
-            return redirect()->back()->withErrors(['error' => 'Gagal: ' . $e->getMessage()]);
+            return redirect()
+                ->back()
+                ->withErrors(['error' => 'Gagal: ' . $e->getMessage()]);
         }
     }
 }

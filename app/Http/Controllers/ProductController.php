@@ -14,11 +14,9 @@ class ProductController extends Controller
 {
     public function index(Request $request)
     {
-        // Default filter ke rentang BULAN INI agar sinkron dengan lonceng notifikasi
         $startDate = $request->start_date ?? Carbon::now()->startOfMonth()->toDateString();
-        $endDate = $request->end_date ?? Carbon::now()->endOfMonth()->toDateString();
+        $endDate   = $request->end_date ?? Carbon::now()->endOfMonth()->toDateString();
 
-        // Ambil data produk berdasarkan rentang tanggal
         $products = Product::with('category')
             ->whereDate('date', '>=', $startDate)
             ->whereDate('date', '<=', $endDate)
@@ -33,9 +31,7 @@ class ProductController extends Controller
                 'status'          => $product->status,
                 'description'     => $product->description,
                 'category'        => $product->category?->name,
-                'proof'           => $product->proof
-                    ? asset('storage/' . $product->proof)
-                    : null,
+                'proof'           => $product->proof ? asset('storage/' . $product->proof) : null,
                 'created_by_name' => $product->created_by_name,
             ]);
 
@@ -62,7 +58,7 @@ class ProductController extends Controller
             'category_id' => 'required|exists:categories,id',
             'date'        => 'required|date',
             'price'       => 'required|integer|min:0',
-            'status'      => 'required|in:tersedia,habis,menipis', 
+            'status'      => 'required|in:tersedia,habis,menipis',
             'description' => 'nullable|string',
             'proof'       => 'nullable|image|max:10240',
         ], [
@@ -81,6 +77,7 @@ class ProductController extends Controller
 
         $data['created_by_name'] = Auth::guard('admin')->user()?->name;
 
+        // Langsung simpan data tanpa mapping stock
         Product::create($data);
 
         return redirect()->route('admin.kelola-produk.index')
@@ -100,9 +97,7 @@ class ProductController extends Controller
                 'status'          => $product->status,
                 'description'     => $product->description,
                 'category'        => $product->category?->name,
-                'proof'           => $product->proof
-                    ? asset('storage/' . $product->proof)
-                    : null,
+                'proof'           => $product->proof ? asset('storage/' . $product->proof) : null,
                 'created_by_name' => $product->created_by_name,
             ],
         ]);
@@ -132,18 +127,10 @@ class ProductController extends Controller
             'category_id'    => 'required|exists:categories,id',
             'date'           => 'required|date',
             'price'          => 'required|integer|min:0',
-            'status'         => 'required|in:tersedia,habis,menipis', 
+            'status'         => 'required|in:tersedia,habis,menipis',
             'description'    => 'nullable|string',
             'proof'          => 'nullable|image|max:10240',
             'keep_old_proof' => 'nullable|string',
-        ], [
-            'name.required'        => 'Nama produk wajib diisi.',
-            'category_id.required' => 'Kategori wajib dipilih.',
-            'date.required'        => 'Tanggal wajib diisi.',
-            'price.required'       => 'Harga wajib diisi.',
-            'status.required'      => 'Status ketersediaan wajib dipilih.',
-            'proof.image'          => 'File yang diunggah harus berupa gambar.',
-            'proof.max'            => 'Ukuran gambar maksimal adalah 10 MB.',
         ]);
 
         if ($request->hasFile('proof')) {
@@ -152,7 +139,6 @@ class ProductController extends Controller
             }
             $data['proof'] = $request->file('proof')->store('products', 'public');
         } else {
-            unset($data['proof']);
             if (!$request->keep_old_proof && $product->proof) {
                 Storage::disk('public')->delete($product->proof);
                 $data['proof'] = null;
@@ -171,7 +157,6 @@ class ProductController extends Controller
             Storage::disk('public')->delete($product->proof);
         }
         $product->delete();
-
         return back()->with('success', 'Produk berhasil dihapus!');
     }
 }

@@ -1,16 +1,16 @@
 import { useState } from 'react';
 import { Head, Link, router } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
-import { 
-  Search, 
-  Eye, 
-  Plus, 
-  Tag, 
+import {
+  Search,
+  Eye,
+  Plus,
+  Tag,
   CheckCircle2,
   XCircle,
   FileText,
   Pencil,
-  AlertTriangle 
+  AlertTriangle
 } from 'lucide-react';
 import { DatePicker, ConfigProvider } from 'antd';
 import idID from 'antd/lib/locale/id_ID';
@@ -21,9 +21,6 @@ dayjs.locale('id');
 
 export default function ProductIndex({ products, filters }) {
   const [searchTerm, setSearchTerm] = useState('');
-  
-  // REVISI LOGIKA TANGGAL:
-  // Mengambil rentang dari Controller (Default: Awal Bulan s/d Akhir Bulan)
   const [startDate, setStartDate] = useState(
     filters.start_date ? dayjs(filters.start_date) : dayjs().startOf('month')
   );
@@ -60,8 +57,9 @@ export default function ProductIndex({ products, filters }) {
   const to = products.to ?? 0;
   const total = products.total ?? 0;
 
+  // Filter client-side berdasarkan searchTerm
   const displayData = products.data.filter((product) =>
-    product.name.toLowerCase().includes(searchTerm.toLowerCase())
+    product.name?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
@@ -69,8 +67,6 @@ export default function ProductIndex({ products, filters }) {
       <Head title="Kelola Bahan" />
 
       <div className="max-w-7xl mx-auto px-4 pt-16 pb-6 font-sfPro bg-gray-50/30 min-h-screen">
-        
-        {/* Header & Filter Tanggal */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
           <div>
             <h1 className="text-2xl font-telegraf text-gray-800 tracking-tight">
@@ -81,6 +77,7 @@ export default function ProductIndex({ products, filters }) {
             </p>
           </div>
 
+          {/* Filter Tanggal */}
           <div className="flex flex-wrap items-center gap-3 bg-white p-2 rounded-2xl border border-gray-100 shadow-sm">
             <ConfigProvider locale={idID}>
               <div className="flex items-center gap-2 px-2 h-full">
@@ -94,7 +91,9 @@ export default function ProductIndex({ products, filters }) {
                   className="p-0 font-medium text-sm flex items-center"
                 />
               </div>
+
               <div className="w-px h-5 bg-gray-200 self-center"></div>
+
               <div className="flex items-center gap-2 px-2 h-full">
                 <span className="text-[11px] text-gray-700">Sampai Tanggal</span>
                 <DatePicker
@@ -107,6 +106,7 @@ export default function ProductIndex({ products, filters }) {
                 />
               </div>
             </ConfigProvider>
+
             <button
               onClick={handleSearchByDate}
               className="bg-gray-900 text-white px-8 py-2.5 rounded-xl text-xs font-sfPro hover:bg-black transition-all active:scale-95 shadow-sm"
@@ -125,7 +125,7 @@ export default function ProductIndex({ products, filters }) {
             />
             <input
               type="text"
-              placeholder="Cari nama bahan..."
+              placeholder="Cari..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-[260px] pl-12 pr-4 py-3 bg-white border border-gray-100 rounded-2xl text-sm font-sfPro shadow-[0_2px_10px_rgba(0,0,0,0.02)] !outline-none !ring-0 focus:!border-gray-100"
@@ -134,57 +134,99 @@ export default function ProductIndex({ products, filters }) {
 
           <Link
             href={route('admin.kelola-produk.create')}
-            className="inline-flex items-center justify-center gap-2 bg-[#EF5350] hover:bg-[#E84949] text-white px-6 py-3 rounded-2xl text-sm font-medium transition-all active:scale-95 shadow-md"
+            className="inline-flex items-center justify-center gap-2 bg-[#EF5350] hover:bg-[#E84949] text-white px-6 py-3 rounded-2xl text-sm font-medium transition-all active:scale-95"
           >
             <Plus size={18} />
-            Tambah Barang
+            Tambah Bahan
           </Link>
         </div>
 
-        {/* Tabel */}
+        {/* Table */}
         <div className="bg-white rounded-[25px] shadow-[0_8px_40px_rgba(0,0,0,0.03)] border border-gray-50 overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-left border-separate border-spacing-0">
               <thead>
                 <tr className="bg-gray-50/50">
-                  <th className="px-8 py-5 text-[10px] font-sfPro font-medium text-gray-800 uppercase tracking-widest">Nama Produk</th>
-                  <th className="px-8 py-5 text-[10px] font-sfPro font-medium text-gray-800 uppercase tracking-widest">Tanggal</th>
-                  <th className="px-8 py-5 text-[10px] font-sfPro font-medium text-gray-800 uppercase tracking-widest">Harga</th>
-                  <th className="px-8 py-5 text-[10px] font-sfPro font-medium text-gray-800 uppercase tracking-widest">Kategori</th>
-                  <th className="px-8 py-5 text-[10px] font-sfPro font-medium text-gray-800 uppercase tracking-widest">Status</th>
-                  <th className="px-8 py-5 text-[10px] font-sfPro font-medium text-gray-800 uppercase tracking-widest text-center">Aksi</th>
+                  <th className="px-8 py-5 text-[10px] font-sfPro font-medium text-gray-800 uppercase tracking-widest">
+                    Nama Bahan
+                  </th>
+                  <th className="px-8 py-5 text-[10px] font-sfPro font-medium text-gray-800 uppercase tracking-widest">
+                    Tanggal
+                  </th>
+                  <th className="px-8 py-5 text-[10px] font-sfPro font-medium text-gray-800 uppercase tracking-widest">
+                    Harga
+                  </th>
+                  <th className="px-8 py-5 text-[10px] font-sfPro font-medium text-gray-800 uppercase tracking-widest">
+                    Kategori
+                  </th>
+                  <th className="px-8 py-5 text-[10px] font-sfPro font-medium text-gray-800 uppercase tracking-widest">
+                    Status
+                  </th>
+                  <th className="px-8 py-5 text-[10px] font-sfPro font-medium text-gray-800 uppercase tracking-widest text-center">
+                    Aksi
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
                 {displayData.length > 0 ? (
-                  displayData.map((product) => (
-                    <tr key={product.id} className="hover:bg-gray-50/30 transition-colors group">
-                      <td className="px-8 py-5 text-sm font-sfPro text-gray-800 font-medium">{product.name}</td>
-                      <td className="px-8 py-5 text-sm font-sfPro text-gray-600">{dayjs(product.date).format('DD-MM-YYYY')}</td>
-                      <td className="px-8 py-5 text-sm font-sfPro text-gray-900">{formatIDR(product.price)}</td>
-                      <td className="px-8 py-5 text-sm">
-                        <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-blue-50 text-blue-600 rounded-lg font-medium capitalize text-[11px]">
-                          <Tag size={12} /> {product.category}
-                        </span>
-                      </td>
-                      <td className="px-8 py-5">
-                        <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-sfPro uppercase tracking-wider ${
-                            product.status === 'tersedia' ? 'bg-green-50 text-green-600' : 
-                            product.status === 'menipis' ? 'bg-amber-50 text-amber-600' : 'bg-red-50 text-red-600'
+                  displayData.map((product) => {
+                    // Penentuan status default jika null
+                    const status = product.status ?? 'tersedia';
+
+                    return (
+                      <tr key={product.id} className="hover:bg-gray-50/30 transition-colors group">
+                        <td className="px-8 py-5 text-sm font-sfPro text-gray-800 font-medium">
+                          {product.name}
+                        </td>
+                        <td className="px-8 py-5 text-sm font-sfPro text-gray-600">
+                          {dayjs(product.date).format('DD-MM-YYYY')}
+                        </td>
+                        <td className="px-8 py-5 text-sm font-sfPro text-gray-900">
+                          {formatIDR(product.price)}
+                        </td>
+                        <td className="px-8 py-5 text-sm">
+                          <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-blue-50 text-blue-600 rounded-lg font-medium capitalize text-[11px]">
+                            <Tag size={12} />
+                            {product.category}
+                          </span>
+                        </td>
+                        <td className="px-8 py-5">
+                          <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-sfPro uppercase tracking-wider ${
+                            status === 'tersedia'
+                              ? 'bg-green-50 text-green-600'
+                              : status === 'menipis'
+                              ? 'bg-amber-50 text-amber-600'
+                              : 'bg-red-50 text-red-600'
                           }`}>
-                          {product.status === 'tersedia' ? <CheckCircle2 size={12} /> : 
-                           product.status === 'menipis' ? <AlertTriangle size={12} /> : <XCircle size={12} />}
-                          {product.status}
-                        </span>
-                      </td>
-                      <td className="px-8 py-5 text-center">
-                        <div className="flex items-center justify-center gap-2">
-                          <Link href={route('admin.kelola-produk.show', product.id)} className="w-10 h-10 rounded-xl bg-gray-50 text-gray-500 hover:bg-gray-900 hover:text-white flex items-center justify-center transition-all active:scale-95 shadow-sm"><Eye size={18} /></Link>
-                          <Link href={route('admin.kelola-produk.edit', product.id)} className="w-10 h-10 rounded-xl bg-gray-50 text-gray-500 hover:bg-gray-900 hover:text-white flex items-center justify-center transition-all active:scale-95 shadow-sm"><Pencil size={18} /></Link>
-                        </div>
-                      </td>
-                    </tr>
-                  ))
+                            {status === 'tersedia' ? (
+                              <CheckCircle2 size={12} />
+                            ) : status === 'menipis' ? (
+                              <AlertTriangle size={12} />
+                            ) : (
+                              <XCircle size={12} />
+                            )}
+                            {status}
+                          </span>
+                        </td>
+                        <td className="px-8 py-5 text-center">
+                          <div className="flex items-center justify-center gap-2">
+                            <Link
+                              href={route('admin.kelola-produk.show', product.id)}
+                              className="w-10 h-10 rounded-xl bg-gray-50 text-gray-500 hover:bg-gray-900 hover:text-white flex items-center justify-center transition-all active:scale-95 shadow-sm"
+                            >
+                              <Eye size={18} />
+                            </Link>
+                            <Link
+                              href={route('admin.kelola-produk.edit', product.id)}
+                              className="w-10 h-10 rounded-xl bg-gray-50 text-gray-500 hover:bg-gray-900 hover:text-white flex items-center justify-center transition-all active:scale-95 shadow-sm"
+                            >
+                              <Pencil size={18} />
+                            </Link>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })
                 ) : (
                   <tr>
                     <td colSpan="6" className="px-8 py-20 text-center font-sfPro text-gray-400 text-sm">
@@ -202,7 +244,9 @@ export default function ProductIndex({ products, filters }) {
 
         {/* Pagination */}
         <div className="mt-10 flex flex-col md:flex-row justify-between items-center gap-4 pb-10">
-          <p className="text-xs text-gray-500 font-sfPro">Menampilkan {from}–{to} dari {total.toLocaleString('id-ID')} data</p>
+          <p className="text-xs text-gray-500 font-sfPro">
+            Menampilkan {from}–{to} dari {total.toLocaleString('id-ID')} data
+          </p>
           <div className="flex gap-1.5 p-1.5 bg-white rounded-xl shadow-sm border border-gray-50">
             {products.links.map((link, index) => (
               <Link
@@ -212,10 +256,20 @@ export default function ProductIndex({ products, filters }) {
                 disabled={!link.url}
                 preserveScroll
                 className={`w-8 h-8 flex items-center justify-center rounded-lg text-xs font-sfPro transition-all ${
-                    link.active ? 'bg-[#EF5350] text-white shadow-sm' : 'bg-gray-50 text-gray-500 hover:bg-gray-100'
-                  } ${!link.url ? 'opacity-30 cursor-not-allowed' : 'active:scale-95'}`}
+                  link.active
+                    ? 'bg-[#EF5350] text-white shadow-sm'
+                    : 'bg-gray-50 text-gray-500 hover:bg-gray-100'
+                } ${!link.url ? 'opacity-30 cursor-not-allowed' : 'active:scale-95'}`}
               >
-                <span dangerouslySetInnerHTML={{ __html: link.label.includes('Previous') ? '<' : link.label.includes('Next') ? '>' : link.label }} />
+                <span
+                  dangerouslySetInnerHTML={{
+                    __html: link.label.includes('Previous')
+                      ? '<'
+                      : link.label.includes('Next')
+                      ? '>'
+                      : link.label
+                  }}
+                />
               </Link>
             ))}
           </div>

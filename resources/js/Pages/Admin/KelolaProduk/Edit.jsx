@@ -11,7 +11,7 @@ import {
   Package,
   FileText,
   ChevronDown,
-  AlertTriangle, // Ikon tambahan untuk status menipis
+  AlertTriangle,
 } from 'lucide-react';
 import { DatePicker, ConfigProvider } from 'antd';
 import idID from 'antd/lib/locale/id_ID';
@@ -30,8 +30,8 @@ export default function Edit({ product, categories }) {
     price: product.price ? String(product.price) : '',
     status: product.status || 'tersedia',
     description: product.description || '',
-    proof: null, 
-    keep_old_proof: product.proof || null, 
+    proof: null,
+    keep_old_proof: product.proof || null,
     _method: 'PUT',
   });
 
@@ -69,7 +69,7 @@ export default function Edit({ product, categories }) {
   const removeImage = (e) => {
     e.stopPropagation();
     setData('proof', null);
-    setData('keep_old_proof', null); 
+    setData('keep_old_proof', null);
     setPreview(null);
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
@@ -82,7 +82,6 @@ export default function Edit({ product, categories }) {
     });
   };
 
-  // Helper untuk menentukan ikon status di dalam select
   const getStatusIcon = () => {
     if (data.status === 'tersedia') return <Check className="w-4 h-4" />;
     if (data.status === 'menipis') return <AlertTriangle className="w-4 h-4 text-amber-500" />;
@@ -93,6 +92,8 @@ export default function Edit({ product, categories }) {
     <AdminLayout>
       <div className="min-h-screen flex items-start justify-center bg-gray-50/30">
         <div className="w-full max-w-2xl px-6 pt-8 pb-12">
+          
+          {/* button kembali */}
           <div className="mb-6 mt-4">
             <Link
               href={route('admin.kelola-produk.index')}
@@ -105,17 +106,21 @@ export default function Edit({ product, categories }) {
 
           <div className="bg-white rounded-[30px] border border-gray-200 shadow-[0_18px_45px_rgba(15,23,42,0.08)]">
             <form onSubmit={handleSubmit} className="p-10 space-y-7">
+              
+              {/* title */}
               <div className="mb-4">
                 <h1 className="text-2xl font-sfPro text-gray-900 text-center tracking-tight">
-                  Edit Produk
+                  Edit Bahan
                 </h1>
-                <p className="text-sm text-gray-500 text-center mt-1">Edit produk yang sudah dibeli</p>
+                <p className="text-sm text-gray-500 text-center mt-1">
+                  Edit bahan yang sudah dibeli
+                </p>
               </div>
 
-              {/* nama produk */}
+              {/* nama bahan */}
               <div className="space-y-3">
                 <label className="block text-sm font-sfPro text-gray-800">
-                  Nama Produk:
+                  Nama Bahan:
                 </label>
                 <div className="relative">
                   <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400">
@@ -123,7 +128,7 @@ export default function Edit({ product, categories }) {
                   </span>
                   <input
                     type="text"
-                    placeholder="Masukkan nama produk yang dibeli"
+                    placeholder="Masukkan nama bahan yang dibeli"
                     value={data.name}
                     onChange={(e) => setData('name', e.target.value)}
                     className={`w-full bg-white border ${
@@ -142,17 +147,13 @@ export default function Edit({ product, categories }) {
                   Tanggal:
                 </label>
                 <ConfigProvider locale={idID}>
-                  <div className="w-full rounded-xl border border-gray-400 px-3 py-[6px] text-sm focus-within:border-gray-500 bg-white">
+                  <div className={`w-full rounded-xl border ${errors.date ? 'border-red-500' : 'border-gray-400'} px-3 py-[6px] text-sm focus-within:border-gray-500 bg-white`}>
                     <DatePicker
                       className="w-full !border-none !shadow-none focus:!shadow-none focus:!border-none focus:!outline-none"
                       format="DD MMMM YYYY"
-                      value={
-                        data.date ? dayjs(data.date, 'YYYY-MM-DD') : null
-                      }
+                      value={data.date ? dayjs(data.date, 'YYYY-MM-DD') : null}
                       onChange={(value) => {
-                        const formatted = value
-                          ? value.format('YYYY-MM-DD')
-                          : '';
+                        const formatted = value ? value.format('YYYY-MM-DD') : '';
                         setData('date', formatted);
                       }}
                       allowClear
@@ -164,7 +165,7 @@ export default function Edit({ product, categories }) {
                 )}
               </div>
 
-              {/* nominal harga */}
+              {/* harga */}
               <div className="space-y-3">
                 <label className="block text-sm font-sfPro text-gray-800">
                   Nominal Harga:
@@ -204,7 +205,7 @@ export default function Edit({ product, categories }) {
                     onChange={(e) => setData('category_id', e.target.value)}
                     className={`w-full bg-white border ${
                       errors.category_id ? 'border-red-500' : 'border-gray-400'
-                    } rounded-xl pl-9 pr-12 py-3 text-sm outline-none appearance-none bg-none focus:outline-none focus:ring-0 focus:border-gray-500 font-sfPro ${
+                    } rounded-xl pl-9 pr-12 py-3 text-sm outline-none appearance-none focus:outline-none focus:ring-0 focus:border-gray-500 font-sfPro ${
                       !data.category_id ? 'text-gray-400' : 'text-gray-900'
                     }`}
                   >
@@ -220,9 +221,7 @@ export default function Edit({ product, categories }) {
                   </div>
                 </div>
                 {errors.category_id && (
-                  <p className="text-red-500 text-xs mt-1">
-                    {errors.category_id}
-                  </p>
+                  <p className="text-red-500 text-xs mt-1">{errors.category_id}</p>
                 )}
               </div>
 
@@ -238,7 +237,7 @@ export default function Edit({ product, categories }) {
                   <select
                     value={data.status}
                     onChange={(e) => setData('status', e.target.value)}
-                    className="w-full bg-white border border-gray-400 rounded-xl pl-9 pr-12 py-3 text-sm outline-none appearance-none bg-none focus:outline-none focus:ring-0 focus:border-gray-500 font-sfPro text-gray-900"
+                    className="w-full bg-white border border-gray-400 rounded-xl pl-9 pr-12 py-3 text-sm outline-none appearance-none focus:outline-none focus:ring-0 focus:border-gray-500 font-sfPro text-gray-900"
                   >
                     <option value="tersedia">Tersedia</option>
                     <option value="menipis">Menipis</option>
@@ -256,22 +255,20 @@ export default function Edit({ product, categories }) {
                   Keterangan:
                 </label>
                 <textarea
-                  placeholder="Masukkan deskripsi atau keterangan tambahan terkait produk yang dibeli"
+                  placeholder="Masukkan deskripsi atau keterangan tambahan"
                   value={data.description}
                   onChange={(e) => setData('description', e.target.value)}
                   className="w-full bg-white border border-gray-400 rounded-xl px-4 py-3 text-sm outline-none focus:outline-none focus:ring-0 focus:border-gray-500 font-sfPro min-h-[100px] resize-none"
                 />
               </div>
 
-              {/* bukti berupa gambar */}
+              {/* gambar */}
               <div className="space-y-3">
                 <label className="block text-sm font-sfPro text-gray-800">
-                  Bukti Produk (Gambar):
+                  Bukti Pembayaran:
                 </label>
                 <div
-                  onClick={() =>
-                    fileInputRef.current && fileInputRef.current.click()
-                  }
+                  onClick={() => fileInputRef.current && fileInputRef.current.click()}
                   className="w-full border border-gray-300 border-dashed rounded-2xl p-6 flex flex-col items-center justify-center cursor-pointer min-h-[180px] relative overflow-hidden bg-gray-50/40 hover:bg-gray-100 transition-colors"
                 >
                   {preview ? (
@@ -314,14 +311,14 @@ export default function Edit({ product, categories }) {
                 )}
               </div>
 
-              {/* button simpan */}
+              {/* submit button */}
               <div className="pt-2">
                 <button
                   type="submit"
                   disabled={processing}
                   className="w-full bg-[#EF5350] text-white font-sfPro py-4 rounded-xl text-sm hover:bg-[#e53935] active:scale-[0.98] transition-all disabled:opacity-50"
                 >
-                  {processing ? 'Menyimpan...' : 'Perbarui Produk'}
+                  {processing ? 'Menyimpan...' : 'Perbarui'}
                 </button>
               </div>
             </form>

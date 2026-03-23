@@ -28,14 +28,14 @@ export default function Index({ menus, type, filters }) {
       route('admin.kasir.summary.index'),
       {
         type,
-        search: value,
+        search: value || undefined,
         start_date: startDate ? startDate.format('YYYY-MM-DD') : undefined,
         end_date: endDate ? endDate.format('YYYY-MM-DD') : undefined,
       },
       {
         preserveState: true,
         preserveScroll: true,
-        only: ['menus', 'filters'],
+        only: ['menus', 'filters', 'type'],
         replace: true,
       }
     );
@@ -75,7 +75,7 @@ export default function Index({ menus, type, filters }) {
       {
         preserveState: true,
         preserveScroll: true,
-        only: ['menus', 'filters'],
+        only: ['menus', 'filters', 'type'],
         replace: true,
       }
     );
@@ -241,39 +241,38 @@ export default function Index({ menus, type, filters }) {
             )}
           </div>
 
-         {menus?.links && menus.data.length > 0 && (
+          {menus?.links && menus.data.length > 0 && (
             <div className="mt-10 flex flex-col md:flex-row justify-between items-center gap-4 pb-10">
-                <p className="text-xs text-gray-500 font-sfPro">
+              <p className="text-xs text-gray-500 font-sfPro">
                 Menampilkan {menus.from || 0}–{menus.to || 0} dari {menus.total || 0} data
-                </p>
+              </p>
 
-                {/* tombol angka */}
-                <div className="flex gap-1.5 p-1.5 bg-white rounded-xl shadow-sm border border-gray-100">
+              <div className="flex gap-1.5 p-1.5 bg-white rounded-xl shadow-sm border border-gray-100">
                 {menus.links.map((link, index) => {
-                    const isPrev = link.label.includes('Previous');
-                    const isNext = link.label.includes('Next');
-                    const label = isPrev ? '<' : isNext ? '>' : link.label;
+                  const isPrev = link.label.includes('Previous');
+                  const isNext = link.label.includes('Next');
+                  const label = isPrev ? '<' : isNext ? '>' : link.label;
 
-                    return (
+                  return (
                     <Link
-                        key={index}
-                        href={link.url || '#'}
-                        preserveScroll
-                        as="button"
-                        disabled={!link.url}
-                        className={`
+                      key={index}
+                      href={link.url || '#'}
+                      preserveScroll
+                      as="button"
+                      disabled={!link.url}
+                      className={`
                         w-8 h-8 flex items-center justify-center rounded-lg text-xs font-sfPro transition-all
                         ${
-                            link.active
+                          link.active
                             ? 'bg-[#ef5350] text-white'
                             : 'bg-gray-50 text-gray-500 hover:bg-gray-100'
                         }
                         ${!link.url ? 'opacity-30 cursor-not-allowed' : 'active:scale-95'}
-                        `}
+                      `}
                     >
-                        <span dangerouslySetInnerHTML={{ __html: label }} />
+                      <span dangerouslySetInnerHTML={{ __html: label }} />
                     </Link>
-                    );
+                  );
                 })}
               </div>
             </div>

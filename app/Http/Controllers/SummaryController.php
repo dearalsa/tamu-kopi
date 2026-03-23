@@ -7,15 +7,18 @@ use App\Models\Menu;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
+use Carbon\Carbon;
 
 class SummaryController extends Controller
 {
     public function index(Request $request)
     {
-        $type      = $request->get('type', 'top');
-        $search    = $request->get('search');
-        $startDate = $request->get('start_date');
-        $endDate   = $request->get('end_date');
+        $type     = $request->get('type', 'top');
+        $search   = $request->get('search');
+
+        // Default tanggal: hari ini
+        $startDate = $request->get('start_date') ?: Carbon::today()->toDateString();
+        $endDate   = $request->get('end_date')   ?: Carbon::today()->toDateString();
 
         $query = TransactionDetail::select(
                 'menu_name',
@@ -23,7 +26,7 @@ class SummaryController extends Controller
             )
             ->groupBy('menu_name');
 
-        // filter tanggal (sesuaikan kolom tanggal kalau beda)
+        // filter tanggal (DATE(created_at) antara start–end)
         if ($startDate && $endDate) {
             $query->whereBetween(
                 DB::raw('DATE(created_at)'),
@@ -55,8 +58,8 @@ class SummaryController extends Controller
             });
 
         return Inertia::render('Admin/Kasir/Summary/Index', [
-            'menus' => $menus,
-            'type'  => $type,
+            'menus'   => $menus,
+            'type'    => $type,
             'filters' => [
                 'search'     => $search,
                 'start_date' => $startDate,

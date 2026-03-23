@@ -1,5 +1,5 @@
-import { useState, useMemo, useRef, useEffect } from 'react'
-import { Head, router, Link } from '@inertiajs/react'
+import { useState, useMemo, useEffect } from 'react'
+import { Head, router, usePage } from '@inertiajs/react'
 import AdminLayout from '@/Layouts/AdminLayout'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
@@ -15,8 +15,11 @@ import {
   CheckCircle,
   AlertCircle,
 } from 'lucide-react'
+import dayjs from 'dayjs'
 
 export default function CatalogIndex({ menus = [], categories = [], auth }) {
+  const { flash } = usePage().props
+
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('all')
   const [showCategoryDropdown, setShowCategoryDropdown] = useState(false)
@@ -26,11 +29,8 @@ export default function CatalogIndex({ menus = [], categories = [], auth }) {
   const [cashAmount, setCashAmount] = useState('')
   const [isProcessing, setIsProcessing] = useState(false)
   const [showSuccessPopup, setShowSuccessPopup] = useState(false)
-  const [showClearCartModal, setShowClearCartModal] = useState(false) // State baru untuk Modal
+  const [showClearCartModal, setShowClearCartModal] = useState(false)
   const [orderType, setOrderType] = useState('dine-in')
-
-  const [printData, setPrintData] = useState(null)
-  const printRef = useRef(null)
 
   const categoryFilters = [
     { value: 'all', label: 'Semua Menu' },
@@ -45,34 +45,85 @@ export default function CatalogIndex({ menus = [], categories = [], auth }) {
 
   const cleanNumber = value => value.toString().replace(/\D/g, '')
 
-  const formatDate = () => {
-    const now = new Date()
-    const day = now.getDate()
-    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des']
-    const month = monthNames[now.getMonth()]
-    const year = now.getFullYear()
-    return `${day} ${month} ${year}`
-  }
-
-  const formatTime = () => {
-    const now = new Date()
-    const hours = String(now.getHours()).padStart(2, '0')
-    const minutes = String(now.getMinutes()).padStart(2, '0')
-    return `${hours}:${minutes}`
-  }
-
   const resetState = () => {
     setCart([])
     setPaymentMethod(null)
     setCashAmount('')
     setOrderType('dine-in')
     setIsProcessing(false)
-    setPrintData(null)
+    setShowClearCartModal(false)
+  }
+
+  useEffect(() => {
+    if (flash?.success_transaction) {
+      const data = flash.success_transaction
+      handleSilentPrint(data)
+      setShowSuccessPopup(true)
+      resetState()
+      const timer = setTimeout(() => setShowSuccessPopup(false), 1000)
+      return () => clearTimeout(timer)
+    }
+  }, [flash])
+
+  const handleSilentPrint = (data) => {
+    const windowPrint = window.open('', '', 'width=450,height=600')
+
+    const itemsHtml = data.items.map(item => `
+      <div style="display: flex; justify-content: space-between; margin-bottom: 2px;">
+        <span>${item.menu_name} x${item.quantity}</span>
+        <span>${Number(item.price * item.quantity).toLocaleString('id-ID')}</span>
+      </div>
+      ${item.description ? `<div style="font-size: 9px; font-style: italic; margin-bottom: 4px; padding-left: 5px;">Catatan: ${item.description}</div>` : ''}
+    `).join('')
+
+    windowPrint.document.write(`
+      <html>
+        <head>
+          <title>Print Struk</title>
+          <style>
+            @page { size: 58mm auto; margin: 0; }
+            body { font-family: 'Courier New', monospace; width: 58mm; padding: 2mm; font-size: 11px; line-height: 1.3; color: #000; margin: 0; }
+            .text-center { text-align: center; }
+            .line { border-top: 1px dashed #000; margin: 4px 0; width: 100%; }
+            .total { font-weight: bold; margin-top: 5px; font-size: 12px; }
+            img { max-width: 35mm; height: auto; filter: grayscale(100%); margin-bottom: 5px; }
+          </style>
+        </head>
+        <body>
+          <div class="text-center">
+            <img src="/asset/Tamu.svg" />
+            <p style="font-size: 9px; margin: 0;">Jl. Dadali No.7, Bogor<br>081218420963</p>
+          </div>
+          <div class="line"></div>
+          <div style="display: flex; justify-content: space-between;">
+            <span>${dayjs(data.created_at).format('DD MMM YYYY')}</span>
+            <span>${dayjs(data.created_at).format('HH:mm')}</span>
+          </div>
+          <div style="display: flex; justify-content: space-between;"><b>No. Inv</b><span>${data.invoice_number}</span></div>
+          <div style="display: flex; justify-content: space-between;"><b>Kasir</b><span>${data.cashier_name || auth?.user?.name}</span></div>
+          <div class="line"></div>
+          <div class="text-center" style="font-weight: bold; margin: 5px 0;">${data.order_type === 'dine-in' ? 'MAKAN DITEMPAT' : 'TAKE AWAY'}</div>
+          <div class="line"></div>
+          ${itemsHtml}
+          <div class="line"></div>
+          <div style="display: flex; justify-content: space-between;"><span>Subtotal</span><span>${Number(data.subtotal).toLocaleString('id-ID')}</span></div>
+          ${data.discount > 0 ? `<div style="display: flex; justify-content: space-between;"><span>Diskon</span><span>-${Number(data.discount).toLocaleString('id-ID')}</span></div>` : ''}
+          <div style="display: flex; justify-content: space-between;" class="total"><span>TOTAL</span><span>${Number(data.total).toLocaleString('id-ID')}</span></div>
+          <div style="display: flex; justify-content: space-between;"><span>Bayar</span><span>${Number(data.cash_amount || data.total).toLocaleString('id-ID')}</span></div>
+          ${data.payment_method === 'cash' ? `<div style="display: flex; justify-content: space-between;"><span>Kembali</span><span>${Number(data.change).toLocaleString('id-ID')}</span></div>` : ''}
+          <div class="line"></div>
+          <div class="text-center" style="margin-top: 10px; font-size: 9px;">Terima Kasih!</div>
+          <script>
+            window.onload = function() { window.print(); setTimeout(function() { window.close(); }, 500); };
+          </script>
+        </body>
+      </html>
+    `)
+    windowPrint.document.close()
   }
 
   const filteredAndSortedMenus = useMemo(() => {
     const menuData = Array.isArray(menus) ? menus : (menus?.data || [])
-
     let result = menuData.filter(menu => {
       const matchesSearch = menu.name.toLowerCase().includes(searchTerm.toLowerCase())
       const categoryId = menu.category?.id || menu.category_id
@@ -81,19 +132,14 @@ export default function CatalogIndex({ menus = [], categories = [], auth }) {
     })
 
     result.sort((a, b) => {
-      const aIsPackage = a.is_package;
-      const bIsPackage = b.is_package;
-      if (aIsPackage !== bIsPackage) return aIsPackage ? 1 : -1;
-      const scoreA = (!aIsPackage && a.promo_price && a.is_best_seller ? 3 : 0) +
-                     (!aIsPackage && a.is_best_seller ? 2 : 0) +
-                     (!aIsPackage && a.promo_price ? 1 : 0);
-      const scoreB = (!bIsPackage && b.promo_price && b.is_best_seller ? 3 : 0) +
-                     (!bIsPackage && b.is_best_seller ? 2 : 0) +
-                     (!bIsPackage && b.promo_price ? 1 : 0);
-      if (scoreB !== scoreA) return scoreB - scoreA;
-      return a.name.localeCompare(b.name);
-    });
-
+      const aIsPackage = a.is_package
+      const bIsPackage = b.is_package
+      if (aIsPackage !== bIsPackage) return aIsPackage ? 1 : -1
+      const scoreA = (!aIsPackage && a.promo_price && a.is_best_seller ? 3 : 0) + (!aIsPackage && a.is_best_seller ? 2 : 0) + (!aIsPackage && a.promo_price ? 1 : 0)
+      const scoreB = (!bIsPackage && b.promo_price && b.is_best_seller ? 3 : 0) + (!bIsPackage && b.is_best_seller ? 2 : 0) + (!bIsPackage && b.promo_price ? 1 : 0)
+      if (scoreB !== scoreA) return scoreB - scoreA
+      return a.name.localeCompare(b.name)
+    })
     return result
   }, [menus, searchTerm, selectedCategory])
 
@@ -104,71 +150,63 @@ export default function CatalogIndex({ menus = [], categories = [], auth }) {
     setCart(prev => {
       const existing = prev.find(item => item.id === menu.id)
       if (existing) {
-        return prev.map(item =>
-          item.id === menu.id ? { ...item, quantity: item.quantity + 1 } : item
-        )
+        return prev.map(item => item.id === menu.id ? { ...item, quantity: item.quantity + 1 } : item)
       }
       return [...prev, { ...menu, price, original_price: menu.price, quantity: 1, note: '' }]
     })
   }
 
   const updateQuantity = (id, change) => {
-    setCart(prev =>
-      prev.map(item => {
-          if (item.id === id) {
-            const newQty = item.quantity + change
-            return newQty > 0 ? { ...item, quantity: newQty } : item
-          }
-          return item
-        }).filter(item => item.quantity > 0)
-    )
+    setCart(prev => prev.map(item => {
+      if (item.id === id) {
+        const newQty = item.quantity + change
+        return newQty > 0 ? { ...item, quantity: newQty } : item
+      }
+      return item
+    }).filter(item => item.quantity > 0))
   }
 
   const updateNote = (id, newNote) => {
-    setCart(prev => prev.map(item => 
-      item.id === id ? { ...item, note: newNote } : item
-    ))
+    setCart(prev => prev.map(item => item.id === id ? { ...item, note: newNote } : item))
   }
 
   const removeFromCart = id => setCart(prev => prev.filter(item => item.id !== id))
 
-  const handleClearCart = () => {
-    setCart([])
-    setPaymentMethod(null)
-    setOrderType('dine-in')
-    setShowClearCartModal(false)
-  }
-
   const subtotalNormal = cart.reduce((sum, item) => sum + item.original_price * item.quantity, 0)
   const totalDiscount = cart.reduce((sum, item) => sum + (item.original_price - item.price) * item.quantity, 0)
   const total = Math.max(0, subtotalNormal - totalDiscount)
-  const changeAmount = cashAmount ? parseInt(cashAmount) - total : 0
-
-  useEffect(() => {
-    if (!printData || !printRef.current) return
-    const printContent = printRef.current
-    const windowPrint = window.open('', '', 'width=300,height=600')
-    windowPrint.document.write(`<html><head><title>Struk Pembayaran</title><style>body { font-family: 'Courier New', Courier, monospace; margin: 0; padding: 10px; font-size: 12px; } .text-center { text-align: center; } .line { border-top: 1px dashed #000; margin: 5px 0; } .item { display: flex; justify-content: space-between; margin-bottom: 2px; } .total { font-weight: bold; margin-top: 5px; } .note { font-size: 10px; font-style: italic; margin-bottom: 4px; }</style></head><body>${printContent.innerHTML}</body></html>`)
-    windowPrint.document.close()
-    windowPrint.focus()
-    setTimeout(() => { windowPrint.print(); windowPrint.close(); }, 500)
-  }, [printData])
+  
+  // Real-time calculation
+  const cashValue = parseInt(cashAmount || 0)
+  const changeAmount = cashValue - total
 
   const processPayment = () => {
     if (!paymentMethod) return
     if (paymentMethod === 'cash') {
-      const cash = parseInt(cashAmount || 0)
-      if (!cashAmount || isNaN(cash)) { alert('Masukkan nominal uang terlebih dahulu.'); return; }
-      if (cash < total) { alert('Uang yang diterima kurang dari total pembayaran.'); return; }
+      if (!cashAmount || isNaN(cashValue)) {
+        alert('Masukkan nominal uang terlebih dahulu.')
+        return
+      }
+      if (cashValue < total) {
+        alert('Uang yang diterima kurang dari total pembayaran.')
+        return
+      }
     }
+
+    if (cart.length === 0) {
+      alert('Keranjang masih kosong.')
+      return
+    }
+
     setIsProcessing(true)
+
     const transactionData = {
       subtotal: subtotalNormal,
       discount: totalDiscount,
       total: total,
       payment_method: paymentMethod,
-      cash_amount: paymentMethod === 'cash' ? parseInt(cashAmount || 0) : 0,
-      change: paymentMethod === 'cash' ? changeAmount : 0,
+      cash_amount: paymentMethod === 'cash' ? cashValue : 0,
+      change: paymentMethod === 'cash' ? Math.max(0, changeAmount) : 0,
       order_type: orderType,
       cart: cart.map(item => ({
         menu_id: item.id,
@@ -178,22 +216,12 @@ export default function CatalogIndex({ menus = [], categories = [], auth }) {
         note: item.note,
       })),
     }
+
     router.post(route('admin.kasir.transactions.store'), transactionData, {
-      onSuccess: page => {
-        const latestData = page.props?.flash?.success_transaction
-        if (latestData) {
-          setPrintData({ invoice_number: latestData.invoice_number, queue_number: latestData.queue_number, date: formatDate(), time: formatTime(), kasir: auth?.user?.name || 'Admin', payment_method: paymentMethod === 'cash' ? 'Tunai' : 'QRIS', order_type: orderType, cart: cart.map(item => ({ id: item.id, name: item.name, price: item.price, quantity: item.quantity, note: item.note })), subtotal: subtotalNormal, discount: totalDiscount, total: total, cash_amount: paymentMethod === 'cash' ? parseInt(cashAmount || 0) : 0, change: paymentMethod === 'cash' ? changeAmount : 0, })
-          setShowSuccessPopup(true)
-          setTimeout(() => { setShowSuccessPopup(false); resetState(); }, 4000)
-        }
-        setIsProcessing(false)
-      },
-      onError: errors => {
-        setIsProcessing(false)
-        let errorMsg = 'Transaksi gagal!';
-        if (errors.error) errorMsg += ` ${errors.error}`;
-        alert(errorMsg);
-      },
+      preserveScroll: false,
+      preserveState: false,
+      onFinish: () => setIsProcessing(false),
+      onError: errors => alert(`Transaksi gagal! ${errors.error || ''}`),
     })
   }
 
@@ -201,44 +229,15 @@ export default function CatalogIndex({ menus = [], categories = [], auth }) {
     <AdminLayout>
       <Head title="Katalog Menu" />
 
-      {/* struk (hidden) */}
-      <div ref={printRef} style={{ display: 'none' }}>
-        {printData && (
-          <>
-            <div className="text-center">
-              <img src="/asset/Tamu.svg" alt="Logo" style={{ width: '120px', margin: '0 auto 5px auto', display: 'block' }} />
-              <p style={{ fontSize: '9px', margin: '0', lineHeight: '1.3' }}>Jl. Dadali No.7, Bogor<br /> 081218420963</p>
-            </div>
-            <div className="line" />
-            <div style={{ fontSize: '10px', marginTop: '4px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
-                <span>{printData.date}</span><span>{printData.time}</span>
-              </div>
-              <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '2px', fontSize: '12px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}><b>No. Invoice</b><span>{printData.invoice_number}</span></div>
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}><b>Kasir</b><span>{printData.kasir}</span></div>
-              </div>
-            </div>
-            <div className="line" />
-            {printData.cart.map((item, idx) => (
-              <div key={idx} style={{ fontSize: '10px', marginBottom: '3px' }}>
-                <div className="item"><span>{item.name} x{item.quantity}</span><span>{(item.price * item.quantity).toLocaleString('id-ID')}</span></div>
-                {item.note && <div className="note">Catatan: {item.note}</div>}
-              </div>
-            ))}
-            <div className="line" />
-            <div className="item total"><span>Total</span><span>{printData.total.toLocaleString('id-ID')}</span></div>
-          </>
-        )}
-      </div>
-
       <div className="relative font-sfPro bg-gray-50/50 min-h-screen">
         <div className="max-w-7xl mx-auto px-4 pt-16 pb-6">
           <div className="flex justify-start items-center mb-8 gap-4">
             <div className="relative w-56">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
               <input
-                type="text" placeholder="Cari menu..." value={searchTerm}
+                type="text"
+                placeholder="Cari menu..."
+                value={searchTerm}
                 onChange={e => setSearchTerm(e.target.value)}
                 className="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-50 shadow-[0_2px_10px_rgba(0,0,0,0.02)] rounded-2xl text-sm"
               />
@@ -270,7 +269,12 @@ export default function CatalogIndex({ menus = [], categories = [], auth }) {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 pb-10">
             {filteredAndSortedMenus.length > 0 ? (
               filteredAndSortedMenus.map(menu => (
-                <motion.div key={menu.id} whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} className="bg-white rounded-[1.5rem] overflow-hidden shadow-[0_8px_30px_rgba(0,0,0,0.02)] border border-gray-50 flex flex-col h-full cursor-pointer">
+                <motion.div
+                  key={menu.id}
+                  whileHover={{ scale: 1.03 }}
+                  whileTap={{ scale: 0.97 }}
+                  className="bg-white rounded-[1.5rem] overflow-hidden shadow-[0_8px_30px_rgba(0,0,0,0.02)] border border-gray-50 flex flex-col h-full cursor-pointer"
+                >
                   <div className="aspect-square bg-gray-50 relative">
                     <div className="absolute top-3 left-3 z-10 flex flex-col items-start gap-1.5">
                       {menu.is_best_seller && (
@@ -291,17 +295,20 @@ export default function CatalogIndex({ menus = [], categories = [], auth }) {
                   <div className="p-5 flex flex-col flex-1">
                     <h3 className="text-gray-800 truncate text-base mb-1 font-normal">{menu.name}</h3>
                     <p className="text-xs text-gray-400 mb-2 font-sfPro">{typeof menu.category === 'object' ? menu.category?.name : menu.category}</p>
-                    {menu.description && (<p className="text-[11px] text-gray-400 line-clamp-2 mb-3 leading-relaxed font-sfPro italic">{menu.description}</p>)}
+                    {menu.description && <p className="text-[11px] text-gray-400 line-clamp-2 mb-3 leading-relaxed font-sfPro italic">{menu.description}</p>}
                     <div className="mt-auto mb-4">
                       {menu.promo_price ? (
                         <div className="flex flex-col items-start">
                           <span className="text-xs text-gray-400 line-through font-sfPro">Rp {Number(menu.price).toLocaleString('id-ID')}</span>
                           <span className="text-lg text-[#ef5350] font-sfPro">Rp {Number(menu.promo_price).toLocaleString('id-ID')}</span>
                         </div>
-                      ) : (<p className="text-lg text-gray-900 font-normal">Rp {Number(menu.price).toLocaleString('id-ID')}</p>)}
+                      ) : (
+                        <p className="text-lg text-gray-900 font-normal">Rp {Number(menu.price).toLocaleString('id-ID')}</p>
+                      )}
                     </div>
                     <button onClick={() => addToCart(menu)} className="w-full bg-gray-900 text-white py-3 rounded-xl flex items-center justify-center gap-2 hover:bg-black transition-all">
-                      <ShoppingCart size={16} /> <span className="text-sm font-sfPro">Tambah</span>
+                      <ShoppingCart size={16} />
+                      <span className="text-sm font-sfPro">Tambah</span>
                     </button>
                   </div>
                 </motion.div>
@@ -310,26 +317,22 @@ export default function CatalogIndex({ menus = [], categories = [], auth }) {
               <div className="col-span-full flex flex-col items-center justify-center py-20">
                 <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-4"><Search size={40} className="text-gray-300" /></div>
                 <h3 className="text-lg font-telegraf text-gray-700 mb-2">Belum ada menu</h3>
-                <p className="text-sm text-gray-400 font-sfPro text-center">{searchTerm || selectedCategory !== 'all' ? 'Tidak ada menu yang sesuai dengan pencarian Anda' : 'Belum ada menu tersedia'}</p>
               </div>
             )}
           </div>
         </div>
 
-        {/* Custom Confirmation Modal (Hapus Pesanan) */}
+        {/* Modals & Popups */}
         <AnimatePresence>
           {showClearCartModal && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/60 backdrop-blur-md z-[110] flex items-center justify-center p-4">
               <motion.div initial={{ scale: 0.9, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.9, opacity: 0, y: 20 }} className="bg-white rounded-[2rem] p-8 max-w-sm w-full shadow-2xl">
                 <div className="flex flex-col items-center text-center">
-                  <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mb-6">
-                    <AlertCircle size={32} className="text-red-500" />
-                  </div>
+                  <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mb-6"><AlertCircle size={32} className="text-red-500" /></div>
                   <h3 className="text-xl font-telegraf text-gray-900 mb-2">Hapus Pesanan?</h3>
-                  <p className="text-gray-500 mb-8 font-sfPro text-sm leading-relaxed">Seluruh item yang telah Anda pilih akan dihapus dari daftar pesanan.</p>
-                  <div className="flex gap-3 w-full">
-                    <button onClick={() => setShowClearCartModal(false)} className="flex-1 py-3.5 rounded-2xl bg-gray-100 text-gray-700 font-telegraf text-sm hover:bg-gray-200 transition-colors">Batal</button>
-                    <button onClick={handleClearCart} className="flex-1 py-3.5 rounded-2xl bg-red-500 text-white font-telegraf text-sm hover:bg-red-600 transition-colors">Ya, Hapus</button>
+                  <div className="flex gap-3 w-full mt-6">
+                    <button onClick={() => setShowClearCartModal(false)} className="flex-1 py-3.5 rounded-2xl bg-gray-100 text-gray-700 font-telegraf text-sm">Batal</button>
+                    <button onClick={() => { resetState(); setShowClearCartModal(false); }} className="flex-1 py-3.5 rounded-2xl bg-red-500 text-white font-telegraf text-sm">Ya, Hapus</button>
                   </div>
                 </div>
               </motion.div>
@@ -337,14 +340,13 @@ export default function CatalogIndex({ menus = [], categories = [], auth }) {
           )}
         </AnimatePresence>
 
-        {/* Success Popup */}
         <AnimatePresence>
           {showSuccessPopup && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
-              <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="bg-white rounded-[2.5rem] p-10 max-w-sm w-full text-center">
+              <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="bg-white rounded-[2.5rem] p-10 max-w-sm w-full text-center shadow-2xl">
                 <CheckCircle size={48} className="text-green-600 mx-auto mb-6" />
                 <h3 className="text-2xl font-telegraf text-gray-900 mb-2">Berhasil!</h3>
-                <p className="text-gray-500">Pesanan telah diproses<br />dan struk dicetak.</p>
+                <p className="text-gray-500">Pesanan telah diproses dan struk dicetak otomatis.</p>
               </motion.div>
             </motion.div>
           )}
@@ -356,7 +358,9 @@ export default function CatalogIndex({ menus = [], categories = [], auth }) {
             <motion.div initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }} className="fixed right-4 top-4 bottom-4 w-[340px] bg-white/80 backdrop-blur-xl border shadow-xl z-50 flex flex-col rounded-[2.5rem] overflow-hidden">
               <div className="p-7 pb-4 flex justify-between items-center">
                 {paymentMethod ? (
-                  <button onClick={() => setPaymentMethod(null)} className="flex items-center gap-2 text-gray-500 hover:text-black transition-colors text-sm"><ArrowLeft size={18} /> Kembali</button>
+                  <button onClick={() => {setPaymentMethod(null); setCashAmount('')}} className="flex items-center gap-2 text-gray-500 hover:text-black transition-colors text-sm">
+                    <ArrowLeft size={18} /> Kembali
+                  </button>
                 ) : (
                   <div>
                     <h2 className="text-xl font-telegraf text-gray-800">Pesanan</h2>
@@ -375,22 +379,28 @@ export default function CatalogIndex({ menus = [], categories = [], auth }) {
                 </div>
               )}
 
-              <div className="flex-1 overflow-y-auto px-6 space-y-4 py-2">
+              <div className="flex-1 overflow-y-auto px-6 space-y-4 py-2 no-scrollbar">
                 {paymentMethod === null ? (
                   cart.map((item, idx) => (
                     <div key={idx} className="flex flex-col gap-2 p-3 rounded-3xl bg-white/50 border">
                       <div className="flex gap-4">
-                        <div className="w-16 h-16 rounded-2xl overflow-hidden shrink-0"><img src={item.image ? `/storage/${item.image}` : '/asset/no-image.png'} className="w-full h-full object-cover" /></div>
+                        <div className="w-16 h-16 rounded-2xl overflow-hidden shrink-0">
+                          <img src={item.image ? `/storage/${item.image}` : '/asset/no-image.png'} className="w-full h-full object-cover" />
+                        </div>
                         <div className="flex-1 min-w-0">
                           <h3 className="text-sm truncate">{item.name}</h3>
-                          <p className="text-xs text-red-500 font-bold">Rp {item.price.toLocaleString()}</p>
+                          <p className="text-xs text-red-500">Rp {item.price.toLocaleString()}</p>
                           <div className="flex justify-between mt-2">
-                            <div className="flex gap-2 items-center bg-gray-100 rounded-lg px-2"><button onClick={() => updateQuantity(item.id, -1)}><Minus size={12} /></button><span className="text-xs">{item.quantity}</span><button onClick={() => updateQuantity(item.id, 1)}><Plus size={12} /></button></div>
+                            <div className="flex gap-2 items-center bg-gray-100 rounded-lg px-2">
+                              <button onClick={() => updateQuantity(item.id, -1)}><Minus size={12} /></button>
+                              <span className="text-xs">{item.quantity}</span>
+                              <button onClick={() => updateQuantity(item.id, 1)}><Plus size={12} /></button>
+                            </div>
                             <button onClick={() => removeFromCart(item.id)} className="text-gray-300 hover:text-red-500"><Trash2 size={14} /></button>
                           </div>
                         </div>
                       </div>
-                      <input type="text" placeholder="Tambah catatan (pedas, es banyakin)..." value={item.note || ''} onChange={(e) => updateNote(item.id, e.target.value)} className="w-full px-3 py-1.5 text-[10px] bg-gray-50 border-none rounded-xl focus:ring-1 focus:ring-gray-300 placeholder-gray-400 font-sfPro" />
+                      <input type="text" placeholder="Tambah catatan..." value={item.note || ''} onChange={(e) => updateNote(item.id, e.target.value)} className="w-full px-3 py-1.5 text-[10px] bg-gray-50 border-none rounded-xl font-sfPro" />
                     </div>
                   ))
                 ) : (
@@ -399,11 +409,44 @@ export default function CatalogIndex({ menus = [], categories = [], auth }) {
                       <p className="text-[12px] text-gray-600 uppercase font-telegraf">Total Pembayaran</p>
                       <p className="text-[23px] font-sfPro">Rp {total.toLocaleString('id-ID')}</p>
                     </div>
+
                     {paymentMethod === 'cash' && (
-                      <div className="text-left"><label className="text-xs font-sfPro px-2">Uang Diterima</label><input type="text" value={formatRupiah(cashAmount)} onChange={e => setCashAmount(cleanNumber(e.target.value))} className="w-full mt-2 p-4 border rounded-2xl text-lg text-center" placeholder="0" autoFocus /></div>
+                      <div className="text-left space-y-4">
+                        <div>
+                          <label className="text-xs font-sfPro px-2 text-gray-500 uppercase">Uang Diterima</label>
+                          <input
+                            type="text"
+                            value={formatRupiah(cashAmount)}
+                            onChange={e => setCashAmount(cleanNumber(e.target.value))}
+                            className="w-full mt-1.5 p-4 border-2 border-gray-100 rounded-2xl text-xl text-center outline-none focus:outline-none focus:ring-0 focus:border-gray-100 font-sfPro transition-none"
+                            placeholder="0"
+                            autoFocus
+                          />
+                        </div>
+
+                        {/* Tampilan Kembalian Otomatis */}
+                        <AnimatePresence>
+                          {cashValue >= total && (
+                            <motion.div 
+                              initial={{ opacity: 0, y: -10 }} 
+                              animate={{ opacity: 1, y: 0 }}
+                              className="bg-green-50 p-4 rounded-2xl border border-green-100 text-center"
+                            >
+                              <p className="text-[10px] text-green-600 uppercase font-sfPro mb-1">Uang Kembalian</p>
+                              <p className="text-lg font-sfPro text-green-700">
+                                Rp {changeAmount.toLocaleString('id-ID')}
+                              </p>
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+                      </div>
                     )}
+                    
                     {paymentMethod === 'qris' && (
-                       <div className="flex flex-col items-center"><img src="/asset/qris.jpg" className="w-48 rounded-2xl border mb-4" /><p className="text-[11px] text-gray-500">Scan QRIS untuk pembayaran otomatis</p></div>
+                      <div className="flex flex-col items-center">
+                        <img src="/asset/qris.jpeg" className="w-48 rounded-2xl border mb-4" />
+                        <p className="text-[11px] text-gray-500">Scan QRIS untuk pembayaran otomatis</p>
+                      </div>
                     )}
                   </div>
                 )}
@@ -412,11 +455,17 @@ export default function CatalogIndex({ menus = [], categories = [], auth }) {
               <div className="p-8 bg-white/40 border-t">
                 {!paymentMethod ? (
                   <div className="grid grid-cols-2 gap-3">
-                    <button onClick={() => setPaymentMethod('cash')} className="bg-gray-200 py-3 rounded-2xl text-[12px]">CASH</button>
-                    <button onClick={() => setPaymentMethod('qris')} className="bg-black text-white py-3 rounded-2xl text-[12px]">QRIS</button>
+                    <button onClick={() => setPaymentMethod('cash')} className="bg-gray-200 py-3 rounded-2xl text-[12px] font-telegraf hover:bg-gray-300 transition-colors">CASH</button>
+                    <button onClick={() => setPaymentMethod('qris')} className="bg-black text-white py-3 rounded-2xl text-[12px] font-telegraf hover:bg-gray-800 transition-colors">QRIS</button>
                   </div>
                 ) : (
-                  <button onClick={processPayment} disabled={isProcessing || (paymentMethod === 'cash' && (!cashAmount || changeAmount < 0))} className="w-full bg-black text-white py-4 rounded-2xl font-bold disabled:bg-gray-400">{isProcessing ? 'Memproses...' : 'Konfirmasi Pembayaran'}</button>
+                  <button
+                    onClick={processPayment}
+                    disabled={isProcessing || (paymentMethod === 'cash' && (cashValue < total))}
+                    className="text-[14px] w-full bg-black text-white py-4 rounded-2xl disabled:bg-gray-300 hover:bg-gray-800 transition-colors font-telegraf"
+                  >
+                    {isProcessing ? 'Memproses...' : 'Konfirmasi Pembayaran'}
+                  </button>
                 )}
               </div>
             </motion.div>

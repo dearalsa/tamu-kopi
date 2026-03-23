@@ -101,7 +101,7 @@ export default function Show({ product }) {
                       {product.name}
                     </h1>
 
-                    {/* nama admin yang menambahkan produk */}
+                    {/* nama admin yang menambahkan bahan */}
                     <div className="flex items-center gap-1.5 text-gray-600 mt-1">
                       <User size={14} className="text-gray-400" />
                       <span className="text-[13px] font-sfPro">
@@ -168,7 +168,7 @@ export default function Show({ product }) {
                 <div className="rounded-2xl border border-dashed border-gray-200 bg-gray-50/60 p-4 max-h-48 overflow-auto font-sfPro">
                   <p className="text-sm text-gray-600 leading-relaxed whitespace-pre-line">
                     {product.description ||
-                      'Tidak ada keterangan tambahan untuk produk ini.'}
+                      'Tidak ada keterangan tambahan untuk bahan ini.'}
                   </p>
                 </div>
               </div>

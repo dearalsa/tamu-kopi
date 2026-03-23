@@ -11,47 +11,62 @@ use Illuminate\Validation\ValidationException;
 
 class LoginRequest extends FormRequest
 {
-    /**
-     * Tentukan apakah pengguna diizinkan untuk membuat permintaan ini.
-     */
     public function authorize(): bool
     {
         return true;
     }
 
-    /**
-     * Aturan validasi untuk permintaan login.
-     */
     public function rules(): array
     {
         return [
-            'email' => ['required', 'string', 'email'],
+            // Validasi ini memastikan format harus berupa email dan diakhiri @gmail.com
+            'email' => ['required', 'string', 'email', 'ends_with:@gmail.com'],
             'password' => ['required', 'string'],
         ];
     }
 
-    /**
-     * Melakukan autentikasi menggunakan guard 'admin'.
-     *
-     * @throws \Illuminate\Validation\ValidationException
-     */
+    public function messages(): array
+    {
+        return [
+            'email.required' => 'Email wajib diisi.',
+            'email.email' => 'Format email tidak valid (harus menggunakan tanda @).',
+            'email.ends_with' => 'Email harus menggunakan domain @gmail.com.',
+            'password.required' => 'Password wajib diisi.',
+        ];
+    }
+
     public function authenticate(): void
     {
         $this->ensureIsNotRateLimited();
-        if (! Auth::guard('admin')->attempt($this->only('email', 'password'), $this->boolean('remember'))) {
-            RateLimiter::hit($this->throttleKey());
 
+        $credentials = $this->only('email', 'password');
+        $provider = Auth::guard('admin')->getProvider();
+        
+        // Cek apakah email terdaftar di database
+        $user = $provider->retrieveByCredentials(['email' => $this->email]);
+
+        // Jika email tidak ditemukan, lempar pesan error hanya ke kolom email
+        if (! $user) {
+            RateLimiter::hit($this->throttleKey(), 35);
             throw ValidationException::withMessages([
-                'email' => 'Email atau password admin salah.',
+                'email' => 'Email tidak terdaftar.',
             ]);
         }
 
+        // Jika email ditemukan, barulah cek kecocokan password
+        // Jika password salah, error hanya muncul di kolom password
+        if (! $provider->validateCredentials($user, $credentials)) {
+            RateLimiter::hit($this->throttleKey(), 35);
+            throw ValidationException::withMessages([
+                'password' => 'Password yang Anda masukkan salah.',
+            ]);
+        }
+
+        // Jika semua benar, loginkan user dan hapus limit
+        Auth::guard('admin')->login($user, $this->boolean('remember'));
         RateLimiter::clear($this->throttleKey());
     }
 
-    /**
-     * Memastikan permintaan login tidak dibatasi (rate limited).
-     */
     public function ensureIsNotRateLimited(): void
     {
         if (! RateLimiter::tooManyAttempts($this->throttleKey(), 5)) {
@@ -63,16 +78,10 @@ class LoginRequest extends FormRequest
         $seconds = RateLimiter::availableIn($this->throttleKey());
 
         throw ValidationException::withMessages([
-            'email' => trans('auth.throttle', [
-                'seconds' => $seconds,
-                'minutes' => ceil($seconds / 60),
-            ]),
+            'email' => "Terlalu banyak upaya login. Silakan coba lagi dalam $seconds detik.",
         ]);
     }
 
-    /**
-     * Mendapatkan kunci throttle untuk pembatasan rate limit.
-     */
     public function throttleKey(): string
     {
         return Str::transliterate(Str::lower($this->string('email')).'|'.$this->ip());

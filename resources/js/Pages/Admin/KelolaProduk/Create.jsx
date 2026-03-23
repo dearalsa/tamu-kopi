@@ -10,7 +10,7 @@ import {
   CircleDollarSign,
   Package,
   FileText,
-  AlertTriangle, 
+  AlertTriangle,
 } from 'lucide-react';
 import { DatePicker, ConfigProvider } from 'antd';
 import idID from 'antd/lib/locale/id_ID';
@@ -21,18 +21,17 @@ dayjs.locale('id');
 
 export default function Create({ categories }) {
   const fileInputRef = useRef(null);
+  const [preview, setPreview] = useState(null);
 
   const { data, setData, post, processing, errors } = useForm({
     name: '',
     category_id: '',
-    date: '', 
+    date: '',
     price: '',
     status: 'tersedia',
     description: '',
     proof: null,
   });
-
-  const [preview, setPreview] = useState(null);
 
   const formatRupiah = (value) => {
     if (value === null || value === undefined || value === '') return '';
@@ -77,7 +76,6 @@ export default function Create({ categories }) {
     });
   };
 
-  // Helper untuk menentukan ikon status di dalam select
   const getStatusIcon = () => {
     if (data.status === 'tersedia') return <Check className="w-4 h-4" />;
     if (data.status === 'menipis') return <AlertTriangle className="w-4 h-4 text-amber-500" />;
@@ -88,6 +86,8 @@ export default function Create({ categories }) {
     <AdminLayout>
       <div className="min-h-screen flex items-start justify-center bg-gray-50/30">
         <div className="w-full max-w-2xl px-6 pt-8 pb-12">
+          
+          {/* button kembali */}
           <div className="mb-6 mt-4">
             <Link
               href={route('admin.kelola-produk.index')}
@@ -100,17 +100,21 @@ export default function Create({ categories }) {
 
           <div className="bg-white rounded-[30px] border border-gray-200 shadow-[0_18px_45px_rgba(15,23,42,0.08)]">
             <form onSubmit={handleSubmit} className="p-10 space-y-7">
+              
+              {/* title */}
               <div className="mb-4">
                 <h1 className="text-2xl font-sfPro text-gray-900 text-center tracking-tight">
-                  Tambah Produk
+                  Tambah Bahan
                 </h1>
-                <p className="text-sm text-gray-500 text-center mt-1">Tambahkan produk yang baru saja dibeli</p>
+                <p className="text-sm text-gray-500 text-center mt-1">
+                  Tambahkan bahan yang baru saja dibeli
+                </p>
               </div>
 
-              {/* nama produk */}
+              {/* nama bahan */}
               <div className="space-y-3">
                 <label className="block text-sm font-sfPro text-gray-800">
-                  Nama Produk:
+                  Nama Bahan:
                 </label>
                 <div className="relative">
                   <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400">
@@ -118,7 +122,7 @@ export default function Create({ categories }) {
                   </span>
                   <input
                     type="text"
-                    placeholder="Masukkan nama produk yang dibeli"
+                    placeholder="Masukkan nama bahan yang dibeli"
                     value={data.name}
                     onChange={(e) => setData('name', e.target.value)}
                     className={`w-full bg-white border ${
@@ -131,32 +135,32 @@ export default function Create({ categories }) {
                 )}
               </div>
 
-            {/* tanggal */}
-            <div className="space-y-3">
-            <label className="block text-sm font-sfPro text-gray-800">
-                Tanggal:
-            </label>
-            <ConfigProvider locale={idID}>
-                <div className="w-full rounded-xl border border-gray-400 px-3 py-[6px] text-sm focus-within:border-gray-500">
-                <DatePicker
-                    className="w-full !border-none !shadow-none focus:!shadow-none focus:!border-none focus:!outline-none"
-                    format="DD MMMM YYYY"
-                    value={data.date ? dayjs(data.date, 'YYYY-MM-DD') : null}
-                    onChange={(value) => {
-                    const formatted = value ? value.format('YYYY-MM-DD') : '';
-                    setData('date', formatted);
-                    }}
-                    allowClear
-                    popupClassName="rounded-xl"
-                />
-                </div>
-            </ConfigProvider>
-            {errors.date && (
-                <p className="text-red-500 text-xs mt-1">{errors.date}</p>
-            )}
-            </div>
+              {/* tanggal */}
+              <div className="space-y-3">
+                <label className="block text-sm font-sfPro text-gray-800">
+                  Tanggal:
+                </label>
+                <ConfigProvider locale={idID}>
+                  <div className={`w-full rounded-xl border ${errors.date ? 'border-red-500' : 'border-gray-400'} px-3 py-[6px] text-sm focus-within:border-gray-500`}>
+                    <DatePicker
+                      className="w-full !border-none !shadow-none focus:!shadow-none focus:!border-none focus:!outline-none"
+                      format="DD MMMM YYYY"
+                      value={data.date ? dayjs(data.date, 'YYYY-MM-DD') : null}
+                      onChange={(value) => {
+                        const formatted = value ? value.format('YYYY-MM-DD') : '';
+                        setData('date', formatted);
+                      }}
+                      allowClear
+                      popupClassName="rounded-xl"
+                    />
+                  </div>
+                </ConfigProvider>
+                {errors.date && (
+                  <p className="text-red-500 text-xs mt-1">{errors.date}</p>
+                )}
+              </div>
 
-              {/* nominal harga */}
+              {/* harga */}
               <div className="space-y-3">
                 <label className="block text-sm font-sfPro text-gray-800">
                   Nominal Harga:
@@ -196,7 +200,7 @@ export default function Create({ categories }) {
                     onChange={(e) => setData('category_id', e.target.value)}
                     className={`w-full bg-white border ${
                       errors.category_id ? 'border-red-500' : 'border-gray-400'
-                    } rounded-xl pl-9 pr-12 py-3 text-sm outline-none appearance-none bg-none !bg-none bg-no-repeat focus:outline-none focus:ring-0 focus:border-gray-500 font-sfPro ${
+                    } rounded-xl pl-9 pr-12 py-3 text-sm outline-none appearance-none focus:outline-none focus:ring-0 focus:border-gray-500 font-sfPro ${
                       !data.category_id ? 'text-gray-400' : 'text-gray-900'
                     }`}
                   >
@@ -208,24 +212,13 @@ export default function Create({ categories }) {
                     ))}
                   </select>
                   <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500">
-                    <svg
-                      width="18"
-                      height="18"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="1.8"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                       <polyline points="6 9 12 15 18 9"></polyline>
                     </svg>
                   </div>
                 </div>
                 {errors.category_id && (
-                  <p className="text-red-500 text-xs mt-1">
-                    {errors.category_id}
-                  </p>
+                  <p className="text-red-500 text-xs mt-1">{errors.category_id}</p>
                 )}
               </div>
 
@@ -241,23 +234,14 @@ export default function Create({ categories }) {
                   <select
                     value={data.status}
                     onChange={(e) => setData('status', e.target.value)}
-                    className="w-full bg-white border border-gray-400 rounded-xl pl-9 pr-12 py-3 text-sm outline-none appearance-none bg-none !bg-none bg-no-repeat focus:outline-none focus:ring-0 focus:border-gray-500 font-normal text-gray-900"
+                    className="w-full bg-white border border-gray-400 rounded-xl pl-9 pr-12 py-3 text-sm outline-none appearance-none focus:outline-none focus:ring-0 focus:border-gray-500 text-gray-900"
                   >
                     <option value="tersedia">Tersedia</option>
                     <option value="menipis">Menipis</option>
                     <option value="habis">Habis</option>
                   </select>
                   <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500">
-                    <svg
-                      width="18"
-                      height="18"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="1.8"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                       <polyline points="6 9 12 15 18 9"></polyline>
                     </svg>
                   </div>
@@ -270,22 +254,20 @@ export default function Create({ categories }) {
                   Keterangan:
                 </label>
                 <textarea
-                  placeholder="Masukkan deskripsi atau keterangan tambahan terkait produk yang dibeli"
+                  placeholder="Masukkan deskripsi atau keterangan tambahan"
                   value={data.description}
                   onChange={(e) => setData('description', e.target.value)}
                   className="w-full bg-white border border-gray-400 rounded-xl px-4 py-3 text-sm outline-none focus:outline-none focus:ring-0 focus:border-gray-500 font-sfPro min-h-[100px] resize-none"
                 />
               </div>
 
-              {/* Bukti (Gambar) */}
+              {/* gambar */}
               <div className="space-y-3">
                 <label className="block text-sm font-sfPro text-gray-800">
-                  Bukti Produk (Gambar):
+                  Bukti Pembayaran:
                 </label>
                 <div
-                  onClick={() =>
-                    fileInputRef.current && fileInputRef.current.click()
-                  }
+                  onClick={() => fileInputRef.current && fileInputRef.current.click()}
                   className="w-full border border-gray-300 border-dashed rounded-2xl p-6 flex flex-col items-center justify-center cursor-pointer min-h-[180px] relative overflow-hidden bg-gray-50/40 hover:bg-gray-100 transition-colors"
                 >
                   {preview ? (
@@ -328,14 +310,14 @@ export default function Create({ categories }) {
                 )}
               </div>
 
-              {/* butto simpan */}
+              {/* submit button */}
               <div className="pt-2">
                 <button
                   type="submit"
                   disabled={processing}
                   className="w-full bg-[#EF5350] text-white font-sfPro py-4 rounded-xl text-sm hover:bg-[#e53935] active:scale-[0.98] transition-all disabled:opacity-50"
                 >
-                  {processing ? 'Menyimpan...' : 'Tambah Produk'}
+                  {processing ? 'Menyimpan...' : 'Tambah Bahan'}
                 </button>
               </div>
             </form>

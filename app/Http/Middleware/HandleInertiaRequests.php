@@ -11,49 +11,74 @@ class HandleInertiaRequests extends Middleware
 {
     protected $rootView = 'app';
 
-    public function version(Request $request): ?string
-    {
-        return parent::version($request);
-    }
-
     public function share(Request $request): array
-    { 
-        // Filter hanya ambil data bermasalah di bulan dan tahun ini saja
-        $problematicProducts = Product::whereIn('status', ['habis', 'menipis'])
-            ->whereMonth('date', Carbon::now()->month)
-            ->whereYear('date', Carbon::now()->year)
+    {
+        $now = Carbon::now();
+
+        // Ambil data produk untuk periode bulan ini
+        $allProducts = Product::whereMonth('date', $now->month)
+            ->whereYear('date', $now->year)
             ->get();
 
-        $habisItems = $problematicProducts->where('status', 'habis');
-        $menipisItems = $problematicProducts->where('status', 'menipis');
+        // Filter produk berdasarkan status untuk isi dropdown pesan
+        $habisProducts = $allProducts->where('status', 'habis');
+        $menipisProducts = $allProducts->where('status', 'menipis');
         
-        $notifMessage = null;
-        $statusBahan = 'aman';
+        // Hitung jumlah bahan yang statusnya masih 'tersedia'
+        $tersediaCount = $allProducts->where('status', 'tersedia')->count();
+        $habisCount = $habisProducts->count();
+        $menipisCount = $menipisProducts->count();
 
-        if ($habisItems->count() > 0) {
-            $statusBahan = 'habis';
-            $notifMessage = ($habisItems->count() <= 3) 
-                ? $habisItems->pluck('name')->implode(', ') . " habis" 
-                : $habisItems->count() . " bahan habis";
-        } 
-        elseif ($menipisItems->count() > 0) {
-            $statusBahan = 'menipis';
-            $notifMessage = ($menipisItems->count() <= 3) 
-                ? $menipisItems->pluck('name')->implode(', ') . " mulai menipis" 
-                : $menipisItems->count() . " bahan menipis";
+        $messages = [];
+
+        // Logika Pesan Notifikasi Habis
+        if ($habisCount > 0) {
+            if ($habisCount <= 4) {
+                foreach ($habisProducts as $product) {
+                    $messages[] = "🚨 {$product->name} habis";
+                }
+            } else {
+                $messages[] = "🚨 {$habisCount} bahan habis";
+            }
+        }
+
+        // Logika Pesan Notifikasi Menipis
+        if ($menipisCount > 0) {
+            if ($menipisCount <= 4) {
+                foreach ($menipisProducts as $product) {
+                    $messages[] = "⚠️ {$product->name} menipis";
+                }
+            } else {
+                $messages[] = "⚠️ {$menipisCount} bahan menipis";
+            }
+        }
+        
+        // Logika Status Notifikasi
+        $status = 'tersedia';
+
+        if ($habisCount > 0) {
+            // Jika ada satu saja yang habis, lonceng langsung merah (habis)
+            $status = 'habis';
+        } elseif ($tersediaCount < 5 && $allProducts->count() > 0) {
+            // Jika bahan yang 'tersedia' jumlahnya sudah kurang dari 5, lonceng jadi kuning (menipis)
+            $status = 'menipis';
         }
 
         return array_merge(parent::share($request), [
             'auth' => [
-                'user' => $request->user('admin') ?? $request->user(), 
+                'user' => $request->user('admin') ?? $request->user(),
             ],
+
             'notif' => [
-                'message' => $notifMessage,
-                'status'  => $statusBahan, 
+                'status'   => $status,
+                'messages' => $messages,
+                'total'    => $habisCount + $menipisCount
             ],
+
             'flash' => [
-                'success' => $request->session()->get('success'),
-                'error' => $request->session()->get('error'),
+                'success' => fn () => $request->session()->get('success'),
+                'error'   => fn () => $request->session()->get('error'),
+                'success_transaction' => fn () => $request->session()->get('success_transaction'),
             ],
         ]);
     }
