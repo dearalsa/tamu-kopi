@@ -25,7 +25,7 @@ export default function Login({ status }) {
         }
     }, [errors]);
 
-    // Timer penghitung mundur yang kebal terhadap refresh halaman
+    // Timer penghitung mundur terhadap refresh halaman
     useEffect(() => {
         const checkCooldown = () => {
             const unlockTime = localStorage.getItem('login_unlock_time');

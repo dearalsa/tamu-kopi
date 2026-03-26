@@ -60,6 +60,18 @@ export default function Dashboard({
     return value;
   };
 
+  // Helper khusus translate nama bulan/hari untuk grafik
+  const translateLabel = (label) => {
+    const dict = {
+      'January': 'Januari', 'February': 'Februari', 'March': 'Maret', 'April': 'April',
+      'May': 'Mei', 'June': 'Juni', 'July': 'Juli', 'August': 'Agustus',
+      'September': 'September', 'October': 'Oktober', 'November': 'November', 'December': 'Desember',
+      'Monday': 'Senin', 'Tuesday': 'Selasa', 'Wednesday': 'Rabu', 'Thursday': 'Kamis', 
+      'Friday': 'Jumat', 'Saturday': 'Sabtu', 'Sunday': 'Minggu'
+    };
+    return dict[label] || label;
+  };
+
   const statusConfig = {
     aman:       { color: 'bg-emerald-50 text-emerald-500', icon: <ShieldCheck size={26} />,   label: 'Aman' },
     peringatan: { color: 'bg-amber-50 text-amber-500',     icon: <AlertTriangle size={26} />, label: 'Menipis' },
@@ -68,29 +80,17 @@ export default function Dashboard({
   
   const currentStatus = statusConfig[statusBahan] || statusConfig.aman;
 
-  const dataGrafik = periode === 'Bulanan'
-    ? grafikBulanan
-    : periode === 'Mingguan'
-    ? grafikMingguan
-    : grafikHarian;
+  // Transform data grafik agar "name" (bulan/hari) jadi Bahasa Indonesia
+  const rawData = periode === 'Bulanan' ? grafikBulanan : periode === 'Mingguan' ? grafikMingguan : grafikHarian;
+  const dataGrafik = rawData.map(item => ({
+    ...item,
+    name: translateLabel(item.name)
+  }));
 
-  const summaryIncome = periode === 'Bulanan'
-    ? incomeMonthly
-    : periode === 'Mingguan'
-    ? incomeWeekly
-    : incomeDaily;
+  const summaryIncome = periode === 'Bulanan' ? incomeMonthly : periode === 'Mingguan' ? incomeWeekly : incomeDaily;
+  const summaryExpense = periode === 'Bulanan' ? expenseMonthly : periode === 'Mingguan' ? expenseWeekly : expenseDaily;
 
-  const summaryExpense = periode === 'Bulanan'
-    ? expenseMonthly
-    : periode === 'Mingguan'
-    ? expenseWeekly
-    : expenseDaily;
-
-  const periodeLabel = periode === 'Bulanan'
-    ? 'Bulan ini'
-    : periode === 'Mingguan'
-    ? 'Minggu ini'
-    : 'Hari ini';
+  const periodeLabel = periode === 'Bulanan' ? 'Bulan ini' : periode === 'Mingguan' ? 'Minggu ini' : 'Hari ini';
 
   const CustomTooltip = ({ active, payload, label }) => {
     if (active && payload && payload.length) {
