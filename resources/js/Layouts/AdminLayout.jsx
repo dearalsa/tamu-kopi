@@ -102,7 +102,7 @@ export default function AdminLayout({ children }) {
               {profileOpen && (
                 <div className={`absolute top-full mt-2 w-52 bg-white rounded-2xl border border-gray-100 shadow-xl z-[70] p-1 ${isDashboard ? 'right-0' : 'left-0'}`}>
                   <div className="px-4 py-3 border-b border-gray-50 mb-1">
-                    <p className="text-sm text-gray-900 truncate font-semibold">{auth.user.name}</p>
+                    <p className="text-sm text-gray-900 truncate">{auth.user.name}</p>
                     <p className="text-[10px] text-gray-400 truncate">{auth.user.email}</p>
                   </div>
 

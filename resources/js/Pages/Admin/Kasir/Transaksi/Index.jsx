@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { Head, Link, router, usePage } from '@inertiajs/react'
 import AdminLayout from '@/Layouts/AdminLayout'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -15,74 +15,121 @@ export default function TransactionIndex({ transactions, stats, filters, auth })
   const { flash } = usePage().props;
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedTransaction, setSelectedTransaction] = useState(null)
-  const [printData, setPrintData] = useState(null)
-  const printRef = useRef(null)
   
   const [startDate, setStartDate] = useState(filters.start_date ? dayjs(filters.start_date) : dayjs())
   const [endDate, setEndDate] = useState(filters.end_date ? dayjs(filters.end_date) : dayjs())
 
   useEffect(() => {
     if (flash?.success_transaction) {
-      setPrintData(flash.success_transaction);
+      handleSilentPrint(flash.success_transaction);
     }
   }, [flash]);
 
-  // Logic Pencetakan agar Kompatibel Printer 58mm 
-  useEffect(() => {
-    if (!printData || !printRef.current) return
-    const printContent = printRef.current.innerHTML
-    const windowPrint = window.open('', '', 'width=450,height=600')
+  const handleSilentPrint = (data) => {
+    if (!data) return;
     
+    const windowPrint = window.open('', '', 'width=450,height=600')
+    const itemsHtml = data.items?.map(item => `
+      <div style="margin-bottom: 8px;">
+        <div style="display: flex; justify-content: space-between; color: #333; margin-bottom: 2px;">
+          <span style="font-weight: 500;">${item.menu_name || item.name}</span>
+          <span>${Number(item.price * item.quantity).toLocaleString('id-ID')}</span>
+        </div>
+        <div style="font-size: 9px; color: #666;">${item.quantity} x ${Number(item.price).toLocaleString('id-ID')}</div>
+        ${(item.note || item.description) ? `<div style="font-size: 9px; font-style: italic; margin-top: 3px; padding-left: 5px; color: #e53e3e;">Catatan: ${item.note || item.description}</div>` : ''}
+      </div>
+    `).join('') || ''
+
     windowPrint.document.write(`
       <html>
         <head>
-          <title>Struk Pembayaran</title>
+          <title>Print Struk</title>
           <style>
-            @page { 
-                size: 58mm auto; 
-                margin: 0mm; 
-            }
-            html, body {
-                margin: 0;
-                padding: 0;
-                width: 58mm;
-                background-color: #fff;
-            }
-            body { 
-                font-family: 'Courier New', Courier, monospace; 
-                padding: 2mm; 
-                font-size: 11px; 
-                line-height: 1.3;
-                color: #000;
-            }
+            @page { size: 58mm auto; margin: 0; }
+            body { font-family: 'Arial', sans-serif; width: 58mm; padding: 2mm; font-size: 11px; line-height: 1.4; color: #333; margin: 0; background: #fff; }
             .text-center { text-align: center; }
-            .line { border-top: 1px dashed #000; margin: 4px 0; width: 100%; }
-            .item { display: flex; justify-content: space-between; margin-bottom: 2px; }
-            .total { font-weight: bold; margin-top: 5px; font-size: 12px; }
-            .note { font-size: 9px; font-style: italic; margin-bottom: 4px; padding-left: 5px; }
-            img { max-width: 35mm; height: auto; filter: grayscale(100%); margin-bottom: 5px; }
-            
-            @media print {
-                header, footer { display: none !important; }
-            }
+            .line { border-top: 1px dashed #ccc; margin: 8px 0; width: 100%; }
+            .total-row { font-weight: bold; margin-top: 6px; font-size: 12px; color: #000; }
+            .brand-color { color: #e5534b; }
+            .status-badge { display: inline-block; padding: 3px 8px; border-radius: 4px; background: #fef2f2; color: #e5534b; font-size: 10px; font-weight: bold; border: 1px solid #fee2e2; }
+            img { max-width: 35mm; height: auto; margin-bottom: 6px; display: block; margin-left: auto; margin-right: auto; }
           </style>
         </head>
         <body>
-            <div style="width: 54mm; margin: 0 auto;">
-                ${printContent}
-            </div>
-            <script>
-                window.onload = function() {
-                    window.print();
-                    setTimeout(function() { window.close(); }, 500);
-                };
-            </script>
+          <div class="text-center">
+            <img src="/asset/Tamu.svg" />
+            <p style="font-size: 9px; margin: 0; color: #666;">Jl. Dadali No.7, Bogor<br>081218420963</p>
+          </div>
+          <div class="line"></div>
+          
+          <div style="display: flex; justify-content: space-between; font-size: 10px; color: #666; margin-bottom: 4px;">
+            <span>${dayjs(data.created_at).format('DD MMM YYYY')}</span>
+            <span>${dayjs(data.created_at).format('HH:mm')}</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+            <b style="color: #000;">No. Inv</b>
+            <span style="font-family: monospace;">${data.invoice_number}</span>
+          </div>
+          <div style="display: flex; justify-content: space-between;">
+            <b style="color: #000;">Kasir</b>
+            <span>${data.cashier_name || auth?.user?.name || 'Kasir'}</span>
+          </div>
+
+          <div class="line"></div>
+          <div class="text-center" style="margin: 8px 0;">
+            <span class="status-badge">${data.order_type === 'dine-in' ? 'MAKAN DITEMPAT' : 'TAKE AWAY'}</span>
+          </div>
+          <div class="line"></div>
+          
+          ${itemsHtml}
+          
+          <div class="line"></div>
+          
+          <div style="display: flex; justify-content: space-between; color: #444; margin-bottom: 4px;">
+            <span>Subtotal</span>
+            <span>${Number(data.subtotal).toLocaleString('id-ID')}</span>
+          </div>
+          ${data.discount > 0 ? `<div style="display: flex; justify-content: space-between; color: #e53e3e; margin-bottom: 4px;"><span>Diskon</span><span>-${Number(data.discount).toLocaleString('id-ID')}</span></div>` : ''}
+          <div style="display: flex; justify-content: space-between; margin-top: 6px;" class="total-row">
+            <span class="brand-color">TOTAL</span>
+            <span class="brand-color">Rp ${Number(data.total).toLocaleString('id-ID')}</span>
+          </div>
+          
+          <div class="line"></div>
+          
+          <div style="display: flex; justify-content: space-between; font-size: 10px; color: #666; margin-bottom: 4px;">
+            <span style="text-transform: uppercase;">Metode: ${data.payment_method}</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+            <span>Bayar</span>
+            <span>${Number(data.cash_amount || data.total).toLocaleString('id-ID')}</span>
+          </div>
+          ${data.payment_method === 'cash' ? `
+          <div style="display: flex; justify-content: space-between; color: #2f855a; font-weight: bold;">
+            <span>Kembali</span>
+            <span>${Number(data.change).toLocaleString('id-ID')}</span>
+          </div>` : ''}
+          
+          <div class="line" style="border-top-style: solid; border-top-color: #eee;"></div>
+          
+          <div class="text-center" style="margin-top: 15px;">
+            <div style="font-size: 10px; color: #e5534b; font-weight: bold; margin-bottom: 8px;">Terima Kasih!</div>
+            <div style="font-size: 9px; color: #666; margin-bottom: 3px;">Wifi: Tataptemu</div>
+            <div style="font-size: 9px; color: #666; margin-bottom: 3px;">Indoor: Tataptemu</div>
+            <div style="font-size: 9px; color: #666;">Outdoor: tatapku</div>
+          </div>
+          
+          <script>
+            window.onload = function() { 
+              window.print(); 
+              setTimeout(function() { window.close(); }, 1000); 
+            };
+          </script>
         </body>
       </html>
     `)
     windowPrint.document.close()
-    setPrintData(null)
-  }, [printData])
+  }
 
   const handleSearchByDate = () => {
     router.get('/admin/kasir/transaksi', {
@@ -102,59 +149,6 @@ export default function TransactionIndex({ transactions, stats, filters, auth })
   return (
     <AdminLayout>
       <Head title="Data Transaksi" />
-
-      {/* Struk Template (Hidden) */}
-      <div ref={printRef} style={{ display: 'none' }}>
-        {printData && (
-          <>
-            <div className="text-center">
-              {/* Logo diletakkan paling atas */}
-              <img src="/asset/Tamu.svg" style={{ width: '120px', margin: '0 auto 5px auto', display: 'block' }} />
-              <p style={{ fontSize: '9px', margin: '0', lineHeight: '1.3' }}>
-                Jl. Dadali No.7, Tanah Sereal, Kota Bogor<br /> 081218420963
-              </p>
-            </div>
-            <div className="line" />
-            <div style={{ fontSize: '10px' }}>
-              <div className="item"><span>Tgl</span><span>{dayjs(printData.created_at).format('DD MMM YYYY HH:mm')}</span></div>
-              <div className="item"><span>ID</span><span>{printData.invoice_number}</span></div>
-              <div className="item"><span>Kasir</span><span>{printData.cashier_name || auth?.user?.name}</span></div>
-            </div>
-            <div className="line" />
-            <div className="text-center" style={{ fontWeight: 'bold', margin: '5px 0', textTransform: 'uppercase' }}>
-              {printData.order_type === 'dine-in' ? 'MAKAN DITEMPAT' : 'TAKE AWAY'}
-            </div>
-            <div className="line" />
-            {printData.items?.map((item, idx) => (
-              <div key={idx} style={{ marginBottom: '5px' }}>
-                <div className="item">
-                  <span style={{ flex: 1, paddingRight: '5px' }}>{item.menu_name || item.name}</span>
-                  <span>{formatIDR(item.price * item.quantity)}</span>
-                </div>
-                <div style={{ fontSize: '9px' }}>{item.quantity} x {formatIDR(item.price)}</div>
-                {/* Menampilkan catatan/note jika ada */}
-                {(item.note || item.description) && (
-                  <div className="note">Catatan: {item.note || item.description}</div>
-                )}
-              </div>
-            ))}
-            <div className="line" />
-            <div className="item"><span>Subtotal</span><span>{formatIDR(printData.subtotal)}</span></div>
-            {printData.discount > 0 && <div className="item"><span>Diskon</span><span>-{formatIDR(printData.discount)}</span></div>}
-            <div className="item total"><span>TOTAL</span><span>{formatIDR(printData.total)}</span></div>
-            
-            <div className="line" />
-            <div className="item"><span style={{textTransform: 'uppercase'}}>Metode Bayar</span><span>{printData.payment_method}</span></div>
-            <div className="item"><span>Bayar</span><span>{formatIDR(printData.cash_amount || printData.total)}</span></div>
-            {printData.payment_method === 'cash' && (
-              <div className="item"><span>Kembalian</span><span>{formatIDR(printData.change)}</span></div>
-            )}
-            
-            <div className="line" />
-            <div className="text-center" style={{ marginTop: '10px', fontSize: '9px' }}>Terima Kasih!</div>
-          </>
-        )}
-      </div>
 
       <style dangerouslySetInnerHTML={{ __html: `
         .no-scrollbar::-webkit-scrollbar { display: none; }
@@ -239,7 +233,7 @@ export default function TransactionIndex({ transactions, stats, filters, auth })
                       <td className="px-8 py-5 text-sm font-sfPro text-gray-900">Rp {formatIDR(trx.total)}</td>
                       <td className="px-8 py-5 flex justify-center gap-2">
                         <button onClick={() => setSelectedTransaction(trx)} className="w-10 h-10 rounded-xl bg-gray-100 text-gray-500 hover:bg-gray-900 hover:text-white flex items-center justify-center transition-all active:scale-95"><Eye size={18} /></button>
-                        <button onClick={() => setPrintData(trx)} className="w-10 h-10 rounded-xl bg-red-50 text-red-500 hover:bg-red-500 hover:text-white flex items-center justify-center transition-all active:scale-95"><Printer size={18} /></button>
+                        <button onClick={() => handleSilentPrint(trx)} className="w-10 h-10 rounded-xl bg-red-50 text-red-500 hover:bg-red-500 hover:text-white flex items-center justify-center transition-all active:scale-95"><Printer size={18} /></button>
                       </td>
                     </tr>
                   ))
@@ -327,7 +321,7 @@ export default function TransactionIndex({ transactions, stats, filters, auth })
                   {selectedTransaction.payment_method === 'cash' && <div className="text-right font-sfPro"><p className="text-[12px] text-green-600 font-sfPro tracking-tighter">Kembali: Rp {formatIDR(selectedTransaction.change)}</p></div>}
                 </div>
 
-                <button onClick={() => setPrintData(selectedTransaction)} className="w-full mt-6 bg-gray-900 text-white py-4 rounded-2xl font-telegraf text-[12px] flex items-center justify-center gap-2 hover:bg-black transition-all">
+                <button onClick={() => handleSilentPrint(selectedTransaction)} className="w-full mt-6 bg-gray-900 text-white py-4 rounded-2xl font-telegraf text-[12px] flex items-center justify-center gap-2 hover:bg-black transition-all">
                   <Printer size={16} /> Cetak Struk
                 </button>
               </div>

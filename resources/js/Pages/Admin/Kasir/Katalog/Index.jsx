@@ -83,17 +83,17 @@ export default function CatalogIndex({ menus = [], categories = [], auth, filter
     }
   }, [flash])
 
-  // Handle Print dengan Warna
+  // Handle Print dengan Warna & Jarak yang Diperbaiki
   const handleSilentPrint = (data) => {
     const windowPrint = window.open('', '', 'width=450,height=600')
     const itemsHtml = data.items.map(item => `
-      <div style="margin-bottom: 5px;">
-        <div style="display: flex; justify-content: space-between; color: #333;">
+      <div style="margin-bottom: 8px;">
+        <div style="display: flex; justify-content: space-between; color: #333; margin-bottom: 2px;">
           <span style="font-weight: 500;">${item.menu_name || item.name}</span>
           <span>${Number(item.price * item.quantity).toLocaleString('id-ID')}</span>
         </div>
         <div style="font-size: 9px; color: #666;">${item.quantity} x ${Number(item.price).toLocaleString('id-ID')}</div>
-        ${(item.note || item.description) ? `<div style="font-size: 9px; font-style: italic; margin-top: 2px; padding-left: 5px; color: #e53e3e;">Catatan: ${item.note || item.description}</div>` : ''}
+        ${(item.note || item.description) ? `<div style="font-size: 9px; font-style: italic; margin-top: 3px; padding-left: 5px; color: #e53e3e;">Catatan: ${item.note || item.description}</div>` : ''}
       </div>
     `).join('')
 
@@ -103,13 +103,13 @@ export default function CatalogIndex({ menus = [], categories = [], auth, filter
           <title>Print Struk</title>
           <style>
             @page { size: 58mm auto; margin: 0; }
-            body { font-family: 'Arial', sans-serif; width: 58mm; padding: 2mm; font-size: 11px; line-height: 1.3; color: #333; margin: 0; background: #fff; }
+            body { font-family: 'Arial', sans-serif; width: 58mm; padding: 2mm; font-size: 11px; line-height: 1.4; color: #333; margin: 0; background: #fff; }
             .text-center { text-align: center; }
-            .line { border-top: 1px dashed #ccc; margin: 6px 0; width: 100%; }
-            .total-row { font-weight: bold; margin-top: 5px; font-size: 12px; color: #000; }
+            .line { border-top: 1px dashed #ccc; margin: 8px 0; width: 100%; }
+            .total-row { font-weight: bold; margin-top: 6px; font-size: 12px; color: #000; }
             .brand-color { color: #e5534b; }
-            .status-badge { display: inline-block; padding: 2px 8px; border-radius: 4px; background: #fef2f2; color: #e5534b; font-size: 10px; font-weight: bold; border: 1px solid #fee2e2; }
-            img { max-width: 35mm; height: auto; margin-bottom: 5px; display: block; margin-left: auto; margin-right: auto; }
+            .status-badge { display: inline-block; padding: 3px 8px; border-radius: 4px; background: #fef2f2; color: #e5534b; font-size: 10px; font-weight: bold; border: 1px solid #fee2e2; }
+            img { max-width: 35mm; height: auto; margin-bottom: 6px; display: block; margin-left: auto; margin-right: auto; }
           </style>
         </head>
         <body>
@@ -118,11 +118,12 @@ export default function CatalogIndex({ menus = [], categories = [], auth, filter
             <p style="font-size: 9px; margin: 0; color: #666;">Jl. Dadali No.7, Bogor<br>081218420963</p>
           </div>
           <div class="line"></div>
-          <div style="display: flex; justify-content: space-between; font-size: 10px; color: #666;">
+          
+          <div style="display: flex; justify-content: space-between; font-size: 10px; color: #666; margin-bottom: 4px;">
             <span>${dayjs(data.created_at).format('DD MMM YYYY')}</span>
             <span>${dayjs(data.created_at).format('HH:mm')}</span>
           </div>
-          <div style="display: flex; justify-content: space-between; margin-top: 2px;">
+          <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
             <b style="color: #000;">No. Inv</b>
             <span style="font-family: monospace;">${data.invoice_number}</span>
           </div>
@@ -130,27 +131,33 @@ export default function CatalogIndex({ menus = [], categories = [], auth, filter
             <b style="color: #000;">Kasir</b>
             <span>${data.cashier_name || auth?.user?.name}</span>
           </div>
+
           <div class="line"></div>
-          <div class="text-center" style="margin: 5px 0;">
+          <div class="text-center" style="margin: 8px 0;">
             <span class="status-badge">${data.order_type === 'dine-in' ? 'MAKAN DITEMPAT' : 'TAKE AWAY'}</span>
           </div>
           <div class="line"></div>
+          
           ${itemsHtml}
+          
           <div class="line"></div>
-          <div style="display: flex; justify-content: space-between; color: #444;">
+          
+          <div style="display: flex; justify-content: space-between; color: #444; margin-bottom: 4px;">
             <span>Subtotal</span>
             <span>${Number(data.subtotal).toLocaleString('id-ID')}</span>
           </div>
-          ${data.discount > 0 ? `<div style="display: flex; justify-content: space-between; color: #e53e3e;"><span>Diskon</span><span>-${Number(data.discount).toLocaleString('id-ID')}</span></div>` : ''}
-          <div style="display: flex; justify-content: space-between; margin-top: 4px;" class="total-row">
+          ${data.discount > 0 ? `<div style="display: flex; justify-content: space-between; color: #e53e3e; margin-bottom: 4px;"><span>Diskon</span><span>-${Number(data.discount).toLocaleString('id-ID')}</span></div>` : ''}
+          <div style="display: flex; justify-content: space-between; margin-top: 6px;" class="total-row">
             <span class="brand-color">TOTAL</span>
             <span class="brand-color">Rp ${Number(data.total).toLocaleString('id-ID')}</span>
           </div>
+          
           <div class="line"></div>
-          <div style="display: flex; justify-content: space-between; font-size: 10px; color: #666;">
+          
+          <div style="display: flex; justify-content: space-between; font-size: 10px; color: #666; margin-bottom: 4px;">
             <span style="text-transform: uppercase;">Metode: ${data.payment_method}</span>
           </div>
-          <div style="display: flex; justify-content: space-between; margin-top: 2px;">
+          <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
             <span>Bayar</span>
             <span>${Number(data.cash_amount || data.total).toLocaleString('id-ID')}</span>
           </div>
@@ -159,10 +166,16 @@ export default function CatalogIndex({ menus = [], categories = [], auth, filter
             <span>Kembali</span>
             <span>${Number(data.change).toLocaleString('id-ID')}</span>
           </div>` : ''}
+          
           <div class="line" style="border-top-style: solid; border-top-color: #eee;"></div>
-          <div class="text-center" style="margin-top: 10px; font-size: 10px; color: #e5534b; font-weight: bold;">
-            Terima Kasih!
+          
+          <div class="text-center" style="margin-top: 15px;">
+            <div style="font-size: 10px; color: #e5534b; font-weight: bold; margin-bottom: 8px;">Terima Kasih!</div>
+            <div style="font-size: 9px; color: #666; margin-bottom: 3px;">Wifi: Tataptemu</div>
+            <div style="font-size: 9px; color: #666; margin-bottom: 3px;">Indoor: Tataptemu</div>
+            <div style="font-size: 9px; color: #666;">Outdoor: tatapku</div>
           </div>
+          
           <script>
             window.onload = function() { 
               window.print(); 
@@ -265,7 +278,7 @@ export default function CatalogIndex({ menus = [], categories = [], auth, filter
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
               <input
                 type="text"
-                placeholder="Cari menu... (Enter)"
+                placeholder="Cari menu..."
                 value={searchTerm}
                 onChange={e => setSearchTerm(e.target.value)}
                 onKeyDown={handleSearch}
