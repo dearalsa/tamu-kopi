@@ -20,47 +20,46 @@ class HandleInertiaRequests extends Middleware
             ->whereYear('date', $now->year)
             ->get();
 
-        // Filter produk berdasarkan status untuk isi dropdown pesan
+        // Filter produk berdasarkan status asli dari database
         $habisProducts = $allProducts->where('status', 'habis');
         $menipisProducts = $allProducts->where('status', 'menipis');
         
-        // Hitung jumlah bahan yang statusnya masih 'tersedia'
-        $tersediaCount = $allProducts->where('status', 'tersedia')->count();
         $habisCount = $habisProducts->count();
         $menipisCount = $menipisProducts->count();
+        $totalBermasalah = $habisCount + $menipisCount;
 
         $messages = [];
 
-        // Logika Pesan Notifikasi Habis
+        // Susun Pesan Notifikasi (🚨 Habis)
         if ($habisCount > 0) {
             if ($habisCount <= 4) {
                 foreach ($habisProducts as $product) {
-                    $messages[] = "🚨 {$product->name} habis";
+                    $messages[] = "{$product->name} habis";
                 }
             } else {
-                $messages[] = "🚨 {$habisCount} bahan habis";
+                $messages[] = "{$habisCount} bahan habis";
             }
         }
 
-        // Logika Pesan Notifikasi Menipis
+        // Susun Pesan Notifikasi (⚠️ Menipis)
         if ($menipisCount > 0) {
             if ($menipisCount <= 4) {
                 foreach ($menipisProducts as $product) {
-                    $messages[] = "⚠️ {$product->name} menipis";
+                    $messages[] = "{$product->name} menipis";
                 }
             } else {
-                $messages[] = "⚠️ {$menipisCount} bahan menipis";
+                $messages[] = "{$menipisCount} bahan menipis";
             }
         }
         
-        // Logika Status Notifikasi
-        $status = 'tersedia';
+        // Default awal adalah 'aman' atau 'tersedia'
+        $status = 'aman';
 
         if ($habisCount > 0) {
-            // Jika ada satu saja yang habis, lonceng langsung merah (habis)
+            // Jika ada yang habis, status jadi 'habis' (prioritas tertinggi)
             $status = 'habis';
-        } elseif ($tersediaCount < 5 && $allProducts->count() > 0) {
-            // Jika bahan yang 'tersedia' jumlahnya sudah kurang dari 5, lonceng jadi kuning (menipis)
+        } elseif ($menipisCount > 0) {
+            // Jika tidak ada yang habis, tapi ada yang menipis, status jadi 'menipis'
             $status = 'menipis';
         }
 
@@ -70,9 +69,9 @@ class HandleInertiaRequests extends Middleware
             ],
 
             'notif' => [
-                'status'   => $status,
+                'status'   => $status, // Status sekarang akurat sesuai kondisi bahan
                 'messages' => $messages,
-                'total'    => $habisCount + $menipisCount
+                'total'    => $totalBermasalah
             ],
 
             'flash' => [

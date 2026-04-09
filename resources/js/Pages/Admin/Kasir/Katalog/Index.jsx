@@ -17,11 +17,11 @@ import {
 } from 'lucide-react'
 import dayjs from 'dayjs'
 
-export default function CatalogIndex({ menus = [], categories = [], auth }) {
+export default function CatalogIndex({ menus = [], categories = [], auth, filters }) {
   const { flash } = usePage().props
 
-  const [searchTerm, setSearchTerm] = useState('')
-  const [selectedCategory, setSelectedCategory] = useState('all')
+  const [searchTerm, setSearchTerm] = useState(filters?.search || '')
+  const [selectedCategory, setSelectedCategory] = useState(filters?.category || 'all')
   const [showCategoryDropdown, setShowCategoryDropdown] = useState(false)
 
   const [cart, setCart] = useState([])
@@ -36,6 +36,24 @@ export default function CatalogIndex({ menus = [], categories = [], auth }) {
     { value: 'all', label: 'Semua Menu' },
     ...categories.map(cat => ({ value: String(cat.id), label: cat.name })),
   ]
+
+  const handleCategoryChange = (value) => {
+    setSelectedCategory(value);
+    setShowCategoryDropdown(false);
+    router.get(route('admin.kasir.katalog.index'), 
+      { category: value, search: searchTerm }, 
+      { preserveState: true, preserveScroll: true, replace: true }
+    );
+  };
+
+  const handleSearch = (e) => {
+    if (e.key === 'Enter') {
+      router.get(route('admin.kasir.katalog.index'), 
+        { category: selectedCategory, search: searchTerm }, 
+        { preserveState: true, preserveScroll: true }
+      );
+    }
+  };
 
   const formatRupiah = value => {
     if (!value) return ''
@@ -65,15 +83,18 @@ export default function CatalogIndex({ menus = [], categories = [], auth }) {
     }
   }, [flash])
 
+  // Handle Print dengan Warna
   const handleSilentPrint = (data) => {
     const windowPrint = window.open('', '', 'width=450,height=600')
-
     const itemsHtml = data.items.map(item => `
-      <div style="display: flex; justify-content: space-between; margin-bottom: 2px;">
-        <span>${item.menu_name} x${item.quantity}</span>
-        <span>${Number(item.price * item.quantity).toLocaleString('id-ID')}</span>
+      <div style="margin-bottom: 5px;">
+        <div style="display: flex; justify-content: space-between; color: #333;">
+          <span style="font-weight: 500;">${item.menu_name || item.name}</span>
+          <span>${Number(item.price * item.quantity).toLocaleString('id-ID')}</span>
+        </div>
+        <div style="font-size: 9px; color: #666;">${item.quantity} x ${Number(item.price).toLocaleString('id-ID')}</div>
+        ${(item.note || item.description) ? `<div style="font-size: 9px; font-style: italic; margin-top: 2px; padding-left: 5px; color: #e53e3e;">Catatan: ${item.note || item.description}</div>` : ''}
       </div>
-      ${item.description ? `<div style="font-size: 9px; font-style: italic; margin-bottom: 4px; padding-left: 5px;">Catatan: ${item.description}</div>` : ''}
     `).join('')
 
     windowPrint.document.write(`
@@ -82,39 +103,71 @@ export default function CatalogIndex({ menus = [], categories = [], auth }) {
           <title>Print Struk</title>
           <style>
             @page { size: 58mm auto; margin: 0; }
-            body { font-family: 'Courier New', monospace; width: 58mm; padding: 2mm; font-size: 11px; line-height: 1.3; color: #000; margin: 0; }
+            body { font-family: 'Arial', sans-serif; width: 58mm; padding: 2mm; font-size: 11px; line-height: 1.3; color: #333; margin: 0; background: #fff; }
             .text-center { text-align: center; }
-            .line { border-top: 1px dashed #000; margin: 4px 0; width: 100%; }
-            .total { font-weight: bold; margin-top: 5px; font-size: 12px; }
-            img { max-width: 35mm; height: auto; filter: grayscale(100%); margin-bottom: 5px; }
+            .line { border-top: 1px dashed #ccc; margin: 6px 0; width: 100%; }
+            .total-row { font-weight: bold; margin-top: 5px; font-size: 12px; color: #000; }
+            .brand-color { color: #e5534b; }
+            .status-badge { display: inline-block; padding: 2px 8px; border-radius: 4px; background: #fef2f2; color: #e5534b; font-size: 10px; font-weight: bold; border: 1px solid #fee2e2; }
+            img { max-width: 35mm; height: auto; margin-bottom: 5px; display: block; margin-left: auto; margin-right: auto; }
           </style>
         </head>
         <body>
           <div class="text-center">
             <img src="/asset/Tamu.svg" />
-            <p style="font-size: 9px; margin: 0;">Jl. Dadali No.7, Bogor<br>081218420963</p>
+            <p style="font-size: 9px; margin: 0; color: #666;">Jl. Dadali No.7, Bogor<br>081218420963</p>
           </div>
           <div class="line"></div>
-          <div style="display: flex; justify-content: space-between;">
+          <div style="display: flex; justify-content: space-between; font-size: 10px; color: #666;">
             <span>${dayjs(data.created_at).format('DD MMM YYYY')}</span>
             <span>${dayjs(data.created_at).format('HH:mm')}</span>
           </div>
-          <div style="display: flex; justify-content: space-between;"><b>No. Inv</b><span>${data.invoice_number}</span></div>
-          <div style="display: flex; justify-content: space-between;"><b>Kasir</b><span>${data.cashier_name || auth?.user?.name}</span></div>
+          <div style="display: flex; justify-content: space-between; margin-top: 2px;">
+            <b style="color: #000;">No. Inv</b>
+            <span style="font-family: monospace;">${data.invoice_number}</span>
+          </div>
+          <div style="display: flex; justify-content: space-between;">
+            <b style="color: #000;">Kasir</b>
+            <span>${data.cashier_name || auth?.user?.name}</span>
+          </div>
           <div class="line"></div>
-          <div class="text-center" style="font-weight: bold; margin: 5px 0;">${data.order_type === 'dine-in' ? 'MAKAN DITEMPAT' : 'TAKE AWAY'}</div>
+          <div class="text-center" style="margin: 5px 0;">
+            <span class="status-badge">${data.order_type === 'dine-in' ? 'MAKAN DITEMPAT' : 'TAKE AWAY'}</span>
+          </div>
           <div class="line"></div>
           ${itemsHtml}
           <div class="line"></div>
-          <div style="display: flex; justify-content: space-between;"><span>Subtotal</span><span>${Number(data.subtotal).toLocaleString('id-ID')}</span></div>
-          ${data.discount > 0 ? `<div style="display: flex; justify-content: space-between;"><span>Diskon</span><span>-${Number(data.discount).toLocaleString('id-ID')}</span></div>` : ''}
-          <div style="display: flex; justify-content: space-between;" class="total"><span>TOTAL</span><span>${Number(data.total).toLocaleString('id-ID')}</span></div>
-          <div style="display: flex; justify-content: space-between;"><span>Bayar</span><span>${Number(data.cash_amount || data.total).toLocaleString('id-ID')}</span></div>
-          ${data.payment_method === 'cash' ? `<div style="display: flex; justify-content: space-between;"><span>Kembali</span><span>${Number(data.change).toLocaleString('id-ID')}</span></div>` : ''}
+          <div style="display: flex; justify-content: space-between; color: #444;">
+            <span>Subtotal</span>
+            <span>${Number(data.subtotal).toLocaleString('id-ID')}</span>
+          </div>
+          ${data.discount > 0 ? `<div style="display: flex; justify-content: space-between; color: #e53e3e;"><span>Diskon</span><span>-${Number(data.discount).toLocaleString('id-ID')}</span></div>` : ''}
+          <div style="display: flex; justify-content: space-between; margin-top: 4px;" class="total-row">
+            <span class="brand-color">TOTAL</span>
+            <span class="brand-color">Rp ${Number(data.total).toLocaleString('id-ID')}</span>
+          </div>
           <div class="line"></div>
-          <div class="text-center" style="margin-top: 10px; font-size: 9px;">Terima Kasih!</div>
+          <div style="display: flex; justify-content: space-between; font-size: 10px; color: #666;">
+            <span style="text-transform: uppercase;">Metode: ${data.payment_method}</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; margin-top: 2px;">
+            <span>Bayar</span>
+            <span>${Number(data.cash_amount || data.total).toLocaleString('id-ID')}</span>
+          </div>
+          ${data.payment_method === 'cash' ? `
+          <div style="display: flex; justify-content: space-between; color: #2f855a; font-weight: bold;">
+            <span>Kembali</span>
+            <span>${Number(data.change).toLocaleString('id-ID')}</span>
+          </div>` : ''}
+          <div class="line" style="border-top-style: solid; border-top-color: #eee;"></div>
+          <div class="text-center" style="margin-top: 10px; font-size: 10px; color: #e5534b; font-weight: bold;">
+            Terima Kasih!
+          </div>
           <script>
-            window.onload = function() { window.print(); setTimeout(function() { window.close(); }, 500); };
+            window.onload = function() { 
+              window.print(); 
+              setTimeout(function() { window.close(); }, 1000); 
+            };
           </script>
         </body>
       </html>
@@ -123,25 +176,17 @@ export default function CatalogIndex({ menus = [], categories = [], auth }) {
   }
 
   const filteredAndSortedMenus = useMemo(() => {
-    const menuData = Array.isArray(menus) ? menus : (menus?.data || [])
-    let result = menuData.filter(menu => {
-      const matchesSearch = menu.name.toLowerCase().includes(searchTerm.toLowerCase())
-      const categoryId = menu.category?.id || menu.category_id
-      const matchesCategory = selectedCategory === 'all' || String(categoryId) === String(selectedCategory)
-      return matchesSearch && matchesCategory
-    })
-
+    const menuData = menus.data || menus;
+    let result = Array.isArray(menuData) ? [...menuData] : [];
     result.sort((a, b) => {
-      const aIsPackage = a.is_package
-      const bIsPackage = b.is_package
-      if (aIsPackage !== bIsPackage) return aIsPackage ? 1 : -1
-      const scoreA = (!aIsPackage && a.promo_price && a.is_best_seller ? 3 : 0) + (!aIsPackage && a.is_best_seller ? 2 : 0) + (!aIsPackage && a.promo_price ? 1 : 0)
-      const scoreB = (!bIsPackage && b.promo_price && b.is_best_seller ? 3 : 0) + (!bIsPackage && b.is_best_seller ? 2 : 0) + (!bIsPackage && b.promo_price ? 1 : 0)
+      if (a.is_package !== b.is_package) return a.is_package ? -1 : 1
+      const scoreA = (a.promo_price ? 3 : 0) + (a.is_best_seller ? 2 : 0)
+      const scoreB = (b.promo_price ? 3 : 0) + (b.is_best_seller ? 2 : 0)
       if (scoreB !== scoreA) return scoreB - scoreA
       return a.name.localeCompare(b.name)
     })
     return result
-  }, [menus, searchTerm, selectedCategory])
+  }, [menus])
 
   const getEffectivePrice = menu => (menu.promo_price ? menu.promo_price : menu.price)
 
@@ -176,59 +221,43 @@ export default function CatalogIndex({ menus = [], categories = [], auth }) {
   const totalDiscount = cart.reduce((sum, item) => sum + (item.original_price - item.price) * item.quantity, 0)
   const total = Math.max(0, subtotalNormal - totalDiscount)
   
-  // Real-time calculation
   const cashValue = parseInt(cashAmount || 0)
   const changeAmount = cashValue - total
 
   const processPayment = () => {
     if (!paymentMethod) return
     if (paymentMethod === 'cash') {
-      if (!cashAmount || isNaN(cashValue)) {
-        alert('Masukkan nominal uang terlebih dahulu.')
-        return
-      }
-      if (cashValue < total) {
-        alert('Uang yang diterima kurang dari total pembayaran.')
-        return
-      }
+      if (!cashAmount || isNaN(cashValue)) { alert('Masukkan nominal uang.'); return; }
+      if (cashValue < total) { alert('Uang diterima kurang.'); return; }
     }
-
-    if (cart.length === 0) {
-      alert('Keranjang masih kosong.')
-      return
-    }
+    if (cart.length === 0) { alert('Keranjang kosong.'); return; }
 
     setIsProcessing(true)
-
     const transactionData = {
-      subtotal: subtotalNormal,
-      discount: totalDiscount,
+      subtotal: subtotalNormal, 
+      discount: totalDiscount, 
       total: total,
-      payment_method: paymentMethod,
+      payment_method: paymentMethod, 
       cash_amount: paymentMethod === 'cash' ? cashValue : 0,
-      change: paymentMethod === 'cash' ? Math.max(0, changeAmount) : 0,
+      change: paymentMethod === 'cash' ? Math.max(0, changeAmount) : 0, 
       order_type: orderType,
-      cart: cart.map(item => ({
-        menu_id: item.id,
-        name: item.name,
-        price: item.price,
-        quantity: item.quantity,
-        note: item.note,
+      cart: cart.map(item => ({ 
+        menu_id: item.id, 
+        name: item.name, 
+        price: item.price, 
+        quantity: item.quantity, 
+        note: item.note 
       })),
     }
-
     router.post(route('admin.kasir.transactions.store'), transactionData, {
-      preserveScroll: false,
-      preserveState: false,
       onFinish: () => setIsProcessing(false),
-      onError: errors => alert(`Transaksi gagal! ${errors.error || ''}`),
+      onError: errors => alert(`Gagal! ${errors.error || ''}`),
     })
   }
 
   return (
     <AdminLayout>
       <Head title="Katalog Menu" />
-
       <div className="relative font-sfPro bg-gray-50/50 min-h-screen">
         <div className="max-w-7xl mx-auto px-4 pt-16 pb-6">
           <div className="flex justify-start items-center mb-8 gap-4">
@@ -236,10 +265,11 @@ export default function CatalogIndex({ menus = [], categories = [], auth }) {
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
               <input
                 type="text"
-                placeholder="Cari menu..."
+                placeholder="Cari menu... (Enter)"
                 value={searchTerm}
                 onChange={e => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-50 shadow-[0_2px_10px_rgba(0,0,0,0.02)] rounded-2xl text-sm"
+                onKeyDown={handleSearch}
+                className="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-50 shadow-[0_2px_10px_rgba(0,0,0,0.02)] rounded-2xl text-sm outline-none"
               />
             </div>
             <div className="relative w-56">
@@ -255,7 +285,7 @@ export default function CatalogIndex({ menus = [], categories = [], auth }) {
                   {categoryFilters.map(filter => (
                     <button
                       key={filter.value}
-                      onClick={() => { setSelectedCategory(filter.value); setShowCategoryDropdown(false); }}
+                      onClick={() => handleCategoryChange(filter.value)}
                       className={`w-full text-left px-4 py-3 text-sm font-normal ${String(selectedCategory) === String(filter.value) ? 'bg-red-50 text-[#ef5350]' : 'text-gray-600 hover:bg-gray-50'}`}
                     >
                       {filter.label}
@@ -269,12 +299,7 @@ export default function CatalogIndex({ menus = [], categories = [], auth }) {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 pb-10">
             {filteredAndSortedMenus.length > 0 ? (
               filteredAndSortedMenus.map(menu => (
-                <motion.div
-                  key={menu.id}
-                  whileHover={{ scale: 1.03 }}
-                  whileTap={{ scale: 0.97 }}
-                  className="bg-white rounded-[1.5rem] overflow-hidden shadow-[0_8px_30px_rgba(0,0,0,0.02)] border border-gray-50 flex flex-col h-full cursor-pointer"
-                >
+                <motion.div key={menu.id} whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} className="bg-white rounded-[1.5rem] overflow-hidden shadow-[0_8px_30px_rgba(0,0,0,0.02)] border border-gray-50 flex flex-col h-full cursor-pointer">
                   <div className="aspect-square bg-gray-50 relative">
                     <div className="absolute top-3 left-3 z-10 flex flex-col items-start gap-1.5">
                       {menu.is_best_seller && (
@@ -294,7 +319,7 @@ export default function CatalogIndex({ menus = [], categories = [], auth }) {
                   </div>
                   <div className="p-5 flex flex-col flex-1">
                     <h3 className="text-gray-800 truncate text-base mb-1 font-normal">{menu.name}</h3>
-                    <p className="text-xs text-gray-400 mb-2 font-sfPro">{typeof menu.category === 'object' ? menu.category?.name : menu.category}</p>
+                    <p className="text-xs text-gray-400 mb-2 font-sfPro">{menu.category}</p>
                     {menu.description && <p className="text-[11px] text-gray-400 line-clamp-2 mb-3 leading-relaxed font-sfPro italic">{menu.description}</p>}
                     <div className="mt-auto mb-4">
                       {menu.promo_price ? (
@@ -306,23 +331,22 @@ export default function CatalogIndex({ menus = [], categories = [], auth }) {
                         <p className="text-lg text-gray-900 font-normal">Rp {Number(menu.price).toLocaleString('id-ID')}</p>
                       )}
                     </div>
-                    <button onClick={() => addToCart(menu)} className="w-full bg-gray-900 text-white py-3 rounded-xl flex items-center justify-center gap-2 hover:bg-black transition-all">
-                      <ShoppingCart size={16} />
-                      <span className="text-sm font-sfPro">Tambah</span>
+                    <button onClick={(e) => { e.stopPropagation(); addToCart(menu); }} className="w-full bg-gray-900 text-white py-3 rounded-xl flex items-center justify-center gap-2 hover:bg-black transition-all">
+                      <ShoppingCart size={16} /> <span className="text-sm font-sfPro">Tambah</span>
                     </button>
                   </div>
                 </motion.div>
               ))
             ) : (
-              <div className="col-span-full flex flex-col items-center justify-center py-20">
-                <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-4"><Search size={40} className="text-gray-300" /></div>
-                <h3 className="text-lg font-telegraf text-gray-700 mb-2">Belum ada menu</h3>
+              <div className="col-span-full flex flex-col items-center justify-center py-20 text-gray-400 font-sfPro">
+                <Search size={48} className="mb-4 opacity-20" />
+                <p>Menu tidak ditemukan</p>
               </div>
             )}
           </div>
         </div>
 
-        {/* Modals & Popups */}
+        {/* Modal & Sidebar */}
         <AnimatePresence>
           {showClearCartModal && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/60 backdrop-blur-md z-[110] flex items-center justify-center p-4">
@@ -352,24 +376,19 @@ export default function CatalogIndex({ menus = [], categories = [], auth }) {
           )}
         </AnimatePresence>
 
-        {/* Cart Sidebar */}
         <AnimatePresence>
           {cart.length > 0 && (
             <motion.div initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }} className="fixed right-4 top-4 bottom-4 w-[340px] bg-white/80 backdrop-blur-xl border shadow-xl z-50 flex flex-col rounded-[2.5rem] overflow-hidden">
               <div className="p-7 pb-4 flex justify-between items-center">
                 {paymentMethod ? (
-                  <button onClick={() => {setPaymentMethod(null); setCashAmount('')}} className="flex items-center gap-2 text-gray-500 hover:text-black transition-colors text-sm">
-                    <ArrowLeft size={18} /> Kembali
-                  </button>
+                  <button onClick={() => {setPaymentMethod(null); setCashAmount('')}} className="flex items-center gap-2 text-gray-500 hover:text-black transition-colors text-sm"><ArrowLeft size={18} /> Kembali</button>
                 ) : (
                   <div>
                     <h2 className="text-xl font-telegraf text-gray-800">Pesanan</h2>
                     <p className="text-[10px] text-gray-400 uppercase font-telegraf">{cart.reduce((a, b) => a + b.quantity, 0)} Item Terpilih</p>
                   </div>
                 )}
-                {!paymentMethod && (
-                  <button onClick={() => setShowClearCartModal(true)} className="p-2.5 rounded-2xl bg-red-50 text-red-500"><Trash2 size={18} /></button>
-                )}
+                {!paymentMethod && <button onClick={() => setShowClearCartModal(true)} className="p-2.5 rounded-2xl bg-red-50 text-red-500"><Trash2 size={18} /></button>}
               </div>
 
               {!paymentMethod && (
@@ -384,12 +403,10 @@ export default function CatalogIndex({ menus = [], categories = [], auth }) {
                   cart.map((item, idx) => (
                     <div key={idx} className="flex flex-col gap-2 p-3 rounded-3xl bg-white/50 border">
                       <div className="flex gap-4">
-                        <div className="w-16 h-16 rounded-2xl overflow-hidden shrink-0">
-                          <img src={item.image ? `/storage/${item.image}` : '/asset/no-image.png'} className="w-full h-full object-cover" />
-                        </div>
+                        <div className="w-16 h-16 rounded-2xl overflow-hidden shrink-0"><img src={item.image ? `/storage/${item.image}` : '/asset/no-image.png'} className="w-full h-full object-cover" /></div>
                         <div className="flex-1 min-w-0">
                           <h3 className="text-sm truncate">{item.name}</h3>
-                          <p className="text-xs text-red-500">Rp {item.price.toLocaleString()}</p>
+                          <p className="text-xs text-red-500">Rp {item.price.toLocaleString('id-ID')}</p>
                           <div className="flex justify-between mt-2">
                             <div className="flex gap-2 items-center bg-gray-100 rounded-lg px-2">
                               <button onClick={() => updateQuantity(item.id, -1)}><Minus size={12} /></button>
@@ -409,39 +426,22 @@ export default function CatalogIndex({ menus = [], categories = [], auth }) {
                       <p className="text-[12px] text-gray-600 uppercase font-telegraf">Total Pembayaran</p>
                       <p className="text-[23px] font-sfPro">Rp {total.toLocaleString('id-ID')}</p>
                     </div>
-
                     {paymentMethod === 'cash' && (
                       <div className="text-left space-y-4">
                         <div>
                           <label className="text-xs font-sfPro px-2 text-gray-500 uppercase">Uang Diterima</label>
-                          <input
-                            type="text"
-                            value={formatRupiah(cashAmount)}
-                            onChange={e => setCashAmount(cleanNumber(e.target.value))}
-                            className="w-full mt-1.5 p-4 border-2 border-gray-100 rounded-2xl text-xl text-center outline-none focus:outline-none focus:ring-0 focus:border-gray-100 font-sfPro transition-none"
-                            placeholder="0"
-                            autoFocus
-                          />
+                          <input type="text" value={formatRupiah(cashAmount)} onChange={e => setCashAmount(cleanNumber(e.target.value))} className="w-full mt-1.5 p-4 border-2 border-gray-100 rounded-2xl text-xl text-center outline-none focus:border-gray-100 font-sfPro" placeholder="0" autoFocus />
                         </div>
-
-                        {/* Tampilan Kembalian Otomatis */}
                         <AnimatePresence>
                           {cashValue >= total && (
-                            <motion.div 
-                              initial={{ opacity: 0, y: -10 }} 
-                              animate={{ opacity: 1, y: 0 }}
-                              className="bg-green-50 p-4 rounded-2xl border border-green-100 text-center"
-                            >
+                            <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="bg-green-50 p-4 rounded-2xl border border-green-100 text-center">
                               <p className="text-[10px] text-green-600 uppercase font-sfPro mb-1">Uang Kembalian</p>
-                              <p className="text-lg font-sfPro text-green-700">
-                                Rp {changeAmount.toLocaleString('id-ID')}
-                              </p>
+                              <p className="text-lg font-sfPro text-green-700">Rp {changeAmount.toLocaleString('id-ID')}</p>
                             </motion.div>
                           )}
                         </AnimatePresence>
                       </div>
                     )}
-                    
                     {paymentMethod === 'qris' && (
                       <div className="flex flex-col items-center">
                         <img src="/asset/qris.jpeg" className="w-48 rounded-2xl border mb-4" />
@@ -459,11 +459,7 @@ export default function CatalogIndex({ menus = [], categories = [], auth }) {
                     <button onClick={() => setPaymentMethod('qris')} className="bg-black text-white py-3 rounded-2xl text-[12px] font-telegraf hover:bg-gray-800 transition-colors">QRIS</button>
                   </div>
                 ) : (
-                  <button
-                    onClick={processPayment}
-                    disabled={isProcessing || (paymentMethod === 'cash' && (cashValue < total))}
-                    className="text-[14px] w-full bg-black text-white py-4 rounded-2xl disabled:bg-gray-300 hover:bg-gray-800 transition-colors font-telegraf"
-                  >
+                  <button onClick={processPayment} disabled={isProcessing || (paymentMethod === 'cash' && (cashValue < total))} className="text-[14px] w-full bg-black text-white py-4 rounded-2xl disabled:bg-gray-300 hover:bg-gray-800 transition-colors font-telegraf">
                     {isProcessing ? 'Memproses...' : 'Konfirmasi Pembayaran'}
                   </button>
                 )}

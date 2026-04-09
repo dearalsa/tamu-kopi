@@ -1,17 +1,12 @@
-import { useState, useEffect } from 'react'; 
+import { useState } from 'react'; 
 import AdminLayout from '@/Layouts/AdminLayout';
 import { usePage, Link } from '@inertiajs/react';
-import { toast, ToastContainer } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
 import { TrendingUp, TrendingDown, ShieldCheck, AlertTriangle, XCircle } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faArrowRight } from '@fortawesome/free-solid-svg-icons';
 
 export default function Dashboard({
-  totalIncome = 0,
-  totalExpense = 0,
-  statusBahan = 'aman',
   incomeDaily = 0,
   incomeWeekly = 0,
   incomeMonthly = 0,
@@ -22,27 +17,10 @@ export default function Dashboard({
   grafikMingguan = [],
   grafikHarian = [],
 }) {
-  const { auth } = usePage().props;
+  const { auth, notif } = usePage().props;
   const [periode, setPeriode] = useState('Bulanan');
 
-  useEffect(() => {
-    if (statusBahan === 'peringatan') {
-      toast.warning('PERINGATAN: Bahan menipis, jangan sampai kehabisan!', {
-        toastId: 'warn-once',
-        position: "top-right",
-        autoClose: 5000,
-        theme: "light",
-      });
-    } else if (statusBahan === 'habis') {
-      toast.error('DARURAT: Bahan sudah habis, segera beli!', {
-        toastId: 'err-once',
-        position: "top-right",
-        autoClose: 5000,
-        theme: "colored",
-      });
-    }
-  }, [statusBahan]);
-
+  // Format Tanggal Hari Ini
   const formattedDate = new Intl.DateTimeFormat('id-ID', {
     weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
   }).format(new Date());
@@ -60,7 +38,6 @@ export default function Dashboard({
     return value;
   };
 
-  // Helper khusus translate nama bulan/hari untuk grafik
   const translateLabel = (label) => {
     const dict = {
       'January': 'Januari', 'February': 'Februari', 'March': 'Maret', 'April': 'April',
@@ -72,15 +49,16 @@ export default function Dashboard({
     return dict[label] || label;
   };
 
+  // Konfigurasi Status Berdasarkan data dari notif.status backend
   const statusConfig = {
     aman:       { color: 'bg-emerald-50 text-emerald-500', icon: <ShieldCheck size={26} />,   label: 'Aman' },
-    peringatan: { color: 'bg-amber-50 text-amber-500',     icon: <AlertTriangle size={26} />, label: 'Menipis' },
+    menipis:    { color: 'bg-amber-50 text-amber-500',     icon: <AlertTriangle size={26} />, label: 'Menipis' },
     habis:      { color: 'bg-rose-50 text-rose-500',       icon: <XCircle size={26} />,       label: 'Habis' },
   };
   
-  const currentStatus = statusConfig[statusBahan] || statusConfig.aman;
+  // Menggunakan status dari notif (HandleInertiaRequests)
+  const currentStatus = statusConfig[notif.status] || statusConfig.aman;
 
-  // Transform data grafik agar "name" (bulan/hari) jadi Bahasa Indonesia
   const rawData = periode === 'Bulanan' ? grafikBulanan : periode === 'Mingguan' ? grafikMingguan : grafikHarian;
   const dataGrafik = rawData.map(item => ({
     ...item,
@@ -110,8 +88,6 @@ export default function Dashboard({
 
   return (
     <AdminLayout>
-      <ToastContainer limit={1} />
-
       <style>{`
         @keyframes wave { 0% { transform: rotate(0deg); } 10% { transform: rotate(14deg); } 20% { transform: rotate(-8deg); } 30% { transform: rotate(14deg); } 40% { transform: rotate(-4deg); } 50% { transform: rotate(10deg); } 60% { transform: rotate(0deg); } 100% { transform: rotate(0deg); } }
         @keyframes fadeSlideDown { from { opacity: 0; transform: translateY(-16px); } to { opacity: 1; transform: translateY(0); } }
@@ -141,7 +117,7 @@ export default function Dashboard({
 
       <div className="space-y-10">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* pemasukan */}
+          {/* Pemasukan */}
           <div className="card-animate bg-white p-6 rounded-[24px] shadow-[0_4px_14px_rgba(15,23,42,0.03)] hover:shadow-[0_8px_30px_rgba(15,23,42,0.06)] transition-shadow duration-300 ease-out flex items-center gap-5">
             <div className="w-14 h-14 bg-emerald-50 text-emerald-500 rounded-full flex items-center justify-center flex-shrink-0">
               <TrendingUp size={26} />
@@ -153,8 +129,8 @@ export default function Dashboard({
             </div>
           </div>
 
-          {/* pengeluaran */}
-          <div className="card-animate bg-white p-6 rounded-[24px] shadow-[0_4px_14px_rgba(15,23,42,0.03)] hover:shadow-[0_8px_30_rgba(15,23,42,0.06)] transition-shadow duration-300 ease-out flex items-center gap-5">
+          {/* Pengeluaran */}
+          <div className="card-animate bg-white p-6 rounded-[24px] shadow-[0_4px_14px_rgba(15,23,42,0.03)] hover:shadow-[0_8px_30px_rgba(15,23,42,0.06)] transition-shadow duration-300 ease-out flex items-center gap-5">
             <div className="w-14 h-14 bg-rose-50 text-rose-500 rounded-full flex items-center justify-center flex-shrink-0">
               <TrendingDown size={26} />
             </div>
@@ -165,7 +141,7 @@ export default function Dashboard({
             </div>
           </div>
 
-          {/* status bahan */}
+          {/* Status Bahan */}
           <div className="card-animate bg-white p-6 rounded-[24px] shadow-[0_4px_14px_rgba(15,23,42,0.03)] hover:shadow-[0_8px_30px_rgba(15,23,42,0.06)] transition-shadow duration-300 ease-out flex items-center gap-5">
             <div className={`w-14 h-14 rounded-full flex items-center justify-center flex-shrink-0 ${currentStatus.color}`}>
               {currentStatus.icon}
@@ -183,7 +159,7 @@ export default function Dashboard({
           </div>
         </div>
 
-        {/* grafik keuangan */}
+        {/* Grafik Keuangan */}
         <div className="fade-up bg-white p-8 rounded-[32px] shadow-sm">
           <div className="flex justify-between items-start mb-6">
             <div>

@@ -27,7 +27,7 @@ export default function TransactionIndex({ transactions, stats, filters, auth })
     }
   }, [flash]);
 
-  // REVISI: Logic Pencetakan agar Kompatibel Printer 58mm & Anti-A4
+  // Logic Pencetakan agar Kompatibel Printer 58mm 
   useEffect(() => {
     if (!printData || !printRef.current) return
     const printContent = printRef.current.innerHTML
@@ -38,7 +38,6 @@ export default function TransactionIndex({ transactions, stats, filters, auth })
         <head>
           <title>Struk Pembayaran</title>
           <style>
-            /* Memaksa kertas lebar 58mm */
             @page { 
                 size: 58mm auto; 
                 margin: 0mm; 
@@ -104,11 +103,12 @@ export default function TransactionIndex({ transactions, stats, filters, auth })
     <AdminLayout>
       <Head title="Data Transaksi" />
 
-      {/* STRUK TEMPLATE (HIDDEN) */}
+      {/* Struk Template (Hidden) */}
       <div ref={printRef} style={{ display: 'none' }}>
         {printData && (
           <>
             <div className="text-center">
+              {/* Logo diletakkan paling atas */}
               <img src="/asset/Tamu.svg" style={{ width: '120px', margin: '0 auto 5px auto', display: 'block' }} />
               <p style={{ fontSize: '9px', margin: '0', lineHeight: '1.3' }}>
                 Jl. Dadali No.7, Tanah Sereal, Kota Bogor<br /> 081218420963
@@ -121,26 +121,35 @@ export default function TransactionIndex({ transactions, stats, filters, auth })
               <div className="item"><span>Kasir</span><span>{printData.cashier_name || auth?.user?.name}</span></div>
             </div>
             <div className="line" />
-            <div className="text-center" style={{ fontWeight: 'bold', margin: '5px 0' }}>
+            <div className="text-center" style={{ fontWeight: 'bold', margin: '5px 0', textTransform: 'uppercase' }}>
               {printData.order_type === 'dine-in' ? 'MAKAN DITEMPAT' : 'TAKE AWAY'}
             </div>
             <div className="line" />
             {printData.items?.map((item, idx) => (
-              <div key={idx}>
+              <div key={idx} style={{ marginBottom: '5px' }}>
                 <div className="item">
-                  <span>{item.menu_name || item.name}</span>
+                  <span style={{ flex: 1, paddingRight: '5px' }}>{item.menu_name || item.name}</span>
                   <span>{formatIDR(item.price * item.quantity)}</span>
                 </div>
                 <div style={{ fontSize: '9px' }}>{item.quantity} x {formatIDR(item.price)}</div>
-                {item.description && <div className="note">Catatan: {item.description}</div>}
+                {/* Menampilkan catatan/note jika ada */}
+                {(item.note || item.description) && (
+                  <div className="note">Catatan: {item.note || item.description}</div>
+                )}
               </div>
             ))}
             <div className="line" />
             <div className="item"><span>Subtotal</span><span>{formatIDR(printData.subtotal)}</span></div>
             {printData.discount > 0 && <div className="item"><span>Diskon</span><span>-{formatIDR(printData.discount)}</span></div>}
             <div className="item total"><span>TOTAL</span><span>{formatIDR(printData.total)}</span></div>
+            
+            <div className="line" />
+            <div className="item"><span style={{textTransform: 'uppercase'}}>Metode Bayar</span><span>{printData.payment_method}</span></div>
             <div className="item"><span>Bayar</span><span>{formatIDR(printData.cash_amount || printData.total)}</span></div>
-            {printData.payment_method === 'cash' && <div className="item"><span>Kembalian</span><span>{formatIDR(printData.change)}</span></div>}
+            {printData.payment_method === 'cash' && (
+              <div className="item"><span>Kembalian</span><span>{formatIDR(printData.change)}</span></div>
+            )}
+            
             <div className="line" />
             <div className="text-center" style={{ marginTop: '10px', fontSize: '9px' }}>Terima Kasih!</div>
           </>
@@ -295,7 +304,9 @@ export default function TransactionIndex({ transactions, stats, filters, auth })
                         </div>
                         <p className="text-sm font-sfPro text-gray-900 ml-4">Rp {formatIDR(item.price * item.quantity)}</p>
                       </div>
-                      {item.description && <p className="text-[10px] text-red-500 italic mt-1 font-sfPro">* {item.description}</p>}
+                      {(item.note || item.description) && (
+                        <p className="text-[10px] text-red-500 italic mt-1 font-sfPro">* {item.note || item.description}</p>
+                      )}
                     </div>
                   ))}
                 </div>
