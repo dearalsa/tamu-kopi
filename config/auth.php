@@ -1,10 +1,23 @@
 <?php
 
 return [
+
+    /*
+    |--------------------------------------------------------------------------
+    | Authentication Defaults
+    |--------------------------------------------------------------------------
+    */
+
     'defaults' => [
         'guard' => env('AUTH_GUARD', 'web'),
         'passwords' => env('AUTH_PASSWORD_BROKER', 'users'),
     ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Authentication Guards
+    |--------------------------------------------------------------------------
+    */
 
     'guards' => [
         'web' => [
@@ -12,11 +25,18 @@ return [
             'provider' => 'users',
         ],
         
+        // Guard khusus untuk admin
         'admin' => [
             'driver' => 'session',
             'provider' => 'admins',
         ],
     ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | User Providers
+    |--------------------------------------------------------------------------
+    */
 
     'providers' => [
         'users' => [
@@ -24,12 +44,18 @@ return [
             'model' => env('AUTH_MODEL', App\Models\User::class),
         ],
 
+        // Provider khusus untuk tabel admins
         'admins' => [
             'driver' => 'eloquent',
             'model' => App\Models\Admin::class,
         ],
-
     ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Resetting Passwords
+    |--------------------------------------------------------------------------
+    */
 
     'passwords' => [
         'users' => [
@@ -39,6 +65,7 @@ return [
             'throttle' => 60,
         ],
 
+        // Broker reset password khusus admin
         'admins' => [
             'provider' => 'admins',
             'table' => 'password_reset_tokens',
@@ -46,6 +73,12 @@ return [
             'throttle' => 60,
         ],
     ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Password Confirmation Timeout
+    |--------------------------------------------------------------------------
+    */
 
     'password_timeout' => env('AUTH_PASSWORD_TIMEOUT', 10800),
 

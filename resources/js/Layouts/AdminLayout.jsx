@@ -63,7 +63,7 @@ export default function AdminLayout({ children }) {
                           </p>
                         ))
                       ) : (
-                        <p className="text-xs text-slate-400 text-center py-2">Semua bahan tersedia aman!</p>
+                        <p className="text-xs text-slate-400 text-center py-2">Semua bahan tersedia, aman!</p>
                       )}
                     </div>
 

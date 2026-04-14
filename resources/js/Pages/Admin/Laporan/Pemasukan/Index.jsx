@@ -138,7 +138,7 @@ export default function PemasukanIndex({ transactions, start, end, summary }) {
                 <Coins size={22} />
               </div>
               <div>
-                <p className="text-[11px] text-gray-600 uppercase tracking-[0.10em]">Sisa Dana</p>
+                <p className="text-[11px] text-gray-600 uppercase tracking-[0.10em]">Sisa Saldo</p>
                 <p className="text-[22px] text-gray-900 mt-1">{formatIDR(summary?.saldo_bersih ?? 0)}</p>
               </div>
             </div>

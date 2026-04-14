@@ -17,7 +17,7 @@ export default function Create({ categories, allMenus }) {
     name: '',
     category_id: '',
     price: '',
-    stock: '', // State awal stok kosong (opsional)
+    stock: '',
     image: null,
     is_available: 1,
     package_items: [],
@@ -54,15 +54,13 @@ export default function Create({ categories, allMenus }) {
   const handleSubmit = (e) => {
     e.preventDefault();
     
-    // REVISI LOGIKA STOK OPSIONAL:
-    // Jika stok kosong (''), kita kirim null agar Laravel membacanya sebagai opsional.
     const finalData = {
         ...data,
         stock: data.stock === '' ? null : data.stock
     };
 
     post(route('admin.kasir.promo.store'), {
-      data: finalData, // Menggunakan data yang sudah diformat
+      data: finalData,
       forceFormData: true,
       preserveScroll: true,
       onSuccess: () => {
@@ -72,7 +70,6 @@ export default function Create({ categories, allMenus }) {
           icon: 'success',
           iconColor: '#ef5350',
           confirmButtonColor: '#ef5350',
-          borderRadius: '20px',
           customClass: {
             popup: 'rounded-[2rem] shadow-2xl',
             confirmButton: 'rounded-xl px-8 py-2.5 text-sm font-bold'
@@ -85,7 +82,6 @@ export default function Create({ categories, allMenus }) {
           html: `<span style="font-family: SF-Pro-Display; color: #666;">Mohon periksa kembali inputan Anda.</span>`,
           icon: 'error',
           confirmButtonColor: '#ef5350',
-          borderRadius: '20px',
         });
       }
     });
@@ -121,7 +117,7 @@ export default function Create({ categories, allMenus }) {
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
-  const inputClass = "w-full bg-white border border-gray-300 rounded-xl px-3.5 py-2.5 text-sm outline-none transition-all focus:border-gray-500 focus:ring-0 shadow-none font-normal";
+  const inputClass = "w-full bg-white border border-gray-400 rounded-xl px-3.5 py-2.5 text-sm outline-none transition-all focus:border-gray-500 focus:ring-0 shadow-none font-normal";
 
   return (
     <ConfigProvider 
@@ -194,7 +190,7 @@ export default function Create({ categories, allMenus }) {
                           <label className="block text-sm text-gray-900 font-sfPro">Nama Paket:</label>
                           <input
                             type="text"
-                            placeholder="Contoh: Paket Hemat Berdua"
+                            placeholder="Masukkan Nama Paket"
                             value={data.name}
                             onChange={(e) => setData('name', e.target.value)}
                             className={inputClass}
@@ -338,23 +334,30 @@ export default function Create({ categories, allMenus }) {
                 </div>
 
                 {isPackageMode && (
-                  <div className="space-y-2 font-sfPro">
-                      <label className="block text-sm text-gray-900 font-normal">Gambar Paket:</label>
-                      <div onClick={() => fileInputRef.current && fileInputRef.current.click()} className="w-full border border-gray-300 border-dashed rounded-2xl p-6 flex flex-col items-center justify-center cursor-pointer min-h-[150px] relative bg-gray-50/50 hover:bg-gray-100 transition-colors">
-                          {preview ? (
-                              <>
-                                  <img src={preview} alt="Preview" className="absolute inset-0 w-full h-full object-cover rounded-2xl" />
-                                  <button type="button" onClick={removeImage} className="absolute top-2 right-2 bg-black/60 text-white rounded-full p-1.5"><X size={14} /></button>
-                              </>
-                          ) : (
-                              <div className="flex flex-col items-center gap-2">
-                                  <Download size={20} className="text-gray-400" />
-                                  <span className="text-xs text-gray-500 font-normal">Upload Gambar</span>
-                              </div>
-                          )}
-                          <input ref={fileInputRef} type="file" accept="image/*" onChange={handleImageChange} className="hidden" />
-                      </div>
-                      {errors.image && <p className="text-xs text-red-500">{errors.image}</p>}
+                  <div className="space-y-3 font-sfPro">
+                    <label className="block text-sm text-gray-900 font-normal">Pilih Gambar:</label>
+                    <div 
+                      onClick={() => fileInputRef.current && fileInputRef.current.click()} 
+                      className="w-full max-w-[280px] aspect-square border border-gray-300 border-dashed rounded-2xl p-4 flex flex-col items-center justify-center cursor-pointer relative overflow-hidden bg-gray-50/40 hover:bg-gray-100 transition-colors duration-150"
+                    >
+                        {preview ? (
+                            <>
+                                <img src={preview} alt="Preview" className="absolute inset-0 w-full h-full object-cover" />
+                                <div className="absolute inset-0 bg-black/15 flex items-center justify-center">
+                                    <button type="button" onClick={removeImage} className="bg-black/60 text-white rounded-full p-2 hover:bg-red-500 transition-colors"><X size={16} /></button>
+                                </div>
+                            </>
+                        ) : (
+                            <div className="flex flex-col items-center gap-2 text-center">
+                                <div className="bg-black text-white p-2.5 rounded-lg">
+                                  <Download size={22} />
+                                </div>
+                                <p className="text-xs font-sfPro text-gray-500 tracking-wide font-normal">Pilih Gambar (1:1)</p>
+                            </div>
+                        )}
+                        <input ref={fileInputRef} type="file" accept="image/*" onChange={handleImageChange} className="hidden" />
+                    </div>
+                    {errors.image && <p className="text-xs text-red-500 mt-1">{errors.image}</p>}
                   </div>
                 )}
 

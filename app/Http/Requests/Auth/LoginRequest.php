@@ -19,8 +19,8 @@ class LoginRequest extends FormRequest
     public function rules(): array
     {
         return [
-            // Validasi ini memastikan format harus berupa email dan diakhiri @gmail.com
-            'email' => ['required', 'string', 'email', 'ends_with:@gmail.com'],
+            // Validasi ini memastikan format harus berupa email dan harus tepat putrisalsabila101208@gmail.com
+            'email' => ['required', 'string', 'email'],
             'password' => ['required', 'string'],
         ];
     }
@@ -29,8 +29,8 @@ class LoginRequest extends FormRequest
     {
         return [
             'email.required' => 'Email wajib diisi.',
-            'email.email' => 'Format email tidak valid (harus menggunakan tanda @).',
-            'email.ends_with' => 'Email harus menggunakan domain @gmail.com.',
+            'email.email' => 'Format email tidak valid.',
+            'email.in' => 'Email admin tidak terdaftar. Pastikan Anda menggunakan email yang benar.',
             'password.required' => 'Password wajib diisi.',
         ];
     }
@@ -45,18 +45,17 @@ class LoginRequest extends FormRequest
         // Cek apakah email terdaftar di database
         $user = $provider->retrieveByCredentials(['email' => $this->email]);
 
-        // Jika email tidak ditemukan, lempar pesan error hanya ke kolom email
+        // Jika email tidak ditemukan
         if (! $user) {
-            RateLimiter::hit($this->throttleKey(), 35);
+            RateLimiter::hit($this->throttleKey(), 30); // Waktu blokir diubah jadi 30 detik
             throw ValidationException::withMessages([
                 'email' => 'Email tidak terdaftar.',
             ]);
         }
 
-        // Jika email ditemukan, barulah cek kecocokan password
-        // Jika password salah, error hanya muncul di kolom password
+        // Cek kecocokan password
         if (! $provider->validateCredentials($user, $credentials)) {
-            RateLimiter::hit($this->throttleKey(), 35);
+            RateLimiter::hit($this->throttleKey(), 30); // Waktu blokir diubah jadi 30 detik
             throw ValidationException::withMessages([
                 'password' => 'Password yang Anda masukkan salah.',
             ]);
@@ -69,7 +68,8 @@ class LoginRequest extends FormRequest
 
     public function ensureIsNotRateLimited(): void
     {
-        if (! RateLimiter::tooManyAttempts($this->throttleKey(), 5)) {
+        // Pembatasan maksimal 3 kali percobaan
+        if (! RateLimiter::tooManyAttempts($this->throttleKey(), 3)) {
             return;
         }
 

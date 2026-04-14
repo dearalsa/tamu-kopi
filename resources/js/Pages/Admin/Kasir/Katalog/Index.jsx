@@ -12,10 +12,18 @@ import {
   ShoppingCart,
   Tag,
   ArrowLeft,
-  CheckCircle,
   AlertCircle,
+  Printer,
+  CheckCircle2,
+  User,
+  Clock,
+  Utensils,
+  StickyNote
 } from 'lucide-react'
 import dayjs from 'dayjs'
+import 'dayjs/locale/id'
+
+dayjs.locale('id')
 
 export default function CatalogIndex({ menus = [], categories = [], auth, filters }) {
   const { flash } = usePage().props
@@ -28,9 +36,10 @@ export default function CatalogIndex({ menus = [], categories = [], auth, filter
   const [paymentMethod, setPaymentMethod] = useState(null)
   const [cashAmount, setCashAmount] = useState('')
   const [isProcessing, setIsProcessing] = useState(false)
-  const [showSuccessPopup, setShowSuccessPopup] = useState(false)
   const [showClearCartModal, setShowClearCartModal] = useState(false)
   const [orderType, setOrderType] = useState('dine-in')
+  
+  const [completedTransaction, setCompletedTransaction] = useState(null)
 
   const categoryFilters = [
     { value: 'all', label: 'Semua Menu' },
@@ -74,119 +83,206 @@ export default function CatalogIndex({ menus = [], categories = [], auth, filter
 
   useEffect(() => {
     if (flash?.success_transaction) {
-      const data = flash.success_transaction
-      handleSilentPrint(data)
-      setShowSuccessPopup(true)
-      resetState()
-      const timer = setTimeout(() => setShowSuccessPopup(false), 1000)
-      return () => clearTimeout(timer)
+      setCompletedTransaction(flash.success_transaction)
+      handlePrintReceipt(flash.success_transaction)
     }
   }, [flash])
 
-  // Handle Print dengan Warna & Jarak yang Diperbaiki
-  const handleSilentPrint = (data) => {
-    const windowPrint = window.open('', '', 'width=450,height=600')
-    const itemsHtml = data.items.map(item => `
-      <div style="margin-bottom: 8px;">
-        <div style="display: flex; justify-content: space-between; color: #333; margin-bottom: 2px;">
-          <span style="font-weight: 500;">${item.menu_name || item.name}</span>
-          <span>${Number(item.price * item.quantity).toLocaleString('id-ID')}</span>
-        </div>
-        <div style="font-size: 9px; color: #666;">${item.quantity} x ${Number(item.price).toLocaleString('id-ID')}</div>
-        ${(item.note || item.description) ? `<div style="font-size: 9px; font-style: italic; margin-top: 3px; padding-left: 5px; color: #e53e3e;">Catatan: ${item.note || item.description}</div>` : ''}
-      </div>
-    `).join('')
+  const handleDoneTransaction = () => {
+    setCompletedTransaction(null)
+    resetState()
+  }
 
-    windowPrint.document.write(`
+  const handlePrintReceipt = (data) => {
+    if (!data) return;
+    const printWindow = window.open('', '_blank', 'width=400,height=600');
+    
+    if (!printWindow) {
+      alert('Mohon izinkan pop-up browser untuk mencetak struk.');
+      return;
+    }
+    
+    const itemsHtml = data.items?.map(item => {
+      const noteText = item.note || item.pivot?.note || item.description;
+      return `
+        <tr>
+            <td class="item-name">
+                ${item.menu_name || item.name}
+                ${noteText ? `<br><span class="note">* Catatan: ${noteText}</span>` : ''}
+            </td>
+            <td class="center-align qty">${item.quantity}</td>
+            <td class="right-align price">${Number(item.price * item.quantity).toLocaleString('id-ID')}</td>
+        </tr>
+      `;
+    }).join('') || '';
+
+    printWindow.document.write(`
       <html>
         <head>
-          <title>Print Struk</title>
+          <title>Struk Transaksi</title>
           <style>
-            @page { size: 58mm auto; margin: 0; }
-            body { font-family: 'Arial', sans-serif; width: 58mm; padding: 2mm; font-size: 11px; line-height: 1.4; color: #333; margin: 0; background: #fff; }
-            .text-center { text-align: center; }
-            .line { border-top: 1px dashed #ccc; margin: 8px 0; width: 100%; }
-            .total-row { font-weight: bold; margin-top: 6px; font-size: 12px; color: #000; }
-            .brand-color { color: #e5534b; }
-            .status-badge { display: inline-block; padding: 3px 8px; border-radius: 4px; background: #fef2f2; color: #e5534b; font-size: 10px; font-weight: bold; border: 1px solid #fee2e2; }
-            img { max-width: 35mm; height: auto; margin-bottom: 6px; display: block; margin-left: auto; margin-right: auto; }
+            @page { 
+                size: 58mm auto; 
+                margin: 0; 
+            }
+            body { 
+                font-family: 'Courier New', Courier, monospace; 
+                width: 48mm; 
+                margin: 0 auto; 
+                padding: 5mm 2mm; 
+                font-size: 11px; 
+                line-height: 1.3; 
+                color: #000; 
+                background: #fff; 
+            }
+            h1, h2, h3, p { margin: 0; padding: 0; }
+            .center-align { text-align: center; }
+            .right-align { text-align: right; }
+            .left-align { text-align: left; }
+            .bold { font-weight: bold; }
+            
+            .dashed-line { border-top: 1px dashed #000; margin: 5px 0; }
+            .solid-line { border-top: 1px solid #000; margin: 5px 0; }
+            
+            table.meta-table { width: 100%; font-size: 10px; margin-bottom: 5px;}
+            table.meta-table td { vertical-align: top; padding: 1px 0;}
+            
+            table.items-table { width: 100%; border-collapse: collapse; margin-bottom: 5px; }
+            table.items-table th { 
+                font-size: 10px; 
+                border-top: 1px dashed #000; 
+                border-bottom: 1px dashed #000; 
+                padding: 4px 0;
+                text-align: left;
+            }
+            table.items-table td { padding: 4px 0; vertical-align: top; }
+            table.items-table .item-name { width: 55%; word-break: break-word; }
+            table.items-table .qty { width: 15%; text-align: center; }
+            table.items-table .price { width: 30%; text-align: right; }
+            .note { font-size: 9px; font-style: italic; }
+
+            table.total-table { width: 100%; font-size: 11px; }
+            table.total-table td { padding: 2px 0; }
+            
+            .footer-info { margin-top: 10px; font-size: 10px; line-height: 1.4;}
           </style>
         </head>
         <body>
-          <div class="text-center">
-            <img src="/asset/Tamu.svg" />
-            <p style="font-size: 9px; margin: 0; color: #666;">Jl. Dadali No.7, Bogor<br>081218420963</p>
+          <div class="center-align" style="margin-bottom: 10px;">
+            <div class="bold" style="font-size: 14px;">TA-MU KOPI</div>
+            <div style="font-size: 10px;">Jl. Dadali No. 7, Bogor</div>
+            <div style="font-size: 10px;">081218420963</div>
           </div>
-          <div class="line"></div>
           
-          <div style="display: flex; justify-content: space-between; font-size: 10px; color: #666; margin-bottom: 4px;">
-            <span>${dayjs(data.created_at).format('DD MMM YYYY')}</span>
-            <span>${dayjs(data.created_at).format('HH:mm')}</span>
-          </div>
-          <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
-            <b style="color: #000;">No. Inv</b>
-            <span style="font-family: monospace;">${data.invoice_number}</span>
-          </div>
-          <div style="display: flex; justify-content: space-between;">
-            <b style="color: #000;">Kasir</b>
-            <span>${data.cashier_name || auth?.user?.name}</span>
+          <table class="meta-table">
+            <tr>
+                <td width="35%">Tanggal</td>
+                <td width="5%">:</td>
+                <td>${dayjs(data.created_at).format('DD/MM/YYYY')} ${dayjs(data.created_at).format('HH:mm')}</td>
+            </tr>
+            <tr>
+                <td>ID</td>
+                <td>:</td>
+                <td>${data.invoice_number}</td>
+            </tr>
+            <tr>
+                <td>Kasir</td>
+                <td>:</td>
+                <td>${data.cashier_name || auth?.user?.name || 'Kasir'}</td>
+            </tr>
+          </table>
+
+          <div class="center-align bold" style="margin: 8px 0; font-size: 12px; text-transform: uppercase;">
+            *** ${data.order_type.replace('-', ' ')} ***
           </div>
 
-          <div class="line"></div>
-          <div class="text-center" style="margin: 8px 0;">
-            <span class="status-badge">${data.order_type === 'dine-in' ? 'MAKAN DITEMPAT' : 'TAKE AWAY'}</span>
-          </div>
-          <div class="line"></div>
+          <table class="items-table">
+            <thead>
+                <tr>
+                    <th>Item</th>
+                    <th class="center-align">Qty</th>
+                    <th class="right-align">Amount</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${itemsHtml}
+            </tbody>
+          </table>
+
+          <div class="solid-line"></div>
+
+          <table class="total-table">
+            <tr>
+                <td width="60%">Subtotal</td>
+                <td width="5%">:</td>
+                <td class="right-align">${Number(data.subtotal).toLocaleString('id-ID')}</td>
+            </tr>
+            ${data.discount > 0 ? `
+            <tr>
+                <td>Diskon</td>
+                <td>:</td>
+                <td class="right-align">-${Number(data.discount).toLocaleString('id-ID')}</td>
+            </tr>` : ''}
+            <tr class="bold" style="font-size: 13px;">
+                <td>TOTAL</td>
+                <td>:</td>
+                <td class="right-align">Rp ${Number(data.total).toLocaleString('id-ID')}</td>
+            </tr>
+          </table>
+
+          <div class="dashed-line"></div>
+
+          <table class="total-table" style="font-size: 10px;">
+            <tr>
+                <td width="60%">Metode Bayar</td>
+                <td width="5%">:</td>
+                <td class="right-align">${data.payment_method.toUpperCase()}</td>
+            </tr>
+            <tr>
+                <td>Diterima</td>
+                <td>:</td>
+                <td class="right-align">${Number(data.cash_amount || data.total).toLocaleString('id-ID')}</td>
+            </tr>
+            ${data.payment_method === 'cash' ? `
+            <tr>
+                <td>Kembali</td>
+                <td>:</td>
+                <td class="right-align">${Number(data.change).toLocaleString('id-ID')}</td>
+            </tr>` : ''}
+          </table>
           
-          ${itemsHtml}
-          
-          <div class="line"></div>
-          
-          <div style="display: flex; justify-content: space-between; color: #444; margin-bottom: 4px;">
-            <span>Subtotal</span>
-            <span>${Number(data.subtotal).toLocaleString('id-ID')}</span>
-          </div>
-          ${data.discount > 0 ? `<div style="display: flex; justify-content: space-between; color: #e53e3e; margin-bottom: 4px;"><span>Diskon</span><span>-${Number(data.discount).toLocaleString('id-ID')}</span></div>` : ''}
-          <div style="display: flex; justify-content: space-between; margin-top: 6px;" class="total-row">
-            <span class="brand-color">TOTAL</span>
-            <span class="brand-color">Rp ${Number(data.total).toLocaleString('id-ID')}</span>
-          </div>
-          
-          <div class="line"></div>
-          
-          <div style="display: flex; justify-content: space-between; font-size: 10px; color: #666; margin-bottom: 4px;">
-            <span style="text-transform: uppercase;">Metode: ${data.payment_method}</span>
-          </div>
-          <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
-            <span>Bayar</span>
-            <span>${Number(data.cash_amount || data.total).toLocaleString('id-ID')}</span>
-          </div>
-          ${data.payment_method === 'cash' ? `
-          <div style="display: flex; justify-content: space-between; color: #2f855a; font-weight: bold;">
-            <span>Kembali</span>
-            <span>${Number(data.change).toLocaleString('id-ID')}</span>
-          </div>` : ''}
-          
-          <div class="line" style="border-top-style: solid; border-top-color: #eee;"></div>
-          
-          <div class="text-center" style="margin-top: 15px;">
-            <div style="font-size: 10px; color: #e5534b; font-weight: bold; margin-bottom: 8px;">Terima Kasih!</div>
-            <div style="font-size: 9px; color: #666; margin-bottom: 3px;">Wifi: Tataptemu</div>
-            <div style="font-size: 9px; color: #666; margin-bottom: 3px;">Indoor: Tataptemu</div>
-            <div style="font-size: 9px; color: #666;">Outdoor: tatapku</div>
+          <div class="solid-line" style="margin-top: 8px;"></div>
+
+          <div class="center-align footer-info">
+            <div class="bold" style="margin-bottom: 4px;">TERIMA KASIH!</div>
+            <div>WiFi</div>
+            <div>Indoor: Tatapku</div>
+            <div>Outdoor: Tataptemu</div>
           </div>
           
           <script>
-            window.onload = function() { 
-              window.print(); 
-              setTimeout(function() { window.close(); }, 1000); 
+            // Perbaikan: Eksekusi langsung dengan timeout, tanpa menunggu window.onload
+            setTimeout(function() {
+              window.focus(); // Paksa window ke depan
+              window.print(); // Panggil dialog print
+            }, 500);
+
+            // Menutup window setelah print selesai / dibatalkan
+            window.onafterprint = function() { 
+              window.close(); 
             };
+
+            // Fallback: tutup otomatis setelah beberapa detik jika browser tidak support onafterprint
+            setTimeout(function() { 
+              window.close(); 
+            }, 3000);
           </script>
         </body>
       </html>
-    `)
-    windowPrint.document.close()
-  }
+    `);
+    printWindow.document.close();
+    printWindow.focus(); 
+  };
 
   const filteredAndSortedMenus = useMemo(() => {
     const menuData = menus.data || menus;
@@ -359,7 +455,7 @@ export default function CatalogIndex({ menus = [], categories = [], auth, filter
           </div>
         </div>
 
-        {/* Modal & Sidebar */}
+        {/* Modal Hapus Keranjang */}
         <AnimatePresence>
           {showClearCartModal && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/60 backdrop-blur-md z-[110] flex items-center justify-center p-4">
@@ -377,20 +473,123 @@ export default function CatalogIndex({ menus = [], categories = [], auth, filter
           )}
         </AnimatePresence>
 
+        {/* Modal PREVIEW STRUK DETAIL (SETELAH PEMBAYARAN) */}
         <AnimatePresence>
-          {showSuccessPopup && (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
-              <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="bg-white rounded-[2.5rem] p-10 max-w-sm w-full text-center shadow-2xl">
-                <CheckCircle size={48} className="text-green-600 mx-auto mb-6" />
-                <h3 className="text-2xl font-telegraf text-gray-900 mb-2">Berhasil!</h3>
-                <p className="text-gray-500">Pesanan telah diproses dan struk dicetak otomatis.</p>
+          {completedTransaction && (
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-gray-900/60 backdrop-blur-md z-[120] flex items-center justify-center p-4">
+              <motion.div initial={{ scale: 0.95, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.95, opacity: 0, y: 20 }} className="bg-white rounded-[32px] w-full max-w-[420px] max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
+                
+                {/* Header Success */}
+                <div className="p-8 pb-4 flex flex-col items-center text-center">
+                  <div className="w-14 h-14 bg-green-50 rounded-full flex items-center justify-center mb-4">
+                    <CheckCircle2 size={28} strokeWidth={2.5} className="text-green-500" />
+                  </div>
+                  <h3 className="text-xl font-semibold text-gray-900 font-sfPro">Pembayaran Sukses</h3>
+                  <p className="text-sm text-gray-500 font-sfPro mt-1 tracking-tight font-mono">INV: {completedTransaction.invoice_number}</p>
+                </div>
+
+                {/* Info Bar: Kasir, Jam, Tipe */}
+                <div className="px-8 grid grid-cols-3 gap-2 py-4 border-y border-gray-100 bg-gray-50/50">
+                    <div className="flex flex-col items-center text-center">
+                        <User size={14} className="text-gray-400 mb-1"/>
+                        <span className="text-[9px] text-gray-400 uppercase tracking-widest font-bold">Kasir</span>
+                        <span className="text-xs font-semibold text-gray-700 truncate w-full px-1">{completedTransaction.cashier_name || auth?.user?.name}</span>
+                    </div>
+                    <div className="flex flex-col items-center text-center">
+                        <Clock size={14} className="text-gray-400 mb-1"/>
+                        <span className="text-[9px] text-gray-400 uppercase tracking-widest font-bold">Waktu</span>
+                        <span className="text-xs font-semibold text-gray-700">{dayjs(completedTransaction.created_at).format('HH:mm')} WIB</span>
+                    </div>
+                    <div className="flex flex-col items-center text-center">
+                        <Utensils size={14} className="text-gray-400 mb-1"/>
+                        <span className="text-[9px] text-gray-400 uppercase tracking-widest font-bold">Tipe</span>
+                        <span className="text-xs font-semibold text-gray-700 capitalize">{completedTransaction.order_type.replace('-', ' ')}</span>
+                    </div>
+                </div>
+
+                {/* Items List (Dengan Catatan) */}
+                <div className="px-8 py-6 flex-1 overflow-y-auto font-sfPro no-scrollbar">
+                  <div className="space-y-5">
+                    {completedTransaction.items?.map((item, idx) => {
+                      const noteText = item.note || item.pivot?.note || item.description;
+                      return (
+                      <div key={idx} className="flex flex-col">
+                        <div className="flex justify-between items-start">
+                            <div className="text-gray-900 text-sm font-medium pr-4">
+                                <p className="leading-tight">{item.menu_name || item.name}</p>
+                                <p className="text-gray-500 text-xs font-normal mt-0.5">{item.quantity} x Rp {Number(item.price).toLocaleString('id-ID')}</p>
+                            </div>
+                            <p className="text-gray-900 text-sm font-semibold whitespace-nowrap">Rp {Number(item.price * item.quantity).toLocaleString('id-ID')}</p>
+                        </div>
+                        
+                        {/* CATATAN ITEM */}
+                        {noteText && (
+                            <div className="mt-2 flex items-start gap-1.5 px-3 py-2 bg-red-50/50 border-l-2 border-red-400 rounded-r-lg">
+                                <StickyNote size={12} className="text-red-400 mt-0.5 shrink-0" />
+                                <p className="text-[11px] text-red-600 italic font-medium">Catatan: {noteText}</p>
+                            </div>
+                        )}
+                      </div>
+                    )})}
+                  </div>
+
+                  {/* Summary */}
+                  <div className="border-t border-dashed border-gray-200 mt-6 pt-6 space-y-3">
+                    <div className="flex justify-between text-sm text-gray-500 font-sfPro">
+                      <span>Subtotal</span>
+                      <span>Rp {Number(completedTransaction.subtotal).toLocaleString('id-ID')}</span>
+                    </div>
+                    {completedTransaction.discount > 0 && (
+                      <div className="flex justify-between text-sm text-red-500">
+                        <span>Diskon</span>
+                        <span>-Rp {Number(completedTransaction.discount).toLocaleString('id-ID')}</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between font-sfPro text-gray-900 text-lg pt-1">
+                      <span>Total Akhir</span>
+                      <span className="font-bold">Rp {Number(completedTransaction.total).toLocaleString('id-ID')}</span>
+                    </div>
+                  </div>
+
+                  {/* Payment Detail */}
+                  <div className="mt-6 pt-4 border-t border-gray-50 flex justify-between items-center bg-gray-50/30 p-3 rounded-2xl">
+                    <div className="flex flex-col">
+                        <span className="text-[9px] text-gray-400 uppercase font-sfPro tracking-widest">Metode Bayar</span>
+                        <span className="text-sm font-sfPro text-gray-800 uppercase font-bold">{completedTransaction.payment_method}</span>
+                    </div>
+                    {completedTransaction.payment_method === 'cash' && (
+                        <div className="flex flex-col text-right">
+                            <span className="text-[9px] text-gray-400 uppercase font-sfPro tracking-widest">Kembalian</span>
+                            <span className="text-sm font-sfPro text-green-600 tracking-tight font-bold">Rp {Number(completedTransaction.change).toLocaleString('id-ID')}</span>
+                        </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Footer Action */}
+                <div className="px-8 pb-8 space-y-3 pt-2 bg-white border-t border-gray-50">
+                  <button 
+                    onClick={() => handlePrintReceipt(completedTransaction)} 
+                    className="w-full bg-[#111827] text-white py-4 rounded-2xl font-sfPro text-[15px] flex items-center justify-center gap-2 hover:bg-black transition-all active:scale-[0.98] shadow-lg shadow-gray-200"
+                  >
+                    <Printer size={18} /> Cetak Struk Ulang
+                  </button>
+                  <button 
+                    onClick={handleDoneTransaction} 
+                    className="w-full bg-white text-gray-700 border border-gray-200 py-4 rounded-2xl font-sfPro text-[15px] hover:bg-gray-50 transition-colors active:scale-[0.98]"
+                  >
+                    Selesai & Tutup
+                  </button>
+                </div>
+
               </motion.div>
             </motion.div>
           )}
         </AnimatePresence>
 
+        {/* Sidebar Keranjang */}
         <AnimatePresence>
-          {cart.length > 0 && (
+          {cart.length > 0 && !completedTransaction && (
             <motion.div initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }} className="fixed right-4 top-4 bottom-4 w-[340px] bg-white/80 backdrop-blur-xl border shadow-xl z-50 flex flex-col rounded-[2.5rem] overflow-hidden">
               <div className="p-7 pb-4 flex justify-between items-center">
                 {paymentMethod ? (
@@ -406,8 +605,8 @@ export default function CatalogIndex({ menus = [], categories = [], auth, filter
 
               {!paymentMethod && (
                 <div className="px-6 mb-4 flex gap-2">
-                  <button onClick={() => setOrderType('dine-in')} className={`flex-1 py-2.5 rounded-xl text-xs font-telegraf ${orderType === 'dine-in' ? 'bg-black text-white' : 'bg-gray-100'}`}>Dine In</button>
-                  <button onClick={() => setOrderType('takeaway')} className={`flex-1 py-2.5 rounded-xl text-xs font-telegraf ${orderType === 'takeaway' ? 'bg-black text-white' : 'bg-gray-100'}`}>Take Away</button>
+                  <button onClick={() => setOrderType('dine-in')} className={`flex-1 py-2.5 rounded-xl text-xs font-telegraf ${orderType === 'dine-in' ? 'bg-black text-white' : 'bg-gray-100 text-gray-500'}`}>Dine In</button>
+                  <button onClick={() => setOrderType('takeaway')} className={`flex-1 py-2.5 rounded-xl text-xs font-telegraf ${orderType === 'takeaway' ? 'bg-black text-white' : 'bg-gray-100 text-gray-500'}`}>Take Away</button>
                 </div>
               )}
 

@@ -58,7 +58,7 @@ export default function UpdateProfileForm({ admin, role, status }) {
 
     const inputBase = 'w-full bg-transparent border-0 border-b py-3 pl-9 pr-2 font-sfPro text-gray-800 placeholder-gray-400 focus:ring-0 focus:ring-offset-0 focus:outline-none transition-colors duration-200'
     const inputNormal = `${inputBase} border-gray-200 focus:border-gray-700`
-    const inputReadOnly = `${inputBase} border-gray-100 text-gray-400 cursor-not-allowed` 
+    // const inputReadOnly = `${inputBase} border-gray-100 text-gray-400 cursor-not-allowed` // Sudah tidak dipakai karena email bisa diedit
     const inputError = `${inputBase} border-red-500 text-red-600 placeholder-red-400 focus:border-red-500`
 
     return (
@@ -105,18 +105,27 @@ export default function UpdateProfileForm({ admin, role, status }) {
                         {errors.name && <p className="mt-2 text-xs text-red-500 font-sfPro italic">{errors.name}</p>}
                     </div>
 
+                    {/* REVISI: Bagian Email sekarang bisa diedit */}
                     <div className="group">
-                        <label className="block text-[11px] uppercase tracking-[0.15em] font-sfPro text-gray-400 mb-1">
-                            Email Akun (Tidak dapat diubah)
+                        <label className="block text-[11px] uppercase tracking-[0.15em] font-sfPro text-gray-400 mb-1 group-focus-within:text-gray-800 transition-colors">
+                            Email Akun
                         </label>
                         <div className="relative">
-                            <div className="absolute inset-y-0 left-0 flex items-center text-gray-300">
+                            <div className="absolute inset-y-0 left-0 flex items-center text-gray-400 group-focus-within:text-gray-800 transition-colors">
                                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                                 </svg>
                             </div>
-                            <input value={data.email} type="email" readOnly className={inputReadOnly} />
+                            <input 
+                                value={data.email} 
+                                onChange={(e) => setData('email', e.target.value)}
+                                type="email" 
+                                required
+                                className={errors.email ? inputError : inputNormal} 
+                                placeholder="Masukkan email baru"
+                            />
                         </div>
+                        {errors.email && <p className="mt-2 text-xs text-red-500 font-sfPro italic">{errors.email}</p>}
                     </div>
 
                     <div className="pt-4 border-t border-gray-50">
@@ -188,6 +197,7 @@ export default function UpdateProfileForm({ admin, role, status }) {
                                 placeholder="Ulangi password baru"
                             />
                         </div>
+                        {errors.password_confirmation && <p className="mt-2 text-xs text-red-500 font-sfPro italic">{errors.password_confirmation}</p>}
                     </div>
 
                     <div className="flex items-center justify-start gap-4 pt-4">

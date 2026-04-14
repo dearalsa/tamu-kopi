@@ -9,7 +9,7 @@ import {
   FileText,
   CheckCircle2,
   XCircle,
-  AlertTriangle, // Ikon tambahan untuk status menipis
+  AlertTriangle,
   Image as ImageIcon,
   User,
 } from 'lucide-react';
@@ -29,7 +29,6 @@ export default function Show({ product }) {
       .replace('Rp', 'Rp ');
   };
 
-  // Helper untuk menentukan warna dan ikon status
   const getStatusConfig = (status) => {
     switch (status) {
       case 'tersedia':
@@ -68,20 +67,20 @@ export default function Show({ product }) {
           </Link>
         </div>
 
-        <div className="bg-white rounded-3xl shadow-[0_12px_40px_rgba(15,23,42,0.06)] border border-gray-100 p-6 md:p-8">
+        <div className="bg-white rounded-[30px] shadow-[0_12px_40px_rgba(15,23,42,0.06)] border border-gray-100 p-6 md:p-8">
           <div className="grid grid-cols-1 md:grid-cols-[250px_minmax(0,1fr)] gap-8 items-start">
-            {/* Foto / Proof */}
+            
             <div className="w-full flex justify-center md:justify-start">
-              <div className="w-full max-w-xs rounded-2xl bg-gray-100 border border-gray-100 overflow-hidden">
-                <div className="aspect-[4/5] w-full">
+              <div className="w-full max-w-xs rounded-2xl bg-gray-50 border border-gray-100 overflow-hidden">
+                <div className="flex items-center justify-center bg-gray-50 min-h-[300px]">
                   {product.proof ? (
                     <img
                       src={product.proof}
                       alt={product.name}
-                      className="w-full h-full object-cover"
+                      className="w-full h-auto max-h-[500px] object-contain"
                     />
                   ) : (
-                    <div className="w-full h-full flex flex-col items-center justify-center text-gray-300">
+                    <div className="flex flex-col items-center justify-center text-gray-300 py-20">
                       <ImageIcon size={40} strokeWidth={1.4} />
                       <p className="text-[11px] mt-2 tracking-wide font-sfPro">
                         Tidak ada foto
@@ -92,7 +91,7 @@ export default function Show({ product }) {
               </div>
             </div>
 
-            {/* detail */}
+            {/* Detail */}
             <div className="space-y-6">
               <div className="space-y-3">
                 <div className="flex justify-between items-start gap-4">
@@ -101,7 +100,6 @@ export default function Show({ product }) {
                       {product.name}
                     </h1>
 
-                    {/* nama admin yang menambahkan bahan */}
                     <div className="flex items-center gap-1.5 text-gray-600 mt-1">
                       <User size={14} className="text-gray-400" />
                       <span className="text-[13px] font-sfPro">

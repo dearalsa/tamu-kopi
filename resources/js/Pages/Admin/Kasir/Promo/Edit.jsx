@@ -60,7 +60,6 @@ export default function Edit({ categories, allMenus, promo }) {
           icon: 'success',
           iconColor: '#ef5350',
           confirmButtonColor: '#ef5350',
-          borderRadius: '20px',
           customClass: {
             popup: 'rounded-[2rem] shadow-2xl',
             confirmButton: 'rounded-xl px-8 py-2.5 text-sm font-bold'
@@ -73,7 +72,6 @@ export default function Edit({ categories, allMenus, promo }) {
           html: `<span style="font-family: SF-Pro-Display; color: #666;">Mohon periksa kembali inputan Anda.</span>`,
           icon: 'error',
           confirmButtonColor: '#ef5350',
-          borderRadius: '20px',
         });
       }
     });
@@ -111,8 +109,8 @@ export default function Edit({ categories, allMenus, promo }) {
   return (
     <ConfigProvider locale={idID} theme={{ token: { colorPrimary: '#9ca3af', borderRadius: 12 }, components: { DatePicker: { activeBorderColor: '#6b7280' }, TimePicker: { activeBorderColor: '#6b7280' } } }}>
       <AdminLayout>
-        <div className="min-h-screen flex items-start justify-center">
-          <div className="w-full max-w-2xl px-6 pt-8 pb-12 font-sfPro">
+        <div className="min-h-screen flex items-start justify-center font-sfPro">
+          <div className="w-full max-w-2xl px-6 pt-8 pb-12">
             <div className="mb-6 mt-4">
               <Link href={route('admin.kasir.promo.index')} className="inline-flex items-center gap-2 text-gray-600 hover:text-red-500 transition-colors text-sm">
                 <ArrowLeft size={18} /> <span>Kembali</span>
@@ -134,7 +132,7 @@ export default function Edit({ categories, allMenus, promo }) {
                   <div className="space-y-4">
                     <div className="space-y-1.5">
                       <label className="text-xs text-gray-500 ml-1 tracking-wider uppercase font-sfPro">Nama Paket</label>
-                      <input type="text" value={data.name} onChange={(e) => setData('name', e.target.value)} className={inputClass} />
+                      <input type="text" value={data.name} onChange={(e) => setData('name', e.target.value)} className={inputClass} placeholder="Masukkan Nama Paket" />
                       {errors.name && <p className="text-xs text-red-500 mt-1">{errors.name}</p>}
                     </div>
                     <div className="space-y-1.5">
@@ -145,23 +143,33 @@ export default function Edit({ categories, allMenus, promo }) {
                       </select>
                       {errors.category_id && <p className="text-xs text-red-500 mt-1">{errors.category_id}</p>}
                     </div>
-                    <div className="space-y-2">
+                    
+                    <div className="space-y-3">
                         <label className="block text-sm text-gray-900 font-sfPro">Gambar Promo:</label>
-                        <div onClick={() => fileInputRef.current?.click()} className="w-full border border-gray-300 border-dashed rounded-2xl p-5 flex flex-col items-center justify-center cursor-pointer min-h-[160px] relative overflow-hidden bg-gray-50/40 hover:bg-gray-100 transition-colors">
+                        <div 
+                          onClick={() => fileInputRef.current?.click()} 
+                          className="w-full max-w-[280px] aspect-square border border-gray-300 border-dashed rounded-2xl flex flex-col items-center justify-center cursor-pointer relative overflow-hidden bg-gray-50/40 hover:bg-gray-100 transition-colors duration-150"
+                        >
                             {preview ? (
                                 <>
                                     <img src={preview} alt="Promo" className="absolute inset-0 w-full h-full object-cover" />
-                                    <div className="absolute inset-0 bg-black/20 flex items-center justify-center group">
+                                    <div className="absolute inset-0 bg-black/15 flex items-center justify-center">
                                         <button type="button" onClick={removeImage} className="bg-black/60 text-white rounded-full p-2 hover:bg-red-500 transition-colors">
-                                            <X size={18} />
+                                            <X size={16} />
                                         </button>
                                     </div>
                                 </>
                             ) : (
-                                <div className="flex flex-col items-center gap-2"><div className="bg-black text-white p-2.5 rounded-lg"><Download size={20} /></div><p className="text-xs text-gray-500">Pilih / ganti gambar promo</p></div>
+                                <div className="flex flex-col items-center gap-2">
+                                  <div className="bg-black text-white p-2.5 rounded-lg">
+                                    <Download size={22} />
+                                  </div>
+                                  <p className="text-xs text-gray-500">Pilih / ganti gambar promo</p>
+                                </div>
                             )}
                             <input ref={fileInputRef} type="file" accept="image/*" onChange={handleImageChange} className="hidden" />
                         </div>
+                        {errors.image && <p className="text-xs text-red-500 mt-1">{errors.image}</p>}
                     </div>
                   </div>
                 )}
@@ -175,7 +183,7 @@ export default function Edit({ categories, allMenus, promo }) {
                       return (
                         <button key={menu.id} type="button" onClick={() => togglePackageItem(menu.id)} className={`w-full flex items-center justify-between px-4 py-3 border-b last:border-b-0 transition-colors ${checked ? 'bg-red-50/40' : 'hover:bg-white'}`}>
                           <div className="flex items-center gap-3">
-                            <div className={`w-5 h-5 rounded-md border flex items-center justify-center transition-all ${checked ? 'bg-red-500 border-red-500' : 'bg-white border-gray-300'}`}>
+                            <div className={`w-5 h-5 rounded-md border flex items-center justify-center transition-all ${checked ? 'bg-[#ef5350] border-[#ef5350]' : 'bg-white border-gray-300'}`}>
                               {checked && <CheckSquare className="w-3.5 h-3.5 text-white" />}
                             </div>
                             <div className="text-left"><p className="text-sm text-gray-800 font-sfPro">{menu.name}</p><p className="text-[10px] text-gray-400 font-sfPro">Normal: Rp {Number(menu.price).toLocaleString('id-ID')}</p></div>
@@ -216,7 +224,7 @@ export default function Edit({ categories, allMenus, promo }) {
                   </div>
                 </div>
 
-                <button type="submit" disabled={processing} className="w-full bg-[#EF5350] text-white py-4 rounded-xl text-sm font-sfPro transition-all flex items-center justify-center gap-2 hover:bg-[#e53935] shadow-lg shadow-red-100 active:scale-95">
+                <button type="submit" disabled={processing} className="w-full bg-[#ef5350] text-white py-4 rounded-xl text-sm font-sfPro transition-all flex items-center justify-center gap-2 hover:bg-[#e53935] shadow-lg shadow-red-100 active:scale-95 font-bold">
                   {processing ? 'Menyimpan...' : <><Save size={18} /> Simpan Perubahan</>}
                 </button>
               </form>
