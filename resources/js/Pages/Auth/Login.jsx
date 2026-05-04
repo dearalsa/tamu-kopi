@@ -135,7 +135,7 @@ export default function Login({ status }) {
                                 </div>
                                 {errors.password && (
                                     <p className="mt-2 text-[13px] text-red-600 font-sfPro italic leading-tight">
-                                        Kata sandi wajib diisi.
+                                        {errors.password.includes("match") ? "Kredensial ini tidak cocok dengan data kami." : errors.password}
                                     </p>
                                 )}
                                 

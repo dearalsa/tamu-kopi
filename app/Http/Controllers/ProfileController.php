@@ -26,13 +26,16 @@ class ProfileController extends Controller
 
     public function update(Request $request): RedirectResponse
     {
+        /** @var \App\Models\Admin $admin */
         $admin = Auth::guard('admin')->user();
 
-        // Email tidak divalidasi karena tidak dikirim/diubah
+        // Validasi Nama dan Email (Email harus unik kecuali untuk ID admin ini sendiri)
         $rules = [
             'name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'lowercase', 'email', 'max:255', 'unique:admins,email,' . $admin->id],
         ];
 
+        // Validasi Password jika user mengisi field password
         if ($request->filled('password')) {
             $rules['current_password'] = [
                 'required',
@@ -47,11 +50,18 @@ class ProfileController extends Controller
 
         $validated = $request->validate($rules);
 
-        // Hanya update Nama (Email diabaikan agar tetap admin@gmail.com)
+        // Update data ke database
         $admin->name = $validated['name'];
+        $admin->email = $validated['email'];
 
+        // Update password hanya jika diisi
         if ($request->filled('password')) {
-            $admin->password = $validated['password'];
+            $admin->password = Hash::make($validated['password']);
+        }
+
+        // Cek jika ada perubahan email, reset verifikasi jika diperlukan
+        if ($admin->isDirty('email')) {
+            $admin->email_verified_at = null;
         }
 
         $admin->save();

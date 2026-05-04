@@ -93,6 +93,7 @@ export default function CatalogIndex({ menus = [], categories = [], auth, filter
     resetState()
   }
 
+  // FUNGSI PRINT DENGAN LAYOUT PERSIS GAMBAR
   const handlePrintReceipt = (data) => {
     if (!data) return;
     const printWindow = window.open('', '_blank', 'width=400,height=600');
@@ -105,14 +106,16 @@ export default function CatalogIndex({ menus = [], categories = [], auth, filter
     const itemsHtml = data.items?.map(item => {
       const noteText = item.note || item.pivot?.note || item.description;
       return `
-        <tr>
-            <td class="item-name">
-                ${item.menu_name || item.name}
-                ${noteText ? `<br><span class="note">* Catatan: ${noteText}</span>` : ''}
-            </td>
-            <td class="center-align qty">${item.quantity}</td>
-            <td class="right-align price">${Number(item.price * item.quantity).toLocaleString('id-ID')}</td>
-        </tr>
+        <div style="margin-bottom: 4px;">
+          <div class="flex-between">
+            <span style="text-transform: uppercase; font-weight: bold;">${item.menu_name || item.name}</span>
+            <span>${Number(item.price * item.quantity).toLocaleString('id-ID')}</span>
+          </div>
+          <div class="flex-between">
+            <span>${item.quantity} x ${Number(item.price).toLocaleString('id-ID')}</span>
+          </div>
+          ${noteText ? `<div style="font-size: 10px; font-style: italic;">* Catatan: ${noteText}</div>` : ''}
+        </div>
       `;
     }).join('') || '';
 
@@ -121,167 +124,112 @@ export default function CatalogIndex({ menus = [], categories = [], auth, filter
         <head>
           <title>Struk Transaksi</title>
           <style>
-            @page { 
-                size: 58mm auto; 
-                margin: 0; 
-            }
+            @page { size: 58mm auto; margin: 0; }
             body { 
-                font-family: 'Courier New', Courier, monospace; 
-                width: 48mm; 
-                margin: 0 auto; 
-                padding: 5mm 2mm; 
-                font-size: 11px; 
-                line-height: 1.3; 
-                color: #000; 
-                background: #fff; 
+              font-family: 'Courier New', Courier, monospace; 
+              width: 48mm; 
+              margin: 0 auto; 
+              padding: 4mm 2mm; 
+              font-size: 12px; 
+              line-height: 1.3; 
+              color: #000; 
+              background: #fff; 
             }
-            h1, h2, h3, p { margin: 0; padding: 0; }
-            .center-align { text-align: center; }
-            .right-align { text-align: right; }
-            .left-align { text-align: left; }
+            .text-center { text-align: center; }
+            .flex-between { display: flex; justify-content: space-between; }
             .bold { font-weight: bold; }
-            
-            .dashed-line { border-top: 1px dashed #000; margin: 5px 0; }
-            .solid-line { border-top: 1px solid #000; margin: 5px 0; }
-            
-            table.meta-table { width: 100%; font-size: 10px; margin-bottom: 5px;}
-            table.meta-table td { vertical-align: top; padding: 1px 0;}
-            
-            table.items-table { width: 100%; border-collapse: collapse; margin-bottom: 5px; }
-            table.items-table th { 
-                font-size: 10px; 
-                border-top: 1px dashed #000; 
-                border-bottom: 1px dashed #000; 
-                padding: 4px 0;
-                text-align: left;
-            }
-            table.items-table td { padding: 4px 0; vertical-align: top; }
-            table.items-table .item-name { width: 55%; word-break: break-word; }
-            table.items-table .qty { width: 15%; text-align: center; }
-            table.items-table .price { width: 30%; text-align: right; }
-            .note { font-size: 9px; font-style: italic; }
-
-            table.total-table { width: 100%; font-size: 11px; }
-            table.total-table td { padding: 2px 0; }
-            
-            .footer-info { margin-top: 10px; font-size: 10px; line-height: 1.4;}
+            .divider { margin: 2px 0; overflow: hidden; white-space: nowrap; }
+            .header-name { font-size: 16px; font-weight: bold; margin-bottom: 2px; }
           </style>
         </head>
         <body>
-          <div class="center-align" style="margin-bottom: 10px;">
-            <div class="bold" style="font-size: 14px;">TA-MU KOPI</div>
-            <div style="font-size: 10px;">Jl. Dadali No. 7, Bogor</div>
-            <div style="font-size: 10px;">081218420963</div>
-          </div>
-          
-          <table class="meta-table">
-            <tr>
-                <td width="35%">Tanggal</td>
-                <td width="5%">:</td>
-                <td>${dayjs(data.created_at).format('DD/MM/YYYY')} ${dayjs(data.created_at).format('HH:mm')}</td>
-            </tr>
-            <tr>
-                <td>ID</td>
-                <td>:</td>
-                <td>${data.invoice_number}</td>
-            </tr>
-            <tr>
-                <td>Kasir</td>
-                <td>:</td>
-                <td>${data.cashier_name || auth?.user?.name || 'Kasir'}</td>
-            </tr>
-          </table>
-
-          <div class="center-align bold" style="margin: 8px 0; font-size: 12px; text-transform: uppercase;">
-            *** ${data.order_type.replace('-', ' ')} ***
+          <div class="text-center">
+            <div class="header-name">TA-MU KOPI</div>
+            <div>Jl. Dadali No. 7, Bogor</div>
+            <div>081218420963</div>
           </div>
 
-          <table class="items-table">
-            <thead>
-                <tr>
-                    <th>Item</th>
-                    <th class="center-align">Qty</th>
-                    <th class="right-align">Amount</th>
-                </tr>
-            </thead>
-            <tbody>
-                ${itemsHtml}
-            </tbody>
-          </table>
+          <div class="divider">----------------------------</div>
 
-          <div class="solid-line"></div>
+          <div>
+            <div class="flex-between">
+                <span>TGL: ${dayjs(data.created_at).format('DD/MM/YYYY')}</span>
+                <span>JAM: ${dayjs(data.created_at).format('HH:mm')}</span>
+            </div>
+            <div>ID  : ${data.invoice_number}</div>
+            <div>KSR : ${data.cashier_name || auth?.user?.name || 'Kasir'}</div>
+          </div>
 
-          <table class="total-table">
-            <tr>
-                <td width="60%">Subtotal</td>
-                <td width="5%">:</td>
-                <td class="right-align">${Number(data.subtotal).toLocaleString('id-ID')}</td>
-            </tr>
+          <div class="divider">----------------------------</div>
+
+          <div class="text-center bold">
+            *** ${data.order_type.replace('-', ' ').toUpperCase()} ***
+          </div>
+
+          <div class="divider">----------------------------</div>
+
+          <div>
+            ${itemsHtml}
+          </div>
+
+          <div class="divider">----------------------------</div>
+
+          <div>
+            <div class="flex-between">
+                <span>SUBTOTAL</span>
+                <span>${Number(data.subtotal).toLocaleString('id-ID')}</span>
+            </div>
             ${data.discount > 0 ? `
-            <tr>
-                <td>Diskon</td>
-                <td>:</td>
-                <td class="right-align">-${Number(data.discount).toLocaleString('id-ID')}</td>
-            </tr>` : ''}
-            <tr class="bold" style="font-size: 13px;">
-                <td>TOTAL</td>
-                <td>:</td>
-                <td class="right-align">Rp ${Number(data.total).toLocaleString('id-ID')}</td>
-            </tr>
-          </table>
+            <div class="flex-between">
+                <span>DISKON</span>
+                <span>-${Number(data.discount).toLocaleString('id-ID')}</span>
+            </div>` : ''}
+            <div class="flex-between bold">
+                <span>TOTAL</span>
+                <span>Rp ${Number(data.total).toLocaleString('id-ID')}</span>
+            </div>
+          </div>
 
-          <div class="dashed-line"></div>
+          <div class="divider">----------------------------</div>
 
-          <table class="total-table" style="font-size: 10px;">
-            <tr>
-                <td width="60%">Metode Bayar</td>
-                <td width="5%">:</td>
-                <td class="right-align">${data.payment_method.toUpperCase()}</td>
-            </tr>
-            <tr>
-                <td>Diterima</td>
-                <td>:</td>
-                <td class="right-align">${Number(data.cash_amount || data.total).toLocaleString('id-ID')}</td>
-            </tr>
+          <div>
+            <div class="flex-between">
+                <span>METODE:</span>
+                <span>${data.payment_method.toUpperCase()}</span>
+            </div>
+            <div class="flex-between">
+                <span>BAYAR:</span>
+                <span>${Number(data.cash_amount || data.total).toLocaleString('id-ID')}</span>
+            </div>
             ${data.payment_method === 'cash' ? `
-            <tr>
-                <td>Kembali</td>
-                <td>:</td>
-                <td class="right-align">${Number(data.change).toLocaleString('id-ID')}</td>
-            </tr>` : ''}
-          </table>
-          
-          <div class="solid-line" style="margin-top: 8px;"></div>
+            <div class="flex-between">
+                <span>KEMBALI:</span>
+                <span>${Number(data.change).toLocaleString('id-ID')}</span>
+            </div>` : ''}
+          </div>
 
-          <div class="center-align footer-info">
-            <div class="bold" style="margin-bottom: 4px;">TERIMA KASIH!</div>
-            <div>WiFi</div>
-            <div>Indoor: Tatapku</div>
-            <div>Outdoor: Tataptemu</div>
+          <div class="divider">----------------------------</div>
+
+          <div class="text-center" style="margin-top: 8px;">
+            <div class="bold">TERIMA KASIH!</div>
+            <div style="margin-top: 4px;">WiFi Indoor: Tatapku</div>
+            <div>WiFi Outdoor: Tataptemu</div>
           </div>
           
           <script>
-            // Perbaikan: Eksekusi langsung dengan timeout, tanpa menunggu window.onload
             setTimeout(function() {
-              window.focus(); // Paksa window ke depan
-              window.print(); // Panggil dialog print
+              window.focus();
+              window.print();
             }, 500);
 
-            // Menutup window setelah print selesai / dibatalkan
             window.onafterprint = function() { 
               window.close(); 
             };
-
-            // Fallback: tutup otomatis setelah beberapa detik jika browser tidak support onafterprint
-            setTimeout(function() { 
-              window.close(); 
-            }, 3000);
           </script>
         </body>
       </html>
     `);
     printWindow.document.close();
-    printWindow.focus(); 
   };
 
   const filteredAndSortedMenus = useMemo(() => {
@@ -488,7 +436,7 @@ export default function CatalogIndex({ menus = [], categories = [], auth, filter
                   <p className="text-sm text-gray-500 font-sfPro mt-1 tracking-tight font-mono">INV: {completedTransaction.invoice_number}</p>
                 </div>
 
-                {/* Info Bar: Kasir, Jam, Tipe */}
+                {/* Info Bar */}
                 <div className="px-8 grid grid-cols-3 gap-2 py-4 border-y border-gray-100 bg-gray-50/50">
                     <div className="flex flex-col items-center text-center">
                         <User size={14} className="text-gray-400 mb-1"/>
@@ -507,7 +455,7 @@ export default function CatalogIndex({ menus = [], categories = [], auth, filter
                     </div>
                 </div>
 
-                {/* Items List (Dengan Catatan) */}
+                {/* Items List */}
                 <div className="px-8 py-6 flex-1 overflow-y-auto font-sfPro no-scrollbar">
                   <div className="space-y-5">
                     {completedTransaction.items?.map((item, idx) => {
@@ -517,12 +465,10 @@ export default function CatalogIndex({ menus = [], categories = [], auth, filter
                         <div className="flex justify-between items-start">
                             <div className="text-gray-900 text-sm font-medium pr-4">
                                 <p className="leading-tight">{item.menu_name || item.name}</p>
-                                <p className="text-gray-500 text-xs font-normal mt-0.5">{item.quantity} x Rp {Number(item.price).toLocaleString('id-ID')}</p>
+                                <p className="text-gray-500 text-xs font-normal mt-0.5">${item.quantity} x Rp {Number(item.price).toLocaleString('id-ID')}</p>
                             </div>
                             <p className="text-gray-900 text-sm font-semibold whitespace-nowrap">Rp {Number(item.price * item.quantity).toLocaleString('id-ID')}</p>
                         </div>
-                        
-                        {/* CATATAN ITEM */}
                         {noteText && (
                             <div className="mt-2 flex items-start gap-1.5 px-3 py-2 bg-red-50/50 border-l-2 border-red-400 rounded-r-lg">
                                 <StickyNote size={12} className="text-red-400 mt-0.5 shrink-0" />
@@ -533,7 +479,6 @@ export default function CatalogIndex({ menus = [], categories = [], auth, filter
                     )})}
                   </div>
 
-                  {/* Summary */}
                   <div className="border-t border-dashed border-gray-200 mt-6 pt-6 space-y-3">
                     <div className="flex justify-between text-sm text-gray-500 font-sfPro">
                       <span>Subtotal</span>
@@ -551,7 +496,6 @@ export default function CatalogIndex({ menus = [], categories = [], auth, filter
                     </div>
                   </div>
 
-                  {/* Payment Detail */}
                   <div className="mt-6 pt-4 border-t border-gray-50 flex justify-between items-center bg-gray-50/30 p-3 rounded-2xl">
                     <div className="flex flex-col">
                         <span className="text-[9px] text-gray-400 uppercase font-sfPro tracking-widest">Metode Bayar</span>
@@ -566,7 +510,6 @@ export default function CatalogIndex({ menus = [], categories = [], auth, filter
                   </div>
                 </div>
 
-                {/* Footer Action */}
                 <div className="px-8 pb-8 space-y-3 pt-2 bg-white border-t border-gray-50">
                   <button 
                     onClick={() => handlePrintReceipt(completedTransaction)} 

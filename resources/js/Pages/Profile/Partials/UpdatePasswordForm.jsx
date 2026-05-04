@@ -1,15 +1,20 @@
-import { useRef, useEffect } from 'react'
+import { useRef, useEffect, useState } from 'react'
 import { useForm, usePage, router } from '@inertiajs/react'
 
 export default function UpdateProfileForm({ admin, role, status }) {
     const passwordInput = useRef()
     const currentPasswordInput = useRef()
     
+    // State untuk toggle mata password
+    const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+    const [showNewPassword, setShowNewPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
     const { auth } = usePage().props;
 
     const { data, setData, errors, patch, reset, processing, recentlySuccessful } = useForm({
-        name: auth?.user?.name || admin?.name || '',
-        email: auth?.user?.email || admin?.email || '', 
+        name: admin?.name || auth?.user?.name || '',
+        email: admin?.email || auth?.user?.email || '', 
         current_password: '',
         password: '',
         password_confirmation: '',
@@ -27,19 +32,14 @@ export default function UpdateProfileForm({ admin, role, status }) {
 
     const submit = (e) => {
         e.preventDefault()
+        
         patch(route(role + '.profile.update'), {
             preserveScroll: true,
             onSuccess: () => {
                 reset('current_password', 'password', 'password_confirmation');
                 setTimeout(() => {
-                    router.visit(route('admin.dashboard'), {
-                        method: 'get',
-                        data: {},
-                        replace: false,
-                        preserveState: false, 
-                        preserveScroll: false,
-                    });
-                }, 1000);
+                    router.visit(route('admin.dashboard'));
+                }, 1500);
             },
             onError: (errors) => {
                 if (errors.password) {
@@ -56,10 +56,17 @@ export default function UpdateProfileForm({ admin, role, status }) {
 
     const handleCancel = () => window.history.back();
 
-    const inputBase = 'w-full bg-transparent border-0 border-b py-3 pl-9 pr-2 font-sfPro text-gray-800 placeholder-gray-400 focus:ring-0 focus:ring-offset-0 focus:outline-none transition-colors duration-200'
+    const inputBase = 'w-full bg-transparent border-0 border-b py-3 pl-9 pr-10 font-sfPro text-gray-800 placeholder-gray-400 focus:ring-0 focus:ring-offset-0 focus:outline-none transition-colors duration-200'
     const inputNormal = `${inputBase} border-gray-200 focus:border-gray-700`
-    // const inputReadOnly = `${inputBase} border-gray-100 text-gray-400 cursor-not-allowed` // Sudah tidak dipakai karena email bisa diedit
     const inputError = `${inputBase} border-red-500 text-red-600 placeholder-red-400 focus:border-red-500`
+
+    // Komponen Ikon Mata
+    const EyeIcon = () => (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+    );
+    const EyeOffIcon = () => (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.542-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18" /></svg>
+    );
 
     return (
         <section className="mt-20 px-6 lg:px-12 flex justify-start pb-20">
@@ -67,12 +74,12 @@ export default function UpdateProfileForm({ admin, role, status }) {
                 <header className="mb-8">
                     <h2 className="text-2xl font-telegraf text-gray-900 tracking-tight">Profil Admin</h2>
                     <p className="mt-2 text-sm text-gray-500 font-telegraf leading-relaxed">
-                        Perbarui identitas kasir yang bertugas saat ini.
+                        Perbarui identitas dan email kasir yang bertugas.
                     </p>
                 </header>
 
                 {recentlySuccessful && (
-                    <div className="mb-6 bg-emerald-50 border-l-4 border-emerald-500 p-4 rounded-r-xl transition-all animate-in fade-in slide-in-from-left-4">
+                    <div className="mb-6 bg-emerald-50 border-l-4 border-emerald-500 p-4 rounded-r-xl animate-in fade-in slide-in-from-left-4">
                         <div className="flex items-center text-emerald-800">
                             <svg className="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
@@ -83,6 +90,7 @@ export default function UpdateProfileForm({ admin, role, status }) {
                 )}
 
                 <form onSubmit={submit} className="space-y-6">
+                    {/* Input Nama */}
                     <div className="group">
                         <label className="block text-[11px] uppercase tracking-[0.15em] font-sfPro text-gray-400 mb-1 group-focus-within:text-gray-800 transition-colors">
                             Nama Kasir Bertugas
@@ -105,7 +113,7 @@ export default function UpdateProfileForm({ admin, role, status }) {
                         {errors.name && <p className="mt-2 text-xs text-red-500 font-sfPro italic">{errors.name}</p>}
                     </div>
 
-                    {/* REVISI: Bagian Email sekarang bisa diedit */}
+                    {/* Input Email */}
                     <div className="group">
                         <label className="block text-[11px] uppercase tracking-[0.15em] font-sfPro text-gray-400 mb-1 group-focus-within:text-gray-800 transition-colors">
                             Email Akun
@@ -132,6 +140,7 @@ export default function UpdateProfileForm({ admin, role, status }) {
                          <p className="text-[10px] text-gray-400 uppercase tracking-widest mb-6 font-sfPro">Ganti Password (Isi jika perlu)</p>
                     </div>
 
+                    {/* Input Password Saat Ini */}
                     <div className="group">
                         <label className="block text-[11px] uppercase tracking-[0.15em] font-sfPro text-gray-400 mb-1 group-focus-within:text-gray-800 transition-colors">
                             Password Saat Ini
@@ -146,15 +155,23 @@ export default function UpdateProfileForm({ admin, role, status }) {
                                 ref={currentPasswordInput}
                                 value={data.current_password}
                                 onChange={(e) => setData('current_password', e.target.value)}
-                                type="password"
+                                type={showCurrentPassword ? "text" : "password"}
                                 autoComplete="current-password"
                                 className={errors.current_password ? inputError : inputNormal}
                                 placeholder="••••••••"
                             />
+                            <button 
+                                type="button"
+                                onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                                className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-700 transition-colors"
+                            >
+                                {showCurrentPassword ? <EyeOffIcon /> : <EyeIcon />}
+                            </button>
                         </div>
                         {errors.current_password && <p className="mt-2 text-xs text-red-500 font-sfPro italic">{errors.current_password}</p>}
                     </div>
 
+                    {/* Input Password Baru */}
                     <div className="group">
                         <label className="block text-[11px] uppercase tracking-[0.15em] font-sfPro text-gray-400 mb-1 group-focus-within:text-gray-800 transition-colors">
                             Password Baru
@@ -169,15 +186,23 @@ export default function UpdateProfileForm({ admin, role, status }) {
                                 ref={passwordInput}
                                 value={data.password}
                                 onChange={(e) => setData('password', e.target.value)}
-                                type="password"
+                                type={showNewPassword ? "text" : "password"}
                                 autoComplete="new-password"
                                 className={errors.password ? inputError : inputNormal}
                                 placeholder="Ketik password baru"
                             />
+                            <button 
+                                type="button"
+                                onClick={() => setShowNewPassword(!showNewPassword)}
+                                className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-700 transition-colors"
+                            >
+                                {showNewPassword ? <EyeOffIcon /> : <EyeIcon />}
+                            </button>
                         </div>
                         {errors.password && <p className="mt-2 text-xs text-red-500 font-sfPro italic">{errors.password}</p>}
                     </div>
 
+                    {/* Konfirmasi Password */}
                     <div className="group">
                         <label className="block text-[11px] uppercase tracking-[0.15em] font-sfPro text-gray-400 mb-1 group-focus-within:text-gray-800 transition-colors">
                             Konfirmasi Password Baru
@@ -191,13 +216,19 @@ export default function UpdateProfileForm({ admin, role, status }) {
                             <input
                                 value={data.password_confirmation}
                                 onChange={(e) => setData('password_confirmation', e.target.value)}
-                                type="password"
+                                type={showConfirmPassword ? "text" : "password"}
                                 autoComplete="new-password"
                                 className={errors.password_confirmation ? inputError : inputNormal}
                                 placeholder="Ulangi password baru"
                             />
+                            <button 
+                                type="button"
+                                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-700 transition-colors"
+                            >
+                                {showConfirmPassword ? <EyeOffIcon /> : <EyeIcon />}
+                            </button>
                         </div>
-                        {errors.password_confirmation && <p className="mt-2 text-xs text-red-500 font-sfPro italic">{errors.password_confirmation}</p>}
                     </div>
 
                     <div className="flex items-center justify-start gap-4 pt-4">
