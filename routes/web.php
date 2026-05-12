@@ -59,9 +59,21 @@ Route::middleware(['auth:admin'])
 
         // Fitur Kasir
         Route::prefix('kasir')->name('kasir.')->group(function () {
+
+            /*
+            |--------------------------------------------------------------------------
+            | MENU
+            |--------------------------------------------------------------------------
+            */
+
             Route::resource('menus', MenuController::class)->except(['show']);
 
-            // Promo Management
+            /*
+            |--------------------------------------------------------------------------
+            | PROMO MANAGEMENT
+            |--------------------------------------------------------------------------
+            */
+
             Route::get('/promo', [MenuPromoController::class, 'index'])->name('promo.index');
             Route::get('/promo/create', [MenuPromoController::class, 'create'])->name('promo.create');
             Route::post('/promo', [MenuPromoController::class, 'store'])->name('promo.store');
@@ -70,17 +82,49 @@ Route::middleware(['auth:admin'])
             Route::patch('/promo/{menu}/toggle', [MenuPromoController::class, 'toggle'])->name('promo.toggle');
             Route::delete('/promo/{menu}', [MenuPromoController::class, 'destroy'])->name('promo.destroy');
 
-            // Katalog & Transaksi
-            Route::get('/katalog', [CatalogController::class, 'index'])->name('katalog.index');
-            Route::get('/transaksi', [TransactionController::class, 'index'])->name('transactions.index');
-            Route::post('/transaksi', [TransactionController::class, 'store'])->name('transactions.store');
+            /*
+            |--------------------------------------------------------------------------
+            | KATALOG
+            |--------------------------------------------------------------------------
+            */
 
-            // Summary Penjualan
-            Route::get('/summary', [SummaryController::class, 'index'])->name('summary.index');
+            Route::get('/katalog', [CatalogController::class, 'index'])
+                ->name('katalog.index');
+
+            /*
+            |--------------------------------------------------------------------------
+            | TRANSAKSI
+            |--------------------------------------------------------------------------
+            */
+
+            Route::get('/transaksi', [TransactionController::class, 'index'])
+                ->name('transactions.index');
+
+            Route::post('/transaksi', [TransactionController::class, 'store'])
+                ->name('transactions.store');
+
+            /*
+            |--------------------------------------------------------------------------
+            | VOID TRANSAKSI
+            |--------------------------------------------------------------------------
+            */
+
+            Route::patch('/transaksi/{id}/void', [TransactionController::class, 'void'])
+                ->name('transactions.void');
+
+            /*
+            |--------------------------------------------------------------------------
+            | SUMMARY PENJUALAN
+            |--------------------------------------------------------------------------
+            */
+
+            Route::get('/summary', [SummaryController::class, 'index'])
+                ->name('summary.index');
         });
 
         // Google Reviews
-        Route::get('/reviews', [GoogleReviewController::class, 'index'])->name('reviews.index');
+        Route::get('/reviews', [GoogleReviewController::class, 'index'])
+            ->name('reviews.index');
     });
 
 require __DIR__.'/auth.php';

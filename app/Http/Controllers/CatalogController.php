@@ -40,7 +40,7 @@ class CatalogController extends Controller
                 $query->where('name', 'like', '%' . $request->search . '%');
             })
             ->orderBy('name')
-            ->paginate(24)
+            ->paginate(20)
             ->withQueryString();
 
         // Transformasi data untuk frontend

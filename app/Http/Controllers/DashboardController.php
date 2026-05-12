@@ -14,8 +14,8 @@ class DashboardController extends Controller
     {
         $admin = Auth::guard('admin')->user();
 
-        // Statistik Total
-        $totalIncome  = (float) Transaction::sum('total');
+        // Statistik Total (HANYA HITUNG YANG SUCCESS)
+        $totalIncome  = (float) Transaction::where('status', 'success')->sum('total');
         $totalExpense = (float) Product::sum('price');
 
         // Logika Status Bahan
@@ -37,16 +37,17 @@ class DashboardController extends Controller
         $weekStart  = Carbon::now()->startOfWeek()->toDateString();
         $monthStart = Carbon::now()->startOfMonth()->toDateString();
 
-        // Statistik Penjualan (Pemasukan)
-        $incomeDaily   = (float) Transaction::whereDate('created_at', $today)->sum('total');
-        $incomeWeekly  = (float) Transaction::whereBetween(
-            'created_at',
-            [$weekStart . ' 00:00:00', $today . ' 23:59:59']
-        )->sum('total');
-        $incomeMonthly = (float) Transaction::whereBetween(
-            'created_at',
-            [$monthStart . ' 00:00:00', $today . ' 23:59:59']
-        )->sum('total');
+        // Statistik Penjualan (Pemasukan) - (HANYA HITUNG YANG SUCCESS)
+        $incomeDaily   = (float) Transaction::where('status', 'success')
+            ->whereDate('created_at', $today)->sum('total');
+            
+        $incomeWeekly  = (float) Transaction::where('status', 'success')
+            ->whereBetween('created_at', [$weekStart . ' 00:00:00', $today . ' 23:59:59'])
+            ->sum('total');
+            
+        $incomeMonthly = (float) Transaction::where('status', 'success')
+            ->whereBetween('created_at', [$monthStart . ' 00:00:00', $today . ' 23:59:59'])
+            ->sum('total');
 
         // Statistik Belanja Bahan (Pengeluaran)
         $expenseDaily   = (float) Product::whereDate('date', $today)->sum('price');
@@ -58,7 +59,8 @@ class DashboardController extends Controller
             $bulan = Carbon::now()->subMonths($i);
             return [
                 'name'        => $bulan->translatedFormat('F'),
-                'pemasukan'   => (float) Transaction::whereYear('created_at', $bulan->year)
+                'pemasukan'   => (float) Transaction::where('status', 'success') // <--- FILTER VOID
+                    ->whereYear('created_at', $bulan->year)
                     ->whereMonth('created_at', $bulan->month)
                     ->sum('total'),
                 'pengeluaran' => (float) Product::whereYear('date', $bulan->year)
@@ -72,7 +74,9 @@ class DashboardController extends Controller
             $hari = Carbon::today()->subDays($i);
             return [
                 'name'        => $hari->translatedFormat('D, d M'),
-                'pemasukan'   => (float) Transaction::whereDate('created_at', $hari)->sum('total'),
+                'pemasukan'   => (float) Transaction::where('status', 'success') // <--- FILTER VOID
+                    ->whereDate('created_at', $hari)
+                    ->sum('total'),
                 'pengeluaran' => (float) Product::whereDate('date', $hari)->sum('price'),
             ];
         })->values();
@@ -81,7 +85,8 @@ class DashboardController extends Controller
         $grafikHarian = collect(range(0, 23))->map(function ($jam) use ($today) {
             return [
                 'name'        => str_pad($jam, 2, '0', STR_PAD_LEFT) . ':00',
-                'pemasukan'   => (float) Transaction::whereDate('created_at', $today)
+                'pemasukan'   => (float) Transaction::where('status', 'success') // <--- FILTER VOID
+                    ->whereDate('created_at', $today)
                     ->whereRaw('HOUR(created_at) = ?', [$jam])
                     ->sum('total'),
                 'pengeluaran' => (float) Product::whereDate('date', $today)
@@ -108,4 +113,3 @@ class DashboardController extends Controller
         ]);
     }
 }
-

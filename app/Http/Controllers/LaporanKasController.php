@@ -23,20 +23,25 @@ class LaporanKasController extends Controller
             ? Carbon::parse($request->end)->endOfDay()
             : now()->endOfDay();
 
+        // HANYA AMBIL TRANSAKSI SUCCESS UNTUK TABEL PEMASUKAN
         $transactions = Transaction::with('user')
+            ->where('status', 'success') // <--- FILTER VOID
             ->whereBetween('created_at', [$start, $end])
             ->latest()
-            ->paginate(10)
+            ->paginate(20)
             ->withQueryString()
             ->through(fn ($trx) => [
                 'id'           => $trx->id,
                 'invoice'      => $trx->invoice_number,
                 'total'        => (float) $trx->total,
                 'created_at'   => $trx->created_at,
-                'cashier_name' => $trx->cashier_name ?? $trx->user?->name ?? '-', // ← fix
+                'cashier_name' => $trx->cashier_name ?? $trx->user?->name ?? '-',
             ]);
 
-        $totalPemasukan   = Transaction::whereBetween('created_at', [$start, $end])->sum('total');
+        // HANYA HITUNG TRANSAKSI SUCCESS UNTUK TOTAL UANG
+        $totalPemasukan   = Transaction::where('status', 'success') // <--- FILTER VOID
+            ->whereBetween('created_at', [$start, $end])->sum('total');
+            
         $totalPengeluaran = Product::whereBetween('date', [$start, $end])->sum('price');
         $saldoBersih      = $totalPemasukan - $totalPengeluaran;
 
@@ -70,7 +75,7 @@ class LaporanKasController extends Controller
         $jumlahTransaksi  = $query->clone()->count();
 
         $products = $query
-            ->paginate(10)
+            ->paginate(20)
             ->withQueryString()
             ->through(fn ($p) => [
                 'id'              => $p->id,
@@ -109,6 +114,7 @@ class LaporanKasController extends Controller
 
         if ($tipe === 'pemasukan') {
             $data = Transaction::with('user')
+                ->where('status', 'success') // <--- FILTER VOID UNTUK EKSPOR PDF/EXCEL
                 ->whereBetween('created_at', [$start, $end])
                 ->latest()
                 ->get();

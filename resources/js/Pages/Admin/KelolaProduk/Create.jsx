@@ -86,7 +86,6 @@ export default function Create({ categories }) {
     <AdminLayout>
       <div className="min-h-screen flex items-start justify-center bg-gray-50/30 font-sfPro">
         <div className="w-full max-w-2xl px-6 pt-8 pb-12">
-          
           <div className="mb-6 mt-4">
             <Link
               href={route('admin.kelola-produk.index')}
@@ -99,7 +98,6 @@ export default function Create({ categories }) {
 
           <div className="bg-white rounded-[30px] border border-gray-200 shadow-[0_18px_45px_rgba(15,23,42,0.08)]">
             <form onSubmit={handleSubmit} className="p-10 space-y-7">
-              
               <div className="mb-4">
                 <h1 className="text-2xl text-gray-900 text-center tracking-tight font-sfPro">
                   Tambah Bahan
@@ -169,6 +167,11 @@ export default function Create({ categories }) {
                     value={data.category_id}
                     onChange={(e) => setData('category_id', e.target.value)}
                     className={`w-full bg-white border ${errors.category_id ? 'border-red-500' : 'border-gray-400'} rounded-xl pl-9 pr-12 py-3 text-sm outline-none appearance-none focus:border-gray-500 ${!data.category_id ? 'text-gray-400' : 'text-gray-900'}`}
+                    style={{
+                      WebkitAppearance: 'none',
+                      MozAppearance: 'none',
+                      backgroundImage: 'none',
+                    }}
                   >
                     <option value="">Pilih Kategori</option>
                     {categories.map((cat) => (
@@ -194,6 +197,11 @@ export default function Create({ categories }) {
                     value={data.status}
                     onChange={(e) => setData('status', e.target.value)}
                     className="w-full bg-white border border-gray-400 rounded-xl pl-9 pr-12 py-3 text-sm outline-none appearance-none focus:border-gray-500"
+                    style={{
+                      WebkitAppearance: 'none',
+                      MozAppearance: 'none',
+                      backgroundImage: 'none',
+                    }}
                   >
                     <option value="tersedia">Tersedia</option>
                     <option value="menipis">Menipis</option>

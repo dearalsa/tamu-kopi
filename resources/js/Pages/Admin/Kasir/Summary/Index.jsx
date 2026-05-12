@@ -185,15 +185,16 @@ export default function Index({ menus, type, filters }) {
                   whileTap={{ scale: 0.97 }}
                   className="bg-white rounded-[1.5rem] overflow-hidden shadow-[0_8px_30px_rgba(0,0,0,0.02)] border border-gray-50 flex flex-col h-full cursor-pointer"
                 >
-                  <div className="aspect-square bg-gray-50 relative">
+                  {/* REVISI BAGIAN INI: Menggunakan tinggi spesifik h-52 (sekitar 208px) dan object-cover agar gambar seragam */}
+                  <div className="w-full h-52 bg-gray-50 relative overflow-hidden shrink-0">
                     {menu.image ? (
                       <img
                         src={`/storage/${menu.image}`}
                         alt={menu.menu_name}
-                        className="w-full h-full object-cover"
+                        className="w-full h-full object-cover absolute inset-0"
                       />
                     ) : (
-                      <div className="flex items-center justify-center h-full bg-gray-100 text-5xl opacity-20">
+                      <div className="flex items-center justify-center w-full h-full bg-gray-100 text-5xl opacity-20 absolute inset-0">
                         🍽️
                       </div>
                     )}

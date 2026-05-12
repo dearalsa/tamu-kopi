@@ -19,7 +19,7 @@ export default function Create({ categories }) {
     price: '',
     image: null,
     is_available: 1,
-    is_best_seller: '', 
+    is_best_seller: '',
   });
 
   const [preview, setPreview] = useState(null);
@@ -161,13 +161,30 @@ export default function Create({ categories }) {
                     } rounded-xl pl-9 pr-12 py-3 text-sm outline-none appearance-none focus:outline-none focus:ring-0 focus:border-gray-500 cursor-pointer ${
                       !data.category_id ? 'text-gray-400' : 'text-gray-900'
                     } shadow-sm transition-colors duration-150 font-normal`}
+                    style={{
+                      WebkitAppearance: 'none',
+                      MozAppearance: 'none',
+                      backgroundImage: 'none',
+                    }}
                   >
                     <option value="">Pilih Kategori</option>
                     {categories.map((cat) => (
-                      <option key={cat.id} value={cat.id}>{cat.name}</option>
+                      <option key={cat.id} value={cat.id}>
+                        {cat.name}
+                      </option>
                     ))}
                   </select>
-                  <svg className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <svg
+                    className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500"
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
                     <polyline points="6 9 12 15 18 9"></polyline>
                   </svg>
                 </div>
@@ -187,11 +204,26 @@ export default function Create({ categories }) {
                     value={String(data.is_available)}
                     onChange={(e) => setData('is_available', Number(e.target.value))}
                     className="w-full bg-white border border-gray-400 rounded-xl pl-9 pr-12 py-3 text-sm outline-none appearance-none focus:outline-none focus:ring-0 focus:border-gray-500 cursor-pointer text-gray-900 shadow-sm transition-colors duration-150 font-normal"
+                    style={{
+                      WebkitAppearance: 'none',
+                      MozAppearance: 'none',
+                      backgroundImage: 'none',
+                    }}
                   >
                     <option value="1">Tersedia</option>
                     <option value="0">Habis</option>
                   </select>
-                  <svg className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <svg
+                    className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500"
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
                     <polyline points="6 9 12 15 18 9"></polyline>
                   </svg>
                 </div>
@@ -209,12 +241,27 @@ export default function Create({ categories }) {
                     className={`w-full bg-white border border-gray-400 rounded-xl px-4 py-3 text-sm outline-none appearance-none focus:outline-none focus:ring-0 focus:border-gray-500 cursor-pointer shadow-sm transition-colors duration-150 font-normal ${
                       data.is_best_seller === '' ? 'text-gray-400' : 'text-gray-900'
                     }`}
+                    style={{
+                      WebkitAppearance: 'none',
+                      MozAppearance: 'none',
+                      backgroundImage: 'none',
+                    }}
                   >
                     <option value="" disabled>Apakah menu ini Best Seller?</option>
                     <option value="1">Ya</option>
                     <option value="0">Tidak</option>
                   </select>
-                  <svg className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <svg
+                    className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500"
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
                     <polyline points="6 9 12 15 18 9"></polyline>
                   </svg>
                 </div>

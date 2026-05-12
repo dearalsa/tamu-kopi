@@ -21,6 +21,12 @@ class Transaction extends Model
         'updated_at' => 'datetime',
     ];
 
+    /*
+    |--------------------------------------------------------------------------
+    | RELATIONSHIP
+    |--------------------------------------------------------------------------
+    */
+
     public function user()
     {
         return $this->belongsTo(Admin::class, 'user_id');
@@ -31,6 +37,12 @@ class Transaction extends Model
         return $this->hasMany(TransactionDetail::class, 'transaction_id');
     }
 
+    /*
+    |--------------------------------------------------------------------------
+    | ACCESSOR
+    |--------------------------------------------------------------------------
+    */
+
     public function getFormattedDateAttribute()
     {
         return $this->created_at->translatedFormat('d M Y');
@@ -39,5 +51,21 @@ class Transaction extends Model
     public function getFormattedTimeAttribute()
     {
         return $this->created_at->format('H:i');
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | HELPER
+    |--------------------------------------------------------------------------
+    */
+
+    public function isVoid()
+    {
+        return $this->status === 'void';
+    }
+
+    public function isSuccess()
+    {
+        return $this->status === 'success';
     }
 }

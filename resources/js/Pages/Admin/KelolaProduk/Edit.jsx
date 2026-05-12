@@ -92,8 +92,6 @@ export default function Edit({ product, categories }) {
     <AdminLayout>
       <div className="min-h-screen flex items-start justify-center bg-gray-50/30 font-sfPro">
         <div className="w-full max-w-2xl px-6 pt-8 pb-12">
-          
-          {/* button kembali */}
           <div className="mb-6 mt-4">
             <Link
               href={route('admin.kelola-produk.index')}
@@ -106,8 +104,6 @@ export default function Edit({ product, categories }) {
 
           <div className="bg-white rounded-[30px] border border-gray-200 shadow-[0_18px_45px_rgba(15,23,42,0.08)]">
             <form onSubmit={handleSubmit} className="p-10 space-y-7">
-              
-              {/* title */}
               <div className="mb-4">
                 <h1 className="text-2xl text-gray-900 text-center tracking-tight font-sfPro">
                   Edit Bahan
@@ -117,7 +113,6 @@ export default function Edit({ product, categories }) {
                 </p>
               </div>
 
-              {/* nama bahan */}
               <div className="space-y-3">
                 <label className="block text-sm text-gray-800">Nama Bahan:</label>
                 <div className="relative">
@@ -135,7 +130,6 @@ export default function Edit({ product, categories }) {
                 {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name}</p>}
               </div>
 
-              {/* tanggal */}
               <div className="space-y-3">
                 <label className="block text-sm text-gray-800">Tanggal:</label>
                 <ConfigProvider locale={idID}>
@@ -152,7 +146,6 @@ export default function Edit({ product, categories }) {
                 {errors.date && <p className="text-red-500 text-xs mt-1">{errors.date}</p>}
               </div>
 
-              {/* harga */}
               <div className="space-y-3">
                 <label className="block text-sm text-gray-800">Nominal Harga:</label>
                 <div className="relative">
@@ -170,7 +163,6 @@ export default function Edit({ product, categories }) {
                 {errors.price && <p className="text-red-500 text-xs mt-1">{errors.price}</p>}
               </div>
 
-              {/* kategori */}
               <div className="space-y-3">
                 <label className="block text-sm text-gray-800">Kategori:</label>
                 <div className="relative">
@@ -180,7 +172,12 @@ export default function Edit({ product, categories }) {
                   <select
                     value={data.category_id}
                     onChange={(e) => setData('category_id', e.target.value)}
-                    className={`w-full bg-white border ${errors.category_id ? 'border-red-500' : 'border-gray-400'} rounded-xl pl-9 pr-12 py-3 text-sm outline-none appearance-none focus:border-gray-500 ${!data.category_id ? 'text-gray-400' : 'text-gray-900'}`}
+                    className={`w-full bg-white border ${errors.category_id ? 'border-red-500' : 'border-gray-400'} rounded-xl pl-9 pr-12 py-3 text-sm outline-none appearance-none focus:border-gray-500 ${!data.category_id ? 'text-gray-400' : 'text-gray-900'} shadow-sm`}
+                    style={{
+                      WebkitAppearance: 'none',
+                      MozAppearance: 'none',
+                      backgroundImage: 'none',
+                    }}
                   >
                     <option value="">Pilih Kategori</option>
                     {categories.map((cat) => (
@@ -194,7 +191,6 @@ export default function Edit({ product, categories }) {
                 {errors.category_id && <p className="text-red-500 text-xs mt-1">{errors.category_id}</p>}
               </div>
 
-              {/* status */}
               <div className="space-y-3">
                 <label className="block text-sm text-gray-800">Status:</label>
                 <div className="relative">
@@ -204,7 +200,12 @@ export default function Edit({ product, categories }) {
                   <select
                     value={data.status}
                     onChange={(e) => setData('status', e.target.value)}
-                    className="w-full bg-white border border-gray-400 rounded-xl pl-9 pr-12 py-3 text-sm outline-none appearance-none focus:border-gray-500 text-gray-900"
+                    className="w-full bg-white border border-gray-400 rounded-xl pl-9 pr-12 py-3 text-sm outline-none appearance-none focus:border-gray-500 text-gray-900 shadow-sm"
+                    style={{
+                      WebkitAppearance: 'none',
+                      MozAppearance: 'none',
+                      backgroundImage: 'none',
+                    }}
                   >
                     <option value="tersedia">Tersedia</option>
                     <option value="menipis">Menipis</option>
@@ -216,7 +217,6 @@ export default function Edit({ product, categories }) {
                 </div>
               </div>
 
-              {/* keterangan */}
               <div className="space-y-3">
                 <label className="block text-sm text-gray-800">Keterangan:</label>
                 <textarea
@@ -227,7 +227,6 @@ export default function Edit({ product, categories }) {
                 />
               </div>
 
-              {/* Area Gambar (Sesuai Proporsi Asli) */}
               <div className="space-y-3">
                 <label className="block text-sm text-gray-800">Bukti Pembayaran:</label>
                 <div
@@ -236,7 +235,6 @@ export default function Edit({ product, categories }) {
                 >
                   {preview ? (
                     <>
-                      {/* object-contain digunakan agar nota/bukti terlihat utuh sesuai aslinya */}
                       <img
                         src={preview}
                         alt="Preview"
@@ -271,7 +269,6 @@ export default function Edit({ product, categories }) {
                 {errors.proof && <p className="text-red-500 text-xs mt-1">{errors.proof}</p>}
               </div>
 
-              {/* submit button */}
               <div className="pt-2">
                 <button
                   type="submit"

@@ -16,15 +16,24 @@ class TransactionController extends Controller
     public function index(Request $request)
     {
         $start_date = $request->query('start_date') ?? Carbon::today()->toDateString();
-        $end_date   = $request->query('end_date')   ?? Carbon::today()->toDateString();
+        $end_date   = $request->query('end_date') ?? Carbon::today()->toDateString();
 
         $dateFilter = [$start_date . ' 00:00:00', $end_date . ' 23:59:59'];
-        $baseQuery  = Transaction::whereBetween('created_at', $dateFilter);
+
+        /*
+        |--------------------------------------------------------------------------
+        | HANYA HITUNG TRANSAKSI SUCCESS
+        |--------------------------------------------------------------------------
+        */
+
+        $baseQuery = Transaction::whereBetween('created_at', $dateFilter)
+            ->where('status', 'success');
 
         $total_income = (int) $baseQuery->sum('total');
         $total_orders = $baseQuery->count();
 
         $busy_hour_query = Transaction::whereBetween('created_at', $dateFilter)
+            ->where('status', 'success')
             ->select(DB::raw('HOUR(created_at) as hour'), DB::raw('count(*) as count'))
             ->groupBy('hour')
             ->orderBy('count', 'desc')
@@ -34,10 +43,16 @@ class TransactionController extends Controller
             ? str_pad($busy_hour_query->hour, 2, '0', STR_PAD_LEFT) . ':00'
             : '-';
 
+        /*
+        |--------------------------------------------------------------------------
+        | DATA TRANSAKSI
+        |--------------------------------------------------------------------------
+        */
+
         $transactions = Transaction::with(['items'])
             ->whereBetween('created_at', $dateFilter)
             ->latest()
-            ->paginate(10)
+            ->paginate(20)
             ->withQueryString()
             ->through(fn ($trx) => [
                 'id'             => $trx->id,
@@ -52,6 +67,16 @@ class TransactionController extends Controller
                 'order_type'     => $trx->order_type,
                 'created_at'     => $trx->created_at,
                 'cashier_name'   => $trx->cashier_name,
+
+                /*
+                |--------------------------------------------------------------------------
+                | STATUS VOID
+                |--------------------------------------------------------------------------
+                */
+
+                'status'         => $trx->status,
+                'void_reason'    => $trx->void_reason,
+
                 'items'          => $trx->items->map(fn ($item) => [
                     'menu_name'   => $item->menu_name,
                     'price'       => $item->price,
@@ -87,12 +112,22 @@ class TransactionController extends Controller
         ]);
 
         try {
+
             $transaction = DB::transaction(function () use ($request) {
+
                 $invoice     = 'TRX-' . now()->format('ymdHis') . rand(10, 99);
+
                 $todayCount  = Transaction::whereDate('created_at', Carbon::today())->count();
+
                 $orderNumber = 'C' . str_pad($todayCount + 1, 3, '0', STR_PAD_LEFT);
 
                 $admin = Auth::guard('admin')->user();
+
+                /*
+                |--------------------------------------------------------------------------
+                | CREATE TRANSACTION
+                |--------------------------------------------------------------------------
+                */
 
                 $newTransaction = Transaction::create([
                     'user_id'        => $admin?->id,
@@ -106,9 +141,25 @@ class TransactionController extends Controller
                     'cash_amount'    => $request->cash_amount ?? 0,
                     'change'         => $request->change ?? 0,
                     'order_type'     => $request->order_type,
+
+                    /*
+                    |--------------------------------------------------------------------------
+                    | DEFAULT STATUS
+                    |--------------------------------------------------------------------------
+                    */
+
+                    'status'         => 'success',
+                    'void_reason'    => null,
                 ]);
 
+                /*
+                |--------------------------------------------------------------------------
+                | DETAIL ITEM
+                |--------------------------------------------------------------------------
+                */
+
                 foreach ($request->cart as $item) {
+
                     TransactionDetail::create([
                         'transaction_id' => $newTransaction->id,
                         'menu_name'      => $item['name'],
@@ -117,7 +168,14 @@ class TransactionController extends Controller
                         'description'    => $item['note'] ?? null,
                     ]);
 
+                    /*
+                    |--------------------------------------------------------------------------
+                    | KURANGI STOK
+                    |--------------------------------------------------------------------------
+                    */
+
                     $menu = Menu::find($item['menu_id']);
+
                     if ($menu && !is_null($menu->stock)) {
                         $menu->decrement('stock', $item['quantity']);
                     }
@@ -126,7 +184,12 @@ class TransactionController extends Controller
                 return $newTransaction->load('items');
             });
 
-            // Data untuk struk (dipakai di React)
+            /*
+            |--------------------------------------------------------------------------
+            | DATA FLASH UNTUK PRINT
+            |--------------------------------------------------------------------------
+            */
+
             $flashData = [
                 'invoice_number' => $transaction->invoice_number,
                 'queue_number'   => $transaction->queue_number,
@@ -139,6 +202,8 @@ class TransactionController extends Controller
                 'order_type'     => $transaction->order_type,
                 'created_at'     => $transaction->created_at,
                 'cashier_name'   => $transaction->cashier_name,
+                'status'         => $transaction->status,
+
                 'items'          => $transaction->items->map(fn ($item) => [
                     'menu_name'   => $item->menu_name,
                     'price'       => $item->price,
@@ -147,15 +212,82 @@ class TransactionController extends Controller
                 ])->toArray(),
             ];
 
-            // Redirect ke halaman katalog kasir yang benar
+            /*
+            |--------------------------------------------------------------------------
+            | REDIRECT
+            |--------------------------------------------------------------------------
+            */
+
             return redirect()
                 ->route('admin.kasir.katalog.index')
                 ->with('success_transaction', $flashData);
 
         } catch (\Exception $e) {
+
             return redirect()
                 ->back()
-                ->withErrors(['error' => 'Gagal: ' . $e->getMessage()]);
+                ->withErrors([
+                    'error' => 'Gagal: ' . $e->getMessage()
+                ]);
+        }
+    }
+
+    public function void(Request $request, $id)
+    {
+        $request->validate([
+            'void_reason' => 'required|string|max:255',
+        ]);
+
+        try {
+
+            DB::transaction(function () use ($id, $request) {
+
+                $transaction = Transaction::with('items')->findOrFail($id);
+
+                /*
+                |--------------------------------------------------------------------------
+                | CEGAH VOID BERULANG
+                |--------------------------------------------------------------------------
+                */
+
+                if ($transaction->status === 'void') {
+                    throw new \Exception('Transaksi sudah di-void.');
+                }
+
+                /*
+                |--------------------------------------------------------------------------
+                | UPDATE STATUS
+                |--------------------------------------------------------------------------
+                */
+
+                $transaction->update([
+                    'status' => 'void',
+                    'void_reason' => $request->void_reason,
+                ]);
+
+                /*
+                |--------------------------------------------------------------------------
+                | BALIKAN STOK MENU
+                |--------------------------------------------------------------------------
+                */
+
+                foreach ($transaction->items as $item) {
+
+                    $menu = Menu::where('name', $item->menu_name)->first();
+
+                    if ($menu && !is_null($menu->stock)) {
+                        $menu->increment('stock', $item->quantity);
+                    }
+                }
+            });
+
+            return back()->with('success', 'Transaksi berhasil di-void.');
+
+        } catch (\Exception $e) {
+
+            return back()->withErrors([
+                'error' => $e->getMessage()
+            ]);
         }
     }
 }

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Head, Link, router } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import {
@@ -20,12 +20,12 @@ import 'dayjs/locale/id';
 dayjs.locale('id');
 
 export default function ProductIndex({ products, filters }) {
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState(filters?.search || '');
   const [startDate, setStartDate] = useState(
-    filters.start_date ? dayjs(filters.start_date) : dayjs().startOf('month')
+    filters?.start_date ? dayjs(filters.start_date) : dayjs().startOf('month')
   );
   const [endDate, setEndDate] = useState(
-    filters.end_date ? dayjs(filters.end_date) : dayjs().endOf('month')
+    filters?.end_date ? dayjs(filters.end_date) : dayjs().endOf('month')
   );
 
   const handleSearchByDate = () => {
@@ -34,6 +34,8 @@ export default function ProductIndex({ products, filters }) {
       {
         start_date: startDate.format('YYYY-MM-DD'),
         end_date: endDate.format('YYYY-MM-DD'),
+        search: searchTerm, // Tambahkan ini agar search tidak reset
+        page: 1 // Reset ke halaman 1 jika ganti tanggal
       },
       {
         preserveState: true,
@@ -57,10 +59,32 @@ export default function ProductIndex({ products, filters }) {
   const to = products.to ?? 0;
   const total = products.total ?? 0;
 
-  // Filter client-side berdasarkan searchTerm
-  const displayData = products.data.filter((product) =>
-    product.name?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Ganti filter client-side dengan Live Search Server-Side
+  useEffect(() => {
+    const delayDebounceFn = setTimeout(() => {
+      if (searchTerm !== (filters?.search || '')) {
+        router.get(
+          route('admin.kelola-produk.index'),
+          {
+            start_date: startDate.format('YYYY-MM-DD'),
+            end_date: endDate.format('YYYY-MM-DD'),
+            search: searchTerm,
+            page: 1 // Reset ke halaman 1 setiap pencarian baru
+          },
+          {
+            preserveState: true,
+            preserveScroll: true,
+            replace: true,
+          }
+        );
+      }
+    }, 300);
+
+    return () => clearTimeout(delayDebounceFn);
+  }, [searchTerm]);
+
+  // Ambil data langsung dari Paginator Laravel
+  const displayData = products.data || [];
 
   return (
     <AdminLayout>

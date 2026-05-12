@@ -224,7 +224,7 @@ export default function Edit({ categories, allMenus, promo }) {
                   </div>
                 </div>
 
-                <button type="submit" disabled={processing} className="w-full bg-[#ef5350] text-white py-4 rounded-xl text-sm font-sfPro transition-all flex items-center justify-center gap-2 hover:bg-[#e53935] shadow-lg shadow-red-100 active:scale-95 font-bold">
+                <button type="submit" disabled={processing} className="w-full bg-[#ef5350] text-white py-4 rounded-xl text-sm font-sfPro transition-all flex items-center justify-center gap-2 hover:bg-[#e53935] shadow-lg shadow-red-100 active:scale-95">
                   {processing ? 'Menyimpan...' : <><Save size={18} /> Simpan Perubahan</>}
                 </button>
               </form>

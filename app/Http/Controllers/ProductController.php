@@ -16,12 +16,17 @@ class ProductController extends Controller
     {
         $startDate = $request->start_date ?? Carbon::now()->startOfMonth()->toDateString();
         $endDate   = $request->end_date ?? Carbon::now()->endOfMonth()->toDateString();
+        $search    = $request->search; // Tangkap parameter pencarian
 
         $products = Product::with('category')
             ->whereDate('date', '>=', $startDate)
             ->whereDate('date', '<=', $endDate)
+            // Tambahkan filter search disini
+            ->when($search, function ($query, $search) {
+                $query->where('name', 'like', "%{$search}%");
+            })
             ->latest()
-            ->paginate(10)
+            ->paginate(20)
             ->withQueryString()
             ->through(fn ($product) => [
                 'id'              => $product->id,
@@ -40,6 +45,7 @@ class ProductController extends Controller
             'filters'  => [
                 'start_date' => $startDate,
                 'end_date'   => $endDate,
+                'search'     => $search, // Kirim parameter pencarian kembali ke frontend
             ],
         ]);
     }

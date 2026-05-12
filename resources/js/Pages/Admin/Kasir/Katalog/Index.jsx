@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react'
-import { Head, router, usePage } from '@inertiajs/react'
+import { Head, router, usePage, Link } from '@inertiajs/react'
 import AdminLayout from '@/Layouts/AdminLayout'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
@@ -55,14 +55,29 @@ export default function CatalogIndex({ menus = [], categories = [], auth, filter
     );
   };
 
-  const handleSearch = (e) => {
-    if (e.key === 'Enter') {
-      router.get(route('admin.kasir.katalog.index'), 
-        { category: selectedCategory, search: searchTerm }, 
-        { preserveState: true, preserveScroll: true }
-      );
-    }
-  };
+  // Pencarian otomatis (debounce) tanpa perlu di enter
+  useEffect(() => {
+    const delayDebounceFn = setTimeout(() => {
+      // Cek apakah user sedang mengetik sesuatu yang berbeda dengan filter saat ini
+      if (searchTerm !== (filters?.search || '')) {
+        router.get(
+          route('admin.kasir.katalog.index'),
+          { 
+            category: selectedCategory, 
+            search: searchTerm,
+            page: 1 
+          },
+          { 
+            preserveState: true, 
+            preserveScroll: true, 
+            replace: true 
+          }
+        );
+      }
+    }); // Delay 500ms setelah user berhenti mengetik
+
+    return () => clearTimeout(delayDebounceFn);
+  }, [searchTerm]);
 
   const formatRupiah = value => {
     if (!value) return ''
@@ -93,7 +108,7 @@ export default function CatalogIndex({ menus = [], categories = [], auth, filter
     resetState()
   }
 
-  // FUNGSI PRINT DENGAN LAYOUT PERSIS GAMBAR
+  // Fungsi untuk membuka jendela cetak struk dengan format yang sudah diatur
   const handlePrintReceipt = (data) => {
     if (!data) return;
     const printWindow = window.open('', '_blank', 'width=400,height=600');
@@ -233,8 +248,8 @@ export default function CatalogIndex({ menus = [], categories = [], auth, filter
   };
 
   const filteredAndSortedMenus = useMemo(() => {
-    const menuData = menus.data || menus;
-    let result = Array.isArray(menuData) ? [...menuData] : [];
+    const menuData = menus.data || [];
+    let result = [...menuData];
     result.sort((a, b) => {
       if (a.is_package !== b.is_package) return a.is_package ? -1 : 1
       const scoreA = (a.promo_price ? 3 : 0) + (a.is_best_seller ? 2 : 0)
@@ -243,7 +258,7 @@ export default function CatalogIndex({ menus = [], categories = [], auth, filter
       return a.name.localeCompare(b.name)
     })
     return result
-  }, [menus])
+  }, [menus.data])
 
   const getEffectivePrice = menu => (menu.promo_price ? menu.promo_price : menu.price)
 
@@ -319,14 +334,13 @@ export default function CatalogIndex({ menus = [], categories = [], auth, filter
         <div className="max-w-7xl mx-auto px-4 pt-16 pb-6">
           <div className="flex justify-start items-center mb-8 gap-4">
             <div className="relative w-56">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 cursor-default" size={16} />
               <input
                 type="text"
                 placeholder="Cari menu..."
                 value={searchTerm}
-                onChange={e => setSearchTerm(e.target.value)}
-                onKeyDown={handleSearch}
-                className="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-50 shadow-[0_2px_10px_rgba(0,0,0,0.02)] rounded-2xl text-sm outline-none"
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-50 shadow-[0_2px_10px_rgba(0,0,0,0.02)] rounded-2xl text-sm outline-none focus:ring-0 focus:border-gray-50 hover:border-gray-50 transition-none"
               />
             </div>
             <div className="relative w-56">
@@ -356,7 +370,7 @@ export default function CatalogIndex({ menus = [], categories = [], auth, filter
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 pb-10">
             {filteredAndSortedMenus.length > 0 ? (
               filteredAndSortedMenus.map(menu => (
-                <motion.div key={menu.id} whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} className="bg-white rounded-[1.5rem] overflow-hidden shadow-[0_8px_30px_rgba(0,0,0,0.02)] border border-gray-50 flex flex-col h-full cursor-pointer">
+                <motion.div key={menu.id} whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} className="bg-white rounded-[2rem] shadow-[0_8px_30px_rgba(0,0,0,0.02)] border border-gray-50 relative flex flex-col overflow-hidden group cursor-pointer">
                   <div className="aspect-square bg-gray-50 relative">
                     <div className="absolute top-3 left-3 z-10 flex flex-col items-start gap-1.5">
                       {menu.is_best_seller && (
@@ -372,12 +386,10 @@ export default function CatalogIndex({ menus = [], categories = [], auth, filter
                         </div>
                       )}
                     </div>
-                    <img src={menu.image ? `/storage/${menu.image}` : '/asset/no-image.png'} alt={menu.name} className="w-full h-full object-cover" />
+                    <img src={menu.image ? `/storage/${menu.image}` : '/asset/no-image.png'} alt={menu.name} className="aspect-square bg-gray-100 relative overflow-hidden" />
                   </div>
                   <div className="p-5 flex flex-col flex-1">
                     <h3 className="text-gray-800 truncate text-base mb-1 font-normal">{menu.name}</h3>
-                    <p className="text-xs text-gray-400 mb-2 font-sfPro">{menu.category}</p>
-                    {menu.description && <p className="text-[11px] text-gray-400 line-clamp-2 mb-3 leading-relaxed font-sfPro italic">{menu.description}</p>}
                     <div className="mt-auto mb-4">
                       {menu.promo_price ? (
                         <div className="flex flex-col items-start">
@@ -403,6 +415,32 @@ export default function CatalogIndex({ menus = [], categories = [], auth, filter
           </div>
         </div>
 
+        <div className="mt-10 flex flex-col md:flex-row justify-between items-center gap-4 pb-10">
+          <p className="text-xs text-gray-500 font-sfPro">
+            Menampilkan {menus.from || 0}–{menus.to || 0} dari {menus.total || 0} data
+          </p>
+          <div className="flex gap-1.5 p-1.5 bg-white rounded-xl shadow-sm border border-gray-50">
+            {menus.links?.map((link, index) => (
+              <Link
+                key={index}
+                href={link.url || '#'}
+                as="button"
+                disabled={!link.url}
+                preserveScroll
+                className={`
+                  w-8 h-8 flex items-center justify-center rounded-lg text-xs font-sfPro transition-all
+                  ${link.active ? 'bg-[#ef5350] text-white' : 'bg-gray-50 text-gray-500 hover:bg-gray-100'}
+                  ${!link.url ? 'opacity-30 cursor-not-allowed' : 'active:scale-95'}
+                `}
+              >
+                <span dangerouslySetInnerHTML={{ 
+                  __html: link.label.includes('Previous') ? '<' : link.label.includes('Next') ? '>' : link.label 
+                }} />
+              </Link>
+            ))}
+          </div>
+        </div>
+
         {/* Modal Hapus Keranjang */}
         <AnimatePresence>
           {showClearCartModal && (
@@ -421,7 +459,7 @@ export default function CatalogIndex({ menus = [], categories = [], auth, filter
           )}
         </AnimatePresence>
 
-        {/* Modal PREVIEW STRUK DETAIL (SETELAH PEMBAYARAN) */}
+        {/* Modal Success */}
         <AnimatePresence>
           {completedTransaction && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-gray-900/60 backdrop-blur-md z-[120] flex items-center justify-center p-4">
@@ -432,7 +470,7 @@ export default function CatalogIndex({ menus = [], categories = [], auth, filter
                   <div className="w-14 h-14 bg-green-50 rounded-full flex items-center justify-center mb-4">
                     <CheckCircle2 size={28} strokeWidth={2.5} className="text-green-500" />
                   </div>
-                  <h3 className="text-xl font-semibold text-gray-900 font-sfPro">Pembayaran Sukses</h3>
+                  <h3 className="text-xl text-gray-900 font-sfPro">Pembayaran Sukses</h3>
                   <p className="text-sm text-gray-500 font-sfPro mt-1 tracking-tight font-mono">INV: {completedTransaction.invoice_number}</p>
                 </div>
 
@@ -440,18 +478,18 @@ export default function CatalogIndex({ menus = [], categories = [], auth, filter
                 <div className="px-8 grid grid-cols-3 gap-2 py-4 border-y border-gray-100 bg-gray-50/50">
                     <div className="flex flex-col items-center text-center">
                         <User size={14} className="text-gray-400 mb-1"/>
-                        <span className="text-[9px] text-gray-400 uppercase tracking-widest font-bold">Kasir</span>
-                        <span className="text-xs font-semibold text-gray-700 truncate w-full px-1">{completedTransaction.cashier_name || auth?.user?.name}</span>
+                        <span className="text-[9px] text-gray-400 uppercase tracking-widest">Kasir</span>
+                        <span className="text-xs text-gray-700 truncate w-full px-1">{completedTransaction.cashier_name || auth?.user?.name}</span>
                     </div>
                     <div className="flex flex-col items-center text-center">
                         <Clock size={14} className="text-gray-400 mb-1"/>
-                        <span className="text-[9px] text-gray-400 uppercase tracking-widest font-bold">Waktu</span>
-                        <span className="text-xs font-semibold text-gray-700">{dayjs(completedTransaction.created_at).format('HH:mm')} WIB</span>
+                        <span className="text-[9px] text-gray-400 uppercase tracking-widest">Waktu</span>
+                        <span className="text-xs text-gray-700">{dayjs(completedTransaction.created_at).format('HH:mm')} WIB</span>
                     </div>
                     <div className="flex flex-col items-center text-center">
                         <Utensils size={14} className="text-gray-400 mb-1"/>
-                        <span className="text-[9px] text-gray-400 uppercase tracking-widest font-bold">Tipe</span>
-                        <span className="text-xs font-semibold text-gray-700 capitalize">{completedTransaction.order_type.replace('-', ' ')}</span>
+                        <span className="text-[9px] text-gray-400 uppercase tracking-widest">Tipe</span>
+                        <span className="text-xs text-gray-700 capitalize">{completedTransaction.order_type.replace('-', ' ')}</span>
                     </div>
                 </div>
 

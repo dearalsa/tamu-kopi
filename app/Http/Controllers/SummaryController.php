@@ -24,6 +24,10 @@ class SummaryController extends Controller
                 'menu_name',
                 DB::raw('SUM(quantity) as total_sold')
             )
+            // HANYA HITUNG ITEM DARI TRANSAKSI YANG BUKAN VOID
+            ->whereNotIn('transaction_id', function($q) {
+                $q->select('id')->from('transactions')->where('status', 'void');
+            })
             ->groupBy('menu_name');
 
         // filter tanggal (DATE(created_at) antara start–end)
