@@ -11,15 +11,16 @@ use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithColumnFormatting;
 use Maatwebsite\Excel\Concerns\WithStyles;
-use Maatwebsite\Excel\Concerns\ShouldAutoSize; // Tambahkan ini untuk lebar kolom otomatis
+use Maatwebsite\Excel\Concerns\ShouldAutoSize;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
-use PhpOffice\PhpSpreadsheet\Style\NumberFormat;
+use PhpOffice\PhpSpreadsheet\Style\Alignment;
 
 class KasExport implements FromCollection, WithHeadings, WithColumnFormatting, WithStyles, ShouldAutoSize
 {
-    protected int|float $totalPemasukan = 0;
+    protected int|float $totalPemasukanSuccess = 0;
+    protected int|float $totalNominalVoid = 0;
     protected int|float $totalPengeluaran = 0;
-    protected int|float $sisaDana = 0;
+    protected int|float $sisaDanaAktual = 0;
 
     public function __construct(
         protected Request $request,
@@ -36,17 +37,20 @@ class KasExport implements FromCollection, WithHeadings, WithColumnFormatting, W
             ? Carbon::parse($this->request->end)->endOfDay()
             : now()->endOfDay();
 
-        // Logika Pemasukan
+        // --- LOGIKA PEMASUKAN ---
         if ($this->tipe === 'pemasukan') {
+            // AMBIL SEMUA DATA (Success & Void) + Alasan Void
             $rows = Transaction::query()
-                ->select(['invoice_number', 'cashier_name', 'total', 'created_at'])
+                ->select(['invoice_number', 'cashier_name', 'total', 'created_at', 'status', 'void_reason'])
                 ->whereBetween('created_at', [$start, $end])
                 ->latest()
                 ->get();
 
-            $this->totalPemasukan   = $rows->sum('total');
-            $this->totalPengeluaran = Product::whereBetween('date', [$start, $end])->sum('price');
-            $this->sisaDana         = $this->totalPemasukan - $this->totalPengeluaran;
+            // Hitung statistik untuk Summary
+            $this->totalPemasukanSuccess = $rows->where('status', 'success')->sum('total');
+            $this->totalNominalVoid      = $rows->where('status', 'void')->sum('total');
+            $this->totalPengeluaran      = Product::whereBetween('date', [$start, $end])->sum('price');
+            $this->sisaDanaAktual        = $this->totalPemasukanSuccess - $this->totalPengeluaran;
 
             $mapped = $rows->values()->map(function ($row, $index) {
                 return [
@@ -54,27 +58,30 @@ class KasExport implements FromCollection, WithHeadings, WithColumnFormatting, W
                     $row->invoice_number,
                     $row->created_at?->format('d-m-Y H:i'),
                     $row->cashier_name ?? 'Sistem',
+                    strtoupper($row->status), // Menampilkan status (SUCCESS/VOID)
+                    $row->status === 'void' ? ($row->void_reason ?? 'Tanpa alasan') : '-', 
                     $row->total,
                 ];
             });
 
-            // Summary di bawah tabel
+            // Tambahkan baris kosong dan Summary (Persis seperti di PDF)
             $summaryRows = collect([
-                [''],
-                [''], 
-                ['Total Pendapatan', '', '', '', $this->totalPemasukan],
-                ['Beli Bahan', '', '', '', -$this->totalPengeluaran],
-                ['Sisa Dana', '', '', '', $this->sisaDana],
+                [''], // Jeda baris
+                ['RINGKASAN LAPORAN'],
+                ['Total Transaksi Sukses', '', '', '', '', '', $this->totalPemasukanSuccess],
+                ['Total Nominal VOID', '', '', '', '', '', -$this->totalNominalVoid],
+                ['Total Pengeluaran (Bahan)', '', '', '', '', '', -$this->totalPengeluaran],
+                ['Sisa Dana', '', '', '', '', '', $this->sisaDanaAktual],
             ]);
 
             return $mapped->concat($summaryRows);
         }
 
-        // Logika Pengeluaran
+        // --- LOGIKA PENGELUARAN ---
         if ($this->tipe === 'pengeluaran') {
             $rows = Product::query()
                 ->with('category')
-                ->select(['name', 'price', 'date', 'category_id', 'created_by_name'])
+                ->select(['name', 'price', 'date', 'category_id', 'created_by_name', 'description'])
                 ->whereBetween('date', [$start, $end])
                 ->latest('date')
                 ->get();
@@ -86,20 +93,18 @@ class KasExport implements FromCollection, WithHeadings, WithColumnFormatting, W
                 return [
                     $index + 1,
                     $row->name,
-                    optional($row->category)->name ?? '-',
-                    $row->created_by_name ?? 'Tidak diketahui',
-                    $row->date
-                        ? Carbon::parse($row->date)->format('d-m-Y')
-                        : null,
+                    optional($row->category)->name ?? 'Umum',
+                    $row->created_by_name ?? 'Admin',
+                    $row->date ? Carbon::parse($row->date)->format('d-m-Y') : '-',
+                    $row->description ?? '-',
                     $row->price,
                 ];
             });
 
-            // Summary di bawah tabel
             $summaryRows = collect([
-                [''], 
-                ['Total Pengeluaran', '', '', '', '', $this->totalPengeluaran],
-                ['Jumlah Pembelian', '', '', '', '', $jumlahPembelian],
+                [''],
+                ['Total Pengeluaran', '', '', '', '', '', $this->totalPengeluaran],
+                ['Jumlah Pembelian', '', '', '', '', '', $jumlahPembelian],
             ]);
 
             return $mapped->concat($summaryRows);
@@ -114,53 +119,62 @@ class KasExport implements FromCollection, WithHeadings, WithColumnFormatting, W
             return [
                 'No',
                 'Id Transaksi',
-                'Tanggal & Jam',
-                'Penerima (Kasir)',
-                'Total Pemasukan',
+                'Waktu',
+                'Kasir',
+                'Status',
+                'Alasan Void',
+                'Total Nominal',
             ];
         }
 
-        if ($this->tipe === 'pengeluaran') {
-            return [
-                'No',
-                'Nama Produk',
-                'Kategori',
-                'Dibeli Oleh',
-                'Tanggal',
-                'Harga',
-            ];
-        }
-
-        return [];
+        return [
+            'No',
+            'Nama Produk',
+            'Kategori',
+            'Dibeli Oleh',
+            'Tanggal',
+            'Keterangan',
+            'Harga',
+        ];
     }
 
     public function columnFormats(): array
     {
-        if ($this->tipe === 'pemasukan') {
-            return [
-                'E' => '#,##0', 
-            ];
-        }
-
-        if ($this->tipe === 'pengeluaran') {
-            return [
-                'F' => '#,##0', 
-                'E' => '@',     
-            ];
-        }
-
-        return [];
+        // Kolom G adalah Total/Harga di kedua tipe
+        return [
+            'G' => '#,##0',
+        ];
     }
 
     public function styles(Worksheet $sheet)
     {
-        if ($this->tipe === 'pengeluaran') {
-            $lastRow = $sheet->getHighestRow(); 
-            $sheet->getStyle('F' . $lastRow)->getNumberFormat()->setFormatCode('0'); 
+        $highestRow = $sheet->getHighestRow();
+        
+        // Style Header (Baris 1)
+        $sheet->getStyle('1')->getFont()->setBold(true);
+        $sheet->getStyle('1')->getFill()
+            ->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)
+            ->getStartColor()->setARGB('F3F4F6');
+
+        // Beri warna Merah untuk status VOID di kolom E (Pemasukan)
+        if ($this->tipe === 'pemasukan') {
+            for ($i = 2; $highestRow; $i++) {
+                $cellValue = $sheet->getCell('E' . $i)->getValue();
+                if ($cellValue === 'VOID') {
+                    $sheet->getStyle('E' . $i)->getFont()->setColor(new \PhpOffice\PhpSpreadsheet\Style\Color('E53E3E'))->setBold(true);
+                    $sheet->getStyle('G' . $i)->getFont()->setStrikethrough(true); // Coret harga jika void
+                }
+                if ($i >= $highestRow) break;
+            }
         }
 
-        return [
-            1 => ['font' => ['bold' => true]], 
-        ];
+        // Style untuk Summary di bagian bawah
+        $summaryStartRow = $highestRow - ($this->tipe === 'pemasukan' ? 4 : 1);
+        $sheet->getStyle($summaryStartRow . ':' . $highestRow)->getFont()->setBold(true);
+        
+        // Rata kanan untuk kolom nominal
+        $sheet->getStyle('G2:G' . $highestRow)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT);
+
+        return [];
     }
 }

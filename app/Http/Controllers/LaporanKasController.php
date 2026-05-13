@@ -23,9 +23,8 @@ class LaporanKasController extends Controller
             ? Carbon::parse($request->end)->endOfDay()
             : now()->endOfDay();
 
-        // HANYA AMBIL TRANSAKSI SUCCESS UNTUK TABEL PEMASUKAN
+        // REVISI: AMBIL SEMUA DATA (SUCCESS & VOID) AGAR MUNCUL DI TABEL
         $transactions = Transaction::with('user')
-            ->where('status', 'success') // <--- FILTER VOID
             ->whereBetween('created_at', [$start, $end])
             ->latest()
             ->paginate(20)
@@ -34,12 +33,14 @@ class LaporanKasController extends Controller
                 'id'           => $trx->id,
                 'invoice'      => $trx->invoice_number,
                 'total'        => (float) $trx->total,
+                'status'       => $trx->status, // Pastikan status dikirim
+                'void_reason'  => $trx->void_reason, // Pastikan alasan void dikirim
                 'created_at'   => $trx->created_at,
                 'cashier_name' => $trx->cashier_name ?? $trx->user?->name ?? '-',
             ]);
 
-        // HANYA HITUNG TRANSAKSI SUCCESS UNTUK TOTAL UANG
-        $totalPemasukan   = Transaction::where('status', 'success') // <--- FILTER VOID
+        // LOGIKA KEUANGAN: Tetap hanya hitung yang 'success' untuk Saldo
+        $totalPemasukan   = Transaction::where('status', 'success') 
             ->whereBetween('created_at', [$start, $end])->sum('total');
             
         $totalPengeluaran = Product::whereBetween('date', [$start, $end])->sum('price');
@@ -65,7 +66,7 @@ class LaporanKasController extends Controller
 
         $end = $request->filled('end')
             ? Carbon::parse($request->end)->endOfDay()
-            : now()->endOfMonth()->endOfDay();
+            : now()->endOfDay();
 
         $query = Product::with('category')
             ->whereBetween('date', [$start, $end])
@@ -108,13 +109,13 @@ class LaporanKasController extends Controller
 
         $end = $request->filled('end')
             ? Carbon::parse($request->end)->endOfDay()
-            : now()->endOfMonth()->endOfDay();
+            : now()->endOfDay();
 
         $format = $request->get('format');
 
         if ($tipe === 'pemasukan') {
+            // REVISI: Ambil semua data (termasuk VOID) untuk PDF/Excel
             $data = Transaction::with('user')
-                ->where('status', 'success') // <--- FILTER VOID UNTUK EKSPOR PDF/EXCEL
                 ->whereBetween('created_at', [$start, $end])
                 ->latest()
                 ->get();
@@ -138,6 +139,9 @@ class LaporanKasController extends Controller
                 "laporan.{$tipe}.pdf",
                 array_merge(compact('data', 'start', 'end'), $extraData)
             );
+
+            // Opsional: atur orientasi landscape jika kolomnya banyak
+            // $pdf->setPaper('a4', 'landscape');
 
             return $pdf->download("laporan_{$tipe}_" . now()->format('Ymd') . ".pdf");
         }
