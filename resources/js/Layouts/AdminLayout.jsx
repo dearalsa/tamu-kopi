@@ -9,7 +9,8 @@ export default function AdminLayout({ children }) {
   const [profileOpen, setProfileOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
 
-  // Logika Helper
+  // Logika Role & Helper
+  const userRole = auth.user?.role; // Pastikan mengambil role user
   const isDashboard = window.location.pathname.includes('/dashboard');
   const profileRouteName = 'admin.profile.edit';
 
@@ -30,8 +31,8 @@ export default function AdminLayout({ children }) {
         <main className="px-10 py-10 relative">
           <div className={`absolute top-10 z-[60] flex items-center gap-3 ${isDashboard ? 'right-10' : 'left-10'}`}>
             
-            {/* Notifikasi Lonceng */}
-            {isDashboard && (
+            {/* Notifikasi Lonceng - HANYA MUNCUL UNTUK ADMIN */}
+            {isDashboard && userRole === 'admin' && (
               <div className="relative">
                 <button
                   onClick={() => {
@@ -51,7 +52,7 @@ export default function AdminLayout({ children }) {
                 {/* Dropdown Notifikasi */}
                 {notifOpen && (
                   <div className="absolute right-0 mt-3 w-72 bg-white rounded-2xl border border-gray-100 shadow-xl overflow-hidden z-[70] animate-in fade-in slide-in-from-top-2">
-                    <div className={`px-5 py-3 border-b border-gray-100 font-sfPro font-bold text-xs uppercase tracking-wider ${getNotifHeaderColor()}`}>
+                    <div className={`px-5 py-3 border-b border-gray-100 font-sfPro text-xs uppercase tracking-wider ${getNotifHeaderColor()}`}>
                       {notif?.status === 'habis' ? '🚨 Darurat Bahan' : notif?.status === 'menipis' ? '‼️Peringatan Bahan' : '✅ Informasi Bahan'}
                     </div>
 
@@ -106,19 +107,23 @@ export default function AdminLayout({ children }) {
                     <p className="text-[10px] text-gray-400 truncate">{auth.user.email}</p>
                   </div>
 
-                  <Link
-                    href={route(profileRouteName)}
-                    className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-600 hover:bg-gray-50 rounded-xl transition-colors"
-                  >
-                    <HiOutlineUserCircle className="text-lg text-gray-400" />
-                    Profil
-                  </Link>
+                  {/* Menu Edit Profil - HANYA UNTUK ADMIN */}
+                  {userRole === 'admin' && (
+                    <Link
+                      href={route(profileRouteName)}
+                      className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-600 hover:bg-gray-50 rounded-xl transition-colors"
+                    >
+                      <HiOutlineUserCircle className="text-lg text-gray-400" />
+                      Profil
+                    </Link>
+                  )}
 
+                  {/* Tombol Logout - MUNCUL UNTUK SEMUA */}
                   <Link
                     href={route('logout')}
                     method="post"
                     as="button"
-                    className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-500 hover:bg-red-50 rounded-xl text-left transition-colors"
+                    className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-500 hover:bg-red-50 rounded-xl text-left transition-colors focus:outline-none"
                   >
                     <HiOutlineLogout className="text-lg" />
                     Logout

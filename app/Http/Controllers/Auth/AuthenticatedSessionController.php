@@ -27,10 +27,34 @@ class AuthenticatedSessionController extends Controller
      */
     public function store(LoginRequest $request): RedirectResponse
     {
+        // 1. Jalankan proses autentikasi (Throttle sudah ada di LoginRequest bawaan Laravel)
         $request->authenticate();
 
+        // 2. Keamanan: Cek apakah akun masih aktif (Opsional, tapi bagus untuk Cyber Security)
+        if (!Auth::guard('admin')->user()->is_active) {
+            Auth::guard('admin')->logout();
+            return redirect()->route('login')->withErrors([
+                'email' => 'Akun Anda telah dinonaktifkan. Silakan hubungi Admin.',
+            ]);
+        }
+
+        // 3. Regenerasi session untuk mencegah Session Fixation attack
         $request->session()->regenerate();
 
+        // 4. LOGIKA REDIRECT BERDASARKAN ROLE
+        $user = Auth::guard('admin')->user();
+
+        if ($user->role === 'admin') {
+            // Admin diarahkan ke Dashboard Utama
+            return redirect()->intended(route('admin.dashboard'));
+        } 
+        
+        if ($user->role === 'kasir') {
+            // Kasir diarahkan langsung ke Katalog/Kasir (sesuai request kamu)
+            return redirect()->intended(route('admin.kasir.katalog.index'));
+        }
+
+        // Fallback jika role tidak dikenali
         return redirect()->intended(route('admin.dashboard'));
     }
 

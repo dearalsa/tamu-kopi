@@ -74,7 +74,7 @@ export default function UpdateProfileForm({ admin, role, status }) {
                 <header className="mb-8">
                     <h2 className="text-2xl font-telegraf text-gray-900 tracking-tight">Profil Admin</h2>
                     <p className="mt-2 text-sm text-gray-500 font-telegraf leading-relaxed">
-                        Perbarui identitas dan email kasir yang bertugas.
+                      Perbarui informasi profil Anda.
                     </p>
                 </header>
 
@@ -93,7 +93,7 @@ export default function UpdateProfileForm({ admin, role, status }) {
                     {/* Input Nama */}
                     <div className="group">
                         <label className="block text-[11px] uppercase tracking-[0.15em] font-sfPro text-gray-400 mb-1 group-focus-within:text-gray-800 transition-colors">
-                            Nama Kasir Bertugas
+                            Nama 
                         </label>
                         <div className="relative">
                             <div className="absolute inset-y-0 left-0 flex items-center text-gray-400 group-focus-within:text-gray-800 transition-colors">
@@ -107,7 +107,7 @@ export default function UpdateProfileForm({ admin, role, status }) {
                                 type="text"
                                 required
                                 className={errors.name ? inputError : inputNormal}
-                                placeholder="Masukkan nama kasir"
+                                placeholder="Masukkan nama admin"
                             />
                         </div>
                         {errors.name && <p className="mt-2 text-xs text-red-500 font-sfPro italic">{errors.name}</p>}
